@@ -17,10 +17,10 @@ int main()
         | fxt::append(3.14)
         //| fxt::transform([](auto&& t) { return std::get<0>(t) * std::get<1>(t); })
         | fxt::apply([](int i, auto d) { return i * d; })
-        | fxt::select<2>();
-        //| fxt::value_or(0);
+        | fxt::get<2>()
+        | fxt::value_or(0);
 
-    //std::cout << result << std::endl;
+    std::cout << result << std::endl;
 
     return 0;
 }
