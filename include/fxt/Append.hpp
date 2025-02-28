@@ -70,7 +70,7 @@ namespace fxt
         auto operator()(const std::expected<TValue, TError>& val) const
         {
             return [val]<typename TTuple>(const std::expected<TTuple, TError>& tuple) {
-                return val ? tuple.transform([val](const TTuple& t) { return tuple_append(t, *val); }) : std::unexpected(val.error());
+                return val ? tuple.transform([val](const TTuple& t) { return impl::tuple_append(t, *val); }) : std::unexpected(val.error());
             };
         }
     };

@@ -1,0 +1,25 @@
+//
+// Created by kenne on 26/02/2025.
+//
+
+#pragma once
+
+namespace fxt
+{
+    namespace impl
+    {
+        template<std::size_t X, typename Tuple, std::size_t... Indices>
+        auto drop_impl(Tuple&& tpl, std::index_sequence<Indices...>)
+        {
+            return std::make_tuple(std::get<Indices + X>(std::forward<Tuple>(tpl))...);
+        }
+    }    // namespace impl
+
+    template<std::size_t X, typename Tuple>
+    auto drop(Tuple&& tpl)
+    {
+        constexpr std::size_t tupleSize = std::tuple_size_v<std::remove_reference_t<Tuple>>;
+        static_assert(X <= tupleSize, "Cannot drop more elements than the tuple size");
+        return impl::drop_impl<X>(std::forward<Tuple>(tpl), std::make_index_sequence<tupleSize - X> {});
+    }
+}    // namespace fxt
