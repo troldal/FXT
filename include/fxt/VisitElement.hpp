@@ -35,11 +35,10 @@ namespace fxt
     // (the key) matches the given key, it invokes the provided function with the tail of that tuple.
     // The return type is the common type of f invoked on the tails.
     template<typename Key, typename Func, typename TupleOfTuples>
-    auto visit_element(const Key& key, Func&& f, const TupleOfTuples& tupleOfTuples) -> std::optional<impl::visit_result_t<Func, TupleOfTuples>>
+    auto visit_element(const Key& key, Func&& f, const TupleOfTuples& tuples) -> std::optional<impl::visit_result_t<Func, TupleOfTuples>>
     {
         using ResultType = impl::visit_result_t<Func, TupleOfTuples>;
-        // bool       found = false;
-        std::optional<ResultType> result {};    // default-constructed result; adjust if default construction doesn't make sense
+        std::optional<ResultType> result {};
 
         std::apply(
             [&](auto&&... innerTuple) {
@@ -48,11 +47,8 @@ namespace fxt
                     ((std::get<0>(innerTuple) == key ? (result = std::apply(f, fxt::drop<1>(innerTuple)), 0) : 0), 0)...
                 };
             },
-            tupleOfTuples);
+            tuples);
 
-        // if (!found) {
-        //     throw std::runtime_error("Key not found in tuple of tuples.");
-        // }
         return result;
     }
 

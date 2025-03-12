@@ -16,5 +16,5 @@ add_library(fxt INTERFACE)
 target_include_directories(fxt INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
 add_library(fxt::fxt ALIAS fxt)
 
-add_executable(fxt_test demo/main.cpp)
-target_link_libraries(fxt_test PRIVATE fxt::fxt)
+#add_executable(fxt_test demo/main.cpp)
+#target_link_libraries(fxt_test PRIVATE fxt::fxt)

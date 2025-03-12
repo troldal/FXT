@@ -20,9 +20,9 @@ namespace fxt
         {
             return [f]<typename... TElems, typename TError>(const std::expected<std::tuple<TElems...>, TError>& tuple) {
                  if constexpr (impl::IsExpected<std::invoke_result_t<TFunction, TElems...>>)
-                     //return tuple ? this->operator()(std::apply(f, *tuple))(tuple) : std::unexpected(tuple.error());
                      return tuple ? append(std::apply(f, *tuple))(tuple) : std::unexpected(tuple.error());
-
+                 else if constexpr (std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
+                     return tuple.transform([&](const std::tuple<TElems...>& t) { std::apply(f, *tuple); return t; });
                  else
                      return tuple.transform([&](const std::tuple<TElems...>& t) { return impl::tuple_append(t, std::apply(f, *tuple)); });
             };
