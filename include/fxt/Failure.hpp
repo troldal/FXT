@@ -53,7 +53,7 @@ namespace fxt
          */
         Failure(std::string message) // NOLINT
             : m_message(std::move(message)),
-              m_exception({}) {}
+              m_exception(nullptr) {}
 
         /**
          * @brief Constructs a Failure from an exception pointer
