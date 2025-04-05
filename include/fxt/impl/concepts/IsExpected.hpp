@@ -21,4 +21,11 @@ struct is_specialization_of_std_expected<std::expected<T, E>> : std::true_type {
 template <typename T>
 concept IsExpected = is_specialization_of_std_expected<T>::value;
 
+  template<typename T>
+concept expected_like = requires {
+    typename T::value_type;
+    typename T::error_type;
+    typename T::unexpected_type;
+};
+
 }

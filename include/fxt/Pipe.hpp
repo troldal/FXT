@@ -11,10 +11,18 @@
 namespace fxt
 {
 
-    template<typename T, typename Function>
-        requires(not std::ranges::range<T> and std::invocable<Function, T>)
-    constexpr auto operator|(T&& t, Function&& f) -> std::invoke_result_t<Function, T>
+    template<typename T, typename TFunction>
+        requires(not std::ranges::range<T> and std::invocable<TFunction, T>)
+    constexpr auto operator|(T&& t, TFunction&& f) -> std::invoke_result_t<TFunction, T>
     {
-        return std::invoke(std::forward<Function>(f), std::forward<T>(t));
+        return std::invoke(std::forward<TFunction>(f), std::forward<T>(t));
     }
+
+    // template<typename T, typename TFunction>
+    //     requires(not std::ranges::range<T> and std::invocable<TFunction, T>)
+    // constexpr auto operator|(const T& t, TFunction&& f) -> std::invoke_result_t<TFunction, T>
+    // {
+    //     return std::invoke(std::forward<TFunction>(f), t);
+    // }
+
 }    // namespace fxt

@@ -15,6 +15,8 @@ namespace fxt
     template<typename T>
     concept HasValueType = requires { typename T::value_type; };
 
+
+
     // template<typename F, typename Tuple>
     // struct is_callable_with_tuple;
     //
@@ -61,16 +63,25 @@ namespace fxt
             requires HasValueType<TValue>
         auto operator()(const TValue& val) const
         {
-            return [val]<typename TTuple, typename TError>(const std::expected<TTuple, TError>& tuple) {
+            return [val]<template<typename,typename> class TExpected, typename TTuple, typename TError>(const TExpected<TTuple, TError>& tuple)
+                requires impl::expected_like<TExpected<TTuple, TError>>
+            {
                 return tuple.transform([&](const TTuple& t) { return impl::tuple_append(t, val); });
             };
         }
 
-        template<typename TValue, typename TError>
-        auto operator()(const std::expected<TValue, TError>& val) const
+        template<template<typename,typename> class TExpected, typename T, typename E>
+            requires impl::expected_like<TExpected<T, E>>
+        auto operator()(const TExpected<T, E>& val) const
         {
-            return [val]<typename TTuple>(const std::expected<TTuple, TError>& tuple) {
-                return val ? tuple.transform([val](const TTuple& t) { return impl::tuple_append(t, *val); }) : std::unexpected(val.error());
+            using TValue = typename TExpected<T, E>::value_type;
+            using TError = typename TExpected<T, E>::error_type;
+            using TUnexpected = typename TExpected<T, E>::unexpected_type;
+
+            return [val]<template<typename,typename> class TExpectedOut, typename TTuple, typename TErrorOut>(const TExpectedOut<TTuple, TErrorOut>& tuple)
+                requires std::convertible_to<TError, TErrorOut>
+            {
+                return val ? tuple.transform([val](const TTuple& t) { return impl::tuple_append(t, *val); }) : typename TExpectedOut<TTuple, TError>::unexpected_type(val.error());
             };
         }
     };
