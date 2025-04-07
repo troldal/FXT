@@ -6,7 +6,6 @@
 
 #include "impl/utils/TupleAppend.hpp"
 #include <string>
-#include <expected>
 #include "Overload.hpp"
 
 namespace fxt
@@ -32,7 +31,7 @@ namespace fxt
 
         static constexpr auto s_overloads = fxt::overload{
             [](const auto& s) { return as_func<T>(s); },
-            []<typename TValue, typename TError>(const std::expected<TValue, TError>& s) { return s.transform([](const auto& v) { return as_func<T>(v); }); }
+            []<typename TValue, typename TError>(const fxt::expected<TValue, TError>& s) { return s.transform([](const auto& v) { return as_func<T>(v); }); }
         };
     };
 

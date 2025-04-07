@@ -300,5 +300,9 @@ int main() {
     someFunc(42);
     someFunc("Hello"s);
 
+    auto inp = fxt::expected<std::string, int>("Input");
+    auto out = inp | fxt::transform([](std::string) { return "Hello, World"; });
+    std::cout << *out << std::endl;
+
     return 0;
 }

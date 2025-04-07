@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <expected>
 #include <tuple>
 #include <cstddef>
 
@@ -14,7 +13,7 @@ namespace fxt {
     template<size_t... Is>
     auto select()
     {
-        return []<typename TTuple, typename TError>(const std::expected<TTuple, TError>& tuple) {
+        return []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
             static_assert(sizeof...(Is) >= 1 , "At least one index must be provided");
             // if constexpr (sizeof...(I) == 1)
             //     return tuple.transform([](const TTuple& t) { return std::get<I...>(t); });
@@ -26,7 +25,7 @@ namespace fxt {
     template<typename... Ts>
     auto select()
     {
-        return []<typename TTuple, typename TError>(const std::expected<TTuple, TError>& tuple) {
+        return []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
             static_assert(sizeof...(Ts) >= 1 , "At least one type must be provided");
             // if constexpr (sizeof...(Ts) == 1)
             //     return tuple.transform([](const TTuple& t) { return std::get<Ts...>(t); });

@@ -4,14 +4,13 @@
 
 #pragma once
 
-#include <expected>
 #include <optional>
 
 namespace fxt
 {
 
     template<typename TValue, typename TError>
-    std::optional<TValue> to_optional(const std::expected<TValue, TError>& ex)
+    std::optional<TValue> to_optional(const fxt::expected<TValue, TError>& ex)
     {
         if (ex.has_value()) return ex.value();
         return std::nullopt;

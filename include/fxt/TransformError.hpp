@@ -6,7 +6,6 @@
 
 #include "impl/concepts/IsExpected.hpp"
 #include "Overload.hpp"
-#include <expected>
 
 namespace fxt
 {
@@ -16,7 +15,7 @@ namespace fxt
         template<typename TFunction>
         auto operator()(TFunction&& f) const
         {
-            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const std::expected<TValue, TError>& ex) {
+            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
                     return ex.transform_error(f);
             };
         }

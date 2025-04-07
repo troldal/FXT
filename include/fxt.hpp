@@ -25,3 +25,5 @@
 #include "fxt/Type.hpp"
 #include "fxt/ValueOr.hpp"
 #include "fxt/VisitElement.hpp"
+#include "fxt/Expected.hpp"
+#include "fxt/Optional.hpp"

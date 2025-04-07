@@ -7,7 +7,7 @@
 namespace fxt
 {
   template<typename TV, typename TE>
-  auto operator||(const std::expected<TV, TE>& v1, const std::expected<TV, TE>& v2)
+  auto operator||(const fxt::expected<TV, TE>& v1, const fxt::expected<TV, TE>& v2)
   {
     return v1.has_value() ? v1 : v2;
   }

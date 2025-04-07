@@ -12,7 +12,7 @@ namespace fxt
         template<typename TFunction>
         auto operator()(TFunction&& f) const
         {
-            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const std::expected<TValue, TError>& ex) {
+            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
                 // if constexpr (impl::IsExpected<std::invoke_result_t<TFunction, TValue>>)
                 //   return ex.and_then(f);
                 // else

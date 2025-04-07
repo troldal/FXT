@@ -4,17 +4,16 @@
 
 #pragma once
 
-#include <expected>
 #include <optional>
 
 namespace fxt
 {
 
     template<typename TValue, typename TError = std::monostate>
-    std::expected<TValue, TError> to_expected(const std::optional<TValue>& opt, const TError& err = TError())
+    fxt::expected<TValue, TError> to_expected(const std::optional<TValue>& opt, const TError& err = TError())
     {
         if (opt) return *opt;
-        return std::unexpected(err);
+        return fxt::unexpected(err);
     }
 
 }    // namespace fxt

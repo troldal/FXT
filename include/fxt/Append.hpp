@@ -7,7 +7,8 @@
 // #include <Boost/hana.hpp>
 #include "impl/concepts/IsExpected.hpp"
 #include "impl/utils/TupleAppend.hpp"
-#include <expected>
+#include "Expected.hpp"
+// #include <expected>
 #include <string>
 
 namespace fxt
@@ -47,7 +48,7 @@ namespace fxt
             //         return tuple.transform([&](const TTuple& t) { return tuple_append(t, val); });
             // };
 
-            return [val, this]<typename... TElems, typename TError>(const std::expected<std::tuple<TElems...>, TError>& tuple) {
+            return [val, this]<typename... TElems, typename TError>(const fxt::expected<std::tuple<TElems...>, TError>& tuple) {
                 // if constexpr (std::invocable<TValue, TElems...> and impl::IsExpected<std::invoke_result_t<TValue, TElems...>>)
                 //     return tuple ? this->operator()(std::apply(val, *tuple))(tuple) : std::unexpected(tuple.error());
                 //

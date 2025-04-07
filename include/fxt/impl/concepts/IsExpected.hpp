@@ -7,7 +7,7 @@
 
 
 #include <type_traits>
-#include <expected>
+#include "../../Expected.hpp"
 
 namespace fxt::impl {
 
@@ -15,7 +15,7 @@ template <typename T>
 struct is_specialization_of_std_expected : std::false_type {};
 
 template <typename T, typename E>
-struct is_specialization_of_std_expected<std::expected<T, E>> : std::true_type {};
+struct is_specialization_of_std_expected<fxt::expected<T, E>> : std::true_type {};
 
 // Concept to check if a type is a specialization of std::expected
 template <typename T>
