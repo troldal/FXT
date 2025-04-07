@@ -8,7 +8,6 @@
 #include "impl/concepts/IsExpected.hpp"
 #include "impl/utils/TupleAppend.hpp"
 #include "Append.hpp"
-#include <expected>
 #include <string>
 
 namespace fxt
