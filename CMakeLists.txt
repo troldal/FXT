@@ -30,6 +30,14 @@ include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
 #==============================================================================
 
 CPMFindPackage(
+        NAME optional
+        GITHUB_REPOSITORY TartanLlama/optional
+        VERSION 1.1.0
+        EXCLUDE_FROM_ALL
+        SYSTEM
+)
+
+CPMFindPackage(
         NAME expected
         GITHUB_REPOSITORY TartanLlama/expected
         VERSION 1.1.0
@@ -37,13 +45,7 @@ CPMFindPackage(
         SYSTEM
 )
 
-CPMFindPackage(
-        NAME optional
-        GITHUB_REPOSITORY TartanLlama/optional
-        VERSION 1.1.0
-        EXCLUDE_FROM_ALL
-        SYSTEM
-)
+
 
 
 #==============================================================================
@@ -54,10 +56,10 @@ target_include_directories(fxt INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
 target_link_libraries(fxt INTERFACE tl::expected tl::optional)
 add_library(fxt::fxt ALIAS fxt)
 
-#if(PROJECT_IS_TOP_LEVEL)
+if(PROJECT_IS_TOP_LEVEL)
     add_executable(fxt_test demo/main.cpp)
     target_link_libraries(fxt_test PRIVATE fxt::fxt)
-#endif()
+endif()
 
 #==============================================================================
 # Options

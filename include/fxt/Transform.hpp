@@ -17,9 +17,9 @@ namespace fxt
         auto operator()(TFunction&& f) const
         {
             return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
-                if constexpr (impl::IsExpected<std::invoke_result_t<TFunction, TValue>>)
-                    return ex.and_then(f);
-                else
+                // if constexpr (impl::expected_like<std::invoke_result_t<TFunction, TValue>>)
+                //     return ex.and_then(f);
+                // else
                     return ex.transform(f);
             };
         }

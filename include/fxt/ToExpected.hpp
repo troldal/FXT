@@ -13,7 +13,7 @@ namespace fxt
     fxt::expected<TValue, TError> to_expected(const std::optional<TValue>& opt, const TError& err = TError())
     {
         if (opt) return *opt;
-        return fxt::unexpected(err);
+        return fxt::unexpected<TError>(err);
     }
 
 }    // namespace fxt
