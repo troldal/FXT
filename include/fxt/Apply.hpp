@@ -19,7 +19,9 @@ namespace fxt
         {
             return [f]<template<typename, typename> class TExpected, typename... TElems, typename TError>(const TExpected<std::tuple<TElems...>, TError>& tuple) {
                  if constexpr (impl::expected_like<std::invoke_result_t<TFunction, TElems...>>)
-                     return tuple ? append(std::apply(f, *tuple))(tuple) : typename std::invoke_result_t<TFunction, TElems...>::unexpected_type(tuple.error());
+                     return tuple
+                        ? append(std::apply(f, *tuple))(tuple)
+                        : typename std::invoke_result_t<TFunction, TElems...>::unexpected_type(tuple.error());
                  else if constexpr (std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
                      return tuple.transform([&](const std::tuple<TElems...>& t) { std::apply(f, *tuple); return t; });
                  else
