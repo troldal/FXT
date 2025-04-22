@@ -81,7 +81,9 @@ namespace fxt
             return [val]<template<typename,typename> class TExpectedOut, typename TTuple, typename TErrorOut>(const TExpectedOut<TTuple, TErrorOut>& tuple)
                 requires std::convertible_to<TError, TErrorOut>
             {
-                return val ? tuple.transform([val](const TTuple& t) { return impl::tuple_append(t, *val); }) : typename TExpectedOut<TTuple, TError>::unexpected_type(val.error());
+                return val
+                    ? tuple.transform([val](const TTuple& t) { return impl::tuple_append(t, *val); })
+                    : typename TExpectedOut<TTuple, TError>::unexpected_type(val.error());
             };
         }
     };

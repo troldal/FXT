@@ -5,10 +5,10 @@
 #pragma once
 
 #include <functional>
+#include <utility>
 
 namespace fxt
 {
-
     inline auto curry = []<typename F>(this auto& curry, F&& f) {
         return [curry, f = std::forward<F>(f)]<typename Self, typename... Ts>(this Self&&, Ts&&... ts) -> decltype(auto) {
             if constexpr (requires { std::forward_like<Self>(f)(std::forward<Ts>(ts)...); }) {
