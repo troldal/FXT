@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <functional>
+
 #ifdef FXT_USE_TL_EXPECTED
 #    include <tl/expected.hpp>
 namespace fxt
