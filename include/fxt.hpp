@@ -27,4 +27,5 @@
 #include "fxt/TransformError.hpp"
 #include "fxt/Type.hpp"
 #include "fxt/ValueOr.hpp"
+#include "fxt/Value.hpp"
 #include "fxt/VisitElement.hpp"
