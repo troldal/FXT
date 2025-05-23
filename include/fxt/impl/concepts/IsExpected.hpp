@@ -22,10 +22,14 @@ namespace fxt::impl {
 // concept IsExpected = is_specialization_of_std_expected<T>::value;
 
   template<typename T>
-concept expected_like = requires {
+concept expected_like_impl = requires {
     typename T::value_type;
     typename T::error_type;
     typename T::unexpected_type;
 };
+
+
+    template<typename... Ts>
+    concept expected_like = (expected_like_impl<Ts> && ...);
 
 }
