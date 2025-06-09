@@ -18,7 +18,6 @@
 #include "fxt/Optional.hpp"
 #include "fxt/OrElse.hpp"
 #include "fxt/Overload.hpp"
-#include "fxt/Pipe.hpp"
 #include "fxt/Select.hpp"
 #include "fxt/Take.hpp"
 #include "fxt/ToExpected.hpp"

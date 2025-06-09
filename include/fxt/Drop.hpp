@@ -15,6 +15,23 @@ namespace fxt
         }
     }    // namespace impl
 
+    /**
+     * @brief Drops the first X elements from a tuple
+     *
+     * This function creates a new tuple that contains all elements of the input tuple
+     * except for the first X elements. Perfect forwarding is preserved for the tuple elements.
+     *
+     * @tparam X The number of elements to drop from the beginning of the tuple
+     * @tparam Tuple The tuple type
+     * @param tpl The input tuple
+     * @return A new tuple containing all but the first X elements of the input tuple
+     *
+     * @throws static_assert If X exceeds the size of the tuple
+     *
+     * @example
+     *   auto t = std::make_tuple(1, 2.0, "three", 'f');
+     *   auto result = fxt::drop<2>(t);  // result is std::tuple<const char*, char>{"three", 'f'}
+     */
     template<std::size_t X, typename Tuple>
     auto drop(Tuple&& tpl)
     {

@@ -17,6 +17,23 @@ namespace fxt
         }
     }    // namespace impl
 
+    /**
+     * @brief Takes the first X elements from a tuple
+     *
+     * This function creates a new tuple that contains only the first X elements
+     * of the input tuple. Perfect forwarding is preserved for the tuple elements.
+     *
+     * @tparam X The number of elements to take from the beginning of the tuple
+     * @tparam Tuple The tuple type
+     * @param tpl The input tuple
+     * @return A new tuple containing the first X elements of the input tuple
+     *
+     * @throws static_assert If X exceeds the size of the tuple
+     *
+     * @example
+     *   auto t = std::make_tuple(1, 2.0, "three", 'f');
+     *   auto result = fxt::take<2>(t);  // result is std::tuple<int, double>{1, 2.0}
+     */
     template<std::size_t X, typename Tuple>
     auto take(Tuple&& tpl)
     {

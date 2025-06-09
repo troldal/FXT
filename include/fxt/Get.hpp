@@ -5,11 +5,24 @@
 #pragma once
 
 #include <tuple>
-#include <cstddef>
 
-namespace fxt {
+namespace fxt
+{
 
-
+    /**
+     * @brief Get element at the specified index from a tuple inside an expected object
+     *
+     * Creates a function that extracts the element at the Ith position of a tuple contained
+     * within an fxt::expected object. The result is wrapped in a new expected object,
+     * preserving the error handling semantics.
+     *
+     * @tparam I The index of the element to extract from the tuple
+     * @return A function that transforms an expected<tuple> to extract the Ith element
+     *
+     * @example
+     *   auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>{std::make_tuple(1, 2.0, "three")};
+     *   auto result = fxt::get<0>()(exp);  // result contains 1
+     */
     template<size_t I>
     auto get()
     {
@@ -18,6 +31,22 @@ namespace fxt {
         };
     }
 
+    /**
+     * @brief Get element of the specified type from a tuple inside an expected object
+     *
+     * Creates a function that extracts the element of type T from a tuple contained
+     * within an fxt::expected object. The result is wrapped in a new expected object,
+     * preserving the error handling semantics.
+     *
+     * @tparam T The type of the element to extract from the tuple
+     * @return A function that transforms an expected<tuple> to extract the element of type T
+     *
+     * @note The tuple must contain exactly one element of type T, otherwise std::get will fail
+     *
+     * @example
+     *   auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>{std::make_tuple(1, 2.0, "three")};
+     *   auto result = fxt::get<std::string>()(exp);  // result contains "three"
+     */
     template<typename T>
     auto get()
     {
@@ -26,4 +55,4 @@ namespace fxt {
         };
     }
 
-} // namespace fxt
+}    // namespace fxt
