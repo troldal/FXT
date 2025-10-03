@@ -5,41 +5,41 @@
 #pragma once
 
 #include "Overload.hpp"
-#include "impl/concepts/IsExpected.hpp"
-#include "impl/utils/TupleAppend.hpp"
+#include "Optional.hpp"
+#include "Expected.hpp"
 
 namespace fxt
 {
-
     /**
-     * @brief Wrapper for the and_then operation on expected-like objects
+     * @brief Monadic and_then operation for both fxt::expected and fxt::optional
      *
-     * AndThenWrapper provides a way to chain operations on fxt::expected objects
-     * in a functional style. It creates a higher-order function that applies the
-     * provided function to the value inside an expected object using and_then,
-     * but only if the expected object contains a value.
+     * Provides a unified way to chain operations on monadic types using and_then.
+     * Works with both fxt::expected and fxt::optional, applying the function only
+     * when the container holds a value or is in success state.
+     *
+     * @section Usage
+     * @code
+     * // Pipe operator usage
+     * auto result1 = parse_int("42") | fxt::and_then(square);
+     * auto result2 = divide(10, 2) | fxt::and_then(add_five);
+     *
+     * // Function call syntax
+     * auto result3 = fxt::and_then(square)(parse_int("42"));
+     *
+     * // Chaining operations
+     * auto result4 = parse_int("3")
+     *              | fxt::and_then(square)
+     *              | fxt::and_then(double_it);
+     * @endcode
      */
-    struct AndThenWrapper
-    {
-        /**
-         * @brief Creates a function that applies and_then with the provided function
-         *
-         * @tparam TFunction Type of the function to apply via and_then
-         * @param f The function to apply to the expected's value
-         * @return A lambda that takes an expected object and applies the function via and_then
-         *
-         * The returned lambda preserves perfect forwarding of the function and handles
-         * the and_then operation on any fxt::expected instance. The function f should
-         * return an expected-like type for proper monadic composition.
-         */
-        template<typename TFunction>
-        auto operator()(TFunction&& f) const
-        {
-            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
+    inline constexpr auto and_then = []<typename TFunction>(TFunction&& f) {
+        return overload(
+            [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
                 return ex.and_then(f);
-            };
-        }
+            },
+            [f = std::forward<TFunction>(f)]<typename TValue>(const fxt::optional<TValue>& opt) {
+                return opt.and_then(f);
+            }
+        );
     };
-
-    inline constexpr AndThenWrapper and_then = {};
-}    // namespace fxt
+}

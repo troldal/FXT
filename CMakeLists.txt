@@ -20,7 +20,7 @@ add_compile_definitions(NOMINMAX)
 # download CPM.cmake
 file(
         DOWNLOAD
-        https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.40.8/CPM.cmake
+        https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.42.0/CPM.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake
 )
 include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
@@ -59,6 +59,12 @@ add_library(fxt::fxt ALIAS fxt)
 if(PROJECT_IS_TOP_LEVEL)
     add_executable(fxt_test demo/main.cpp)
     target_link_libraries(fxt_test PRIVATE fxt::fxt)
+
+    add_executable(fxt_and_then_demo demo/AndThen.cpp)
+    target_link_libraries(fxt_and_then_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_append_demo demo/Append.cpp)
+    target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
