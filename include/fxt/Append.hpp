@@ -99,6 +99,23 @@ namespace fxt
         }
 
         /**
+         * @brief Append a value from a container with a value_type member (rvalue) to a tuple in an expected-like container
+         */
+        template<typename TValue>
+            requires HasValueType<std::remove_cvref_t<TValue>> && (!std::is_lvalue_reference_v<TValue>)
+        auto operator()(TValue&& value) const
+        {
+            return [value = std::forward<TValue>(value)]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
+                       const TExpected<TTuple, TError>& tupleExpected) mutable
+                requires impl::expected_like<TExpected<TTuple, TError>>
+            {
+                return tupleExpected.transform([value = std::move(value)](const TTuple& tuple) mutable {
+                    return impl::tuple_append(tuple, std::move(value));
+                });
+            };
+        }
+
+        /**
          * @brief Append an arbitrary value to a tuple in an expected-like container
          *
          * This is the fallback overload for handling any value type.
@@ -108,13 +125,32 @@ namespace fxt
          * @return A function that takes an fxt::expected container with a tuple and returns a new one with the value appended
          */
         template<typename TValue>
+            requires (!HasValueType<TValue>)
         auto operator()(const TValue& value) const
         {
-            return [value]<typename... TElems, typename TError>(
-                       const fxt::expected<std::tuple<TElems...>, TError>& tupleExpected)
+            return [value]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
+                       const TExpected<TTuple, TError>& tupleExpected)
+                requires impl::expected_like<TExpected<TTuple, TError>>
             {
-                return tupleExpected.transform([value](const std::tuple<TElems...>& tuple) {
+                return tupleExpected.transform([value](const TTuple& tuple) {
                     return impl::tuple_append(tuple, value);
+                });
+            };
+        }
+
+        /**
+         * @brief Append an arbitrary value (rvalue) to a tuple in an expected-like container
+         */
+        template<typename TValue>
+            requires (!HasValueType<std::remove_cvref_t<TValue>>) && (!std::is_lvalue_reference_v<TValue>)
+        auto operator()(TValue&& value) const
+        {
+            return [value = std::forward<TValue>(value)]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
+                       const TExpected<TTuple, TError>& tupleExpected) mutable
+                requires impl::expected_like<TExpected<TTuple, TError>>
+            {
+                return tupleExpected.transform([value = std::move(value)](const TTuple& tuple) mutable {
+                    return impl::tuple_append(tuple, std::move(value));
                 });
             };
         }
