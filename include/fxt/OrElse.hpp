@@ -4,40 +4,45 @@
 
 #pragma once
 
+#include <utility>
+
 namespace fxt
 {
-
     /**
-     * @brief Wrapper for the or_else operation on expected-like objects
+     * @brief Monadic or_else operation for types that provide an or_else() member function
      *
-     * OrElseWrapper provides a way to chain error handling operations on fxt::expected objects
-     * in a functional style. It creates a higher-order function that applies the
-     * provided function to the error inside an expected object using or_else,
-     * but only if the expected object contains an error.
+     * This is a generic function object that works with any type that has an or_else() member
+     * function, such as fxt::expected and fxt::optional. It forwards the provided function to
+     * the container's or_else() member function, enabling monadic error handling composition.
+     *
+     * @tparam TFunction The type of the function to apply via or_else()
+     * @param f The function to forward to the container's or_else() member function
+     * @return A callable that accepts any container with an or_else() member function
+     *
+     * @section Concepts
+     * The returned callable accepts any type that satisfies:
+     * - Has a member function named or_else() that accepts the provided function
+     * - Supports both lvalue and rvalue references
+     *
+     * @section Usage
+     * @code
+     * // Pipe operator usage
+     * auto result1 = divide(10, 0) | fxt::or_else(handle_error);
+     * auto result2 = parse_int("abc") | fxt::or_else(return_default);
+     *
+     * // Function call syntax
+     * auto result3 = fxt::or_else(handle_error)(divide(10, 0));
+     *
+     * // Chaining operations
+     * auto result4 = parse_int("abc")
+     *              | fxt::or_else(try_parse_hex)
+     *              | fxt::or_else(return_zero);
+     * @endcode
      */
-    struct OrElseWrapper
-    {
-        /**
-         * @brief Creates a function that applies or_else with the provided function
-         *
-         * @tparam TFunction Type of the function to apply via or_else
-         * @param f The function to apply to the expected's error
-         * @return A lambda that takes an expected object and applies the function via or_else
-         *
-         * The returned lambda preserves perfect forwarding of the function and handles
-         * the or_else operation on any fxt::expected instance. The function f should
-         * return an expected-like type with the same value type for proper error handling
-         * composition.
-         */
-        template<typename TFunction>
-        auto operator()(TFunction&& f) const
-        {
-            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
-                return ex.or_else(f);
-            };
-        }
+    inline constexpr auto or_else = []<typename TFunction>(TFunction&& f) {
+        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+            requires requires(TContainer&& c) { c.or_else(f); }
+        { return std::forward<TContainer>(container).or_else(f); };
     };
-
-    inline constexpr OrElseWrapper or_else = {};
 
 }    // namespace fxt
