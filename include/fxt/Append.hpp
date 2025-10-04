@@ -4,41 +4,52 @@
 
 #pragma once
 
-// #include <Boost/hana.hpp>
-#include "Expected.hpp"
 #include "impl/concepts/IsExpected.hpp"
+#include "impl/concepts/IsOptional.hpp"
 #include "impl/utils/TupleAppend.hpp"
-#include "Overload.hpp" // added for overloaded lambda support
-#include <string>
 
 namespace fxt
 {
+    /**
+     * @brief Concept that excludes expected-like types
+     *
+     * Used to distinguish regular values and containers from expected-like types
+     * in overload resolution for the append operation.
+     *
+     * @tparam T The type to check
+     */
     template<typename T>
-    concept HasValueType = requires { typename T::value_type; };
+    concept NotExpectedLike = !impl::expected_like<std::remove_cvref_t<T>>;
 
     /**
-     * @brief Wrapper for appending values to tuples contained in expected-like objects
+     * @brief Function object wrapper for appending values to tuples within monadic containers
      *
-     * AppendWrapper provides a set of overloaded operators to handle different appending scenarios:
-     * - Appending values from expected-like containers (with proper error handling)
-     * - Appending values from types with a value_type member
-     * - Appending arbitrary values
+     * Provides overloaded call operators to append values to tuples contained in
+     * expected-like or optional-like containers, preserving the monadic semantics.
+     * Supports both lvalue and rvalue references for optimal performance.
      */
     struct AppendWrapper
     {
-
         /**
-         * @brief Append a value from an expected-like container to a tuple in another expected-like container
+         * @brief Append a value from an expected-like container (lvalue) to a tuple in another expected-like container
          *
-         * This overload handles monadic composition, propagating errors appropriately.
+         * This overload handles monadic composition for expected types, propagating errors appropriately.
+         * When the input expected contains an error, that error is propagated to the result.
          *
-         * @tparam TExpected The expected-like template used for the input value
-         * @tparam TValue The type stored in the input expected
+         * @tparam TExpected The expected-like template (e.g., std::expected)
+         * @tparam TValue The type of value stored in the input expected
          * @tparam TError The error type of the input expected
-         * @param expectedValue The expected-like container holding the value to append
-         * @return A function that takes an expected-like container with a tuple and returns a new one with the value appended
+         * @param expectedValue The expected-like container holding the value to append (copied)
+         * @return A lambda that takes an expected-like container with a tuple and returns a new expected with the value appended
          *
-         * @note Requires that the error type of expectedValue is convertible to the error type of the tuple container
+         * @note Requires that TError is convertible to the error type of the output expected
+         *
+         * Example:
+         * @code
+         * std::expected<std::tuple<int>, Error> tuple_exp = std::tuple{42};
+         * std::expected<std::string, Error> str_exp = std::string{"hello"};
+         * auto result = tuple_exp | fxt::append(str_exp); // std::expected<std::tuple<int, std::string>, Error>
+         * @endcode
          */
         template<template<typename, typename> class TExpected, typename TValue, typename TError>
             requires impl::expected_like<TExpected<TValue, TError>>
@@ -56,7 +67,22 @@ namespace fxt
         /**
          * @brief Append a value from an expected-like container (rvalue) to a tuple in another expected-like container
          *
-         * Move-enabled version for efficiency when the input expected is a temporary.
+         * Move-optimized version for use with temporary expected values. Moves the value instead of copying
+         * for better performance when the input expected is an rvalue.
+         *
+         * @tparam TExpected The expected-like template (e.g., std::expected)
+         * @tparam TValue The type of value stored in the input expected
+         * @tparam TError The error type of the input expected
+         * @param expectedValue The expected-like container holding the value to append (moved)
+         * @return A lambda that takes an expected-like container with a tuple and returns a new expected with the value appended
+         *
+         * @note Requires that TError is convertible to the error type of the output expected
+         *
+         * Example:
+         * @code
+         * std::expected<std::tuple<int>, Error> tuple_exp = std::tuple{42};
+         * auto result = tuple_exp | fxt::append(make_expected_string()); // Moves temporary
+         * @endcode
          */
         template<template<typename, typename> class TExpected, typename TValue, typename TError>
             requires impl::expected_like<TExpected<TValue, TError>>
@@ -76,86 +102,113 @@ namespace fxt
         }
 
         /**
-         * @brief Append a value from a container with a value_type member to a tuple in an expected-like container
+         * @brief Append a value from an optional-like container (lvalue) to a tuple in another optional-like container
          *
-         * This overload handles types like std::optional and other container-like types.
+         * This overload handles optional types, returning an empty optional if either the input optional
+         * or the tuple optional is empty. Follows standard optional monadic composition semantics.
          *
-         * @tparam TValue The type holding the value to append (must have a value_type member)
-         * @param value The container holding the value to append
-         * @return A function that takes an expected-like container with a tuple and returns a new one with the value appended
+         * @tparam TOptional The optional-like template (e.g., std::optional, fxt::optional)
+         * @tparam TValue The type of value stored in the input optional
+         * @param optionalValue The optional-like container holding the value to append (copied)
+         * @return A lambda that takes an optional-like container with a tuple and returns a new optional with the value appended
+         *
+         * Example:
+         * @code
+         * std::optional<std::tuple<int>> tuple_opt = std::tuple{42};
+         * std::optional<std::string> str_opt = std::string{"hello"};
+         * auto result = tuple_opt | fxt::append(str_opt); // std::optional<std::tuple<int, std::string>>
+         * @endcode
          */
-        template<typename TValue>
-            requires HasValueType<TValue>
-        auto operator()(const TValue& value) const
+        template<template<typename> class TOptional, typename TValue>
+            requires impl::optional_like<TOptional<TValue>>
+        auto operator()(const TOptional<TValue>& optionalValue) const
         {
-            return [value]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
-                       const TExpected<TTuple, TError>& tupleExpected)
-                requires impl::expected_like<TExpected<TTuple, TError>>
+            return [value = optionalValue]<template<typename> class TOptionalOutput, typename TTuple>(
+                       const TOptionalOutput<TTuple>& tupleOptional)
             {
-                return tupleExpected.transform([value](const TTuple& tuple) {
-                    return impl::tuple_append(tuple, value);
-                });
+                return value ? tupleOptional.transform([value](const TTuple& tuple) { return impl::tuple_append(tuple, *value); })
+                             : TOptionalOutput {};
             };
         }
 
         /**
-         * @brief Append a value from a container with a value_type member (rvalue) to a tuple in an expected-like container
+         * @brief Append a value from an optional-like container (rvalue) to a tuple in another optional-like container
+         *
+         * Move-optimized version for use with temporary optional values. Moves the value instead of copying
+         * for better performance when the input optional is an rvalue.
+         *
+         * @tparam TOptional The optional-like template (e.g., std::optional, fxt::optional)
+         * @tparam TValue The type of value stored in the input optional
+         * @param optionalValue The optional-like container holding the value to append (moved)
+         * @return A lambda that takes an optional-like container with a tuple and returns a new optional with the value appended
+         *
+         * Example:
+         * @code
+         * std::optional<std::tuple<int>> tuple_opt = std::tuple{42};
+         * auto result = tuple_opt | fxt::append(make_optional_string()); // Moves temporary
+         * @endcode
          */
-        template<typename TValue>
-            requires HasValueType<std::remove_cvref_t<TValue>> && (!std::is_lvalue_reference_v<TValue>)
-        auto operator()(TValue&& value) const
+        template<template<typename> class TOptional, typename TValue>
+            requires impl::optional_like<TOptional<TValue>>
+        auto operator()(TOptional<TValue>&& optionalValue) const
         {
-            return [value = std::forward<TValue>(value)]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
-                       const TExpected<TTuple, TError>& tupleExpected) mutable
-                requires impl::expected_like<TExpected<TTuple, TError>>
-            {
-                return tupleExpected.transform([value = std::move(value)](const TTuple& tuple) mutable {
-                    return impl::tuple_append(tuple, std::move(value));
-                });
+            return [value = std::move(optionalValue)]<template<typename> class TOptionalOutput, typename TTuple>(
+                       const TOptionalOutput<TTuple>& tupleOptional) mutable {
+                return value ? tupleOptional.transform([value = std::move(value)](const TTuple& tuple) mutable {
+                    return impl::tuple_append(tuple, std::move(*value));
+                })
+                             : TOptionalOutput {};
             };
         }
 
         /**
          * @brief Append an arbitrary value to a tuple in an expected-like container
          *
-         * This is the fallback overload for handling any value type.
+         * This overload handles regular values (not expected-like or optional-like) and appends them
+         * to a tuple contained in an expected. Uses deducing this (C++23) to handle both lvalue and
+         * rvalue references with a single overload.
          *
-         * @tparam TValue The type of the value to append
-         * @param value The value to append
-         * @return A function that takes an fxt::expected container with a tuple and returns a new one with the value appended
+         * @tparam Self The type of this (deduced via explicit this parameter)
+         * @tparam TValue The type of value to append (must not be expected-like)
+         * @param value The value to append (perfectly forwarded)
+         * @return A lambda that takes an expected-like container with a tuple and returns a new expected with the value appended
+         *
+         * @note The NotExpectedLike constraint ensures this overload doesn't conflict with the expected-like overloads
+         * @note Requires C++23 support for deducing this
+         *
+         * Example:
+         * @code
+         * std::expected<std::tuple<int>, Error> tuple_exp = std::tuple{42};
+         * auto result = tuple_exp | fxt::append(std::string{"hello"}); // Appends plain string
+         * @endcode
          */
-        template<typename TValue>
-            requires (!HasValueType<TValue>)
-        auto operator()(const TValue& value) const
-        {
-            return [value]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
-                       const TExpected<TTuple, TError>& tupleExpected)
-                requires impl::expected_like<TExpected<TTuple, TError>>
-            {
-                return tupleExpected.transform([value](const TTuple& tuple) {
-                    return impl::tuple_append(tuple, value);
-                });
-            };
-        }
-
-        /**
-         * @brief Append an arbitrary value (rvalue) to a tuple in an expected-like container
-         */
-        template<typename TValue>
-            requires (!HasValueType<std::remove_cvref_t<TValue>>) && (!std::is_lvalue_reference_v<TValue>)
-        auto operator()(TValue&& value) const
+        template<typename Self, typename TValue>
+            requires NotExpectedLike<TValue>
+        auto operator()(this Self&&, TValue&& value)
         {
             return [value = std::forward<TValue>(value)]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
                        const TExpected<TTuple, TError>& tupleExpected) mutable
                 requires impl::expected_like<TExpected<TTuple, TError>>
             {
-                return tupleExpected.transform([value = std::move(value)](const TTuple& tuple) mutable {
-                    return impl::tuple_append(tuple, std::move(value));
-                });
+                return tupleExpected.transform(
+                    [value = std::move(value)](const TTuple& tuple) mutable { return impl::tuple_append(tuple, std::move(value)); });
             };
         }
     };
 
+    /**
+     * @brief Global instance of AppendWrapper for convenient pipeline-style usage
+     *
+     * Used with the pipe operator (|) to append values to tuples in monadic containers.
+     *
+     * Example:
+     * @code
+     * auto result = std::expected<std::tuple<int>, Error>{std::tuple{42}}
+     *     | fxt::append(std::string{"hello"})
+     *     | fxt::append(3.14);
+     * // result: std::expected<std::tuple<int, std::string, double>, Error>
+     * @endcode
+     */
     inline constexpr AppendWrapper append = {};
 
 }    // namespace fxt
