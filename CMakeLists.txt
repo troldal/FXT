@@ -65,6 +65,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_append_demo demo/Append.cpp)
     target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_transform_demo demo/Transform.cpp)
+    target_link_libraries(fxt_transform_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
@@ -87,4 +90,8 @@ if(FXT_USE_TL_OPTIONAL)
     target_compile_definitions(fxt INTERFACE FXT_USE_TL_OPTIONAL)
 else()
     message(STATUS "Using std::optional")
+endif()
+
+if(PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(tests)
 endif()
