@@ -20,6 +20,7 @@
 #include "fxt/Overload.hpp"
 #include "fxt/Select.hpp"
 #include "fxt/Take.hpp"
+#include "fxt/Tap.hpp"
 #include "fxt/ToExpected.hpp"
 #include "fxt/ToOptional.hpp"
 #include "fxt/Transform.hpp"
