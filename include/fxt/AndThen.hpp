@@ -4,18 +4,25 @@
 
 #pragma once
 
-#include "Overload.hpp"
-#include "Optional.hpp"
-#include "Expected.hpp"
+#include <utility>
 
 namespace fxt
 {
     /**
-     * @brief Monadic and_then operation for both fxt::expected and fxt::optional
+     * @brief Monadic and_then operation for types that provide an and_then() member function
      *
-     * Provides a unified way to chain operations on monadic types using and_then.
-     * Works with both fxt::expected and fxt::optional, applying the function only
-     * when the container holds a value or is in success state.
+     * This is a generic function object that works with any type that has an and_then() member
+     * function, such as fxt::expected and fxt::optional. It forwards the provided function to
+     * the container's and_then() member function, enabling monadic composition.
+     *
+     * @tparam TFunction The type of the function to apply via and_then()
+     * @param f The function to forward to the container's and_then() member function
+     * @return A callable that accepts any container with an and_then() member function
+     *
+     * @section Concepts
+     * The returned callable accepts any type that satisfies:
+     * - Has a member function named and_then() that accepts the provided function
+     * - Supports both lvalue and rvalue references
      *
      * @section Usage
      * @code
@@ -33,13 +40,8 @@ namespace fxt
      * @endcode
      */
     inline constexpr auto and_then = []<typename TFunction>(TFunction&& f) {
-        return overload(
-            [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
-                return ex.and_then(f);
-            },
-            [f = std::forward<TFunction>(f)]<typename TValue>(const fxt::optional<TValue>& opt) {
-                return opt.and_then(f);
-            }
-        );
+        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+            requires requires(TContainer&& c) { c.and_then(f); }
+        { return std::forward<TContainer>(container).and_then(f); };
     };
-}
+}    // namespace fxt
