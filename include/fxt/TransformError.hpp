@@ -4,42 +4,45 @@
 
 #pragma once
 
-#include "Overload.hpp"
-#include "impl/concepts/IsExpected.hpp"
+#include <utility>
 
 namespace fxt
 {
-
     /**
-     * @brief Wrapper for the transform_error operation on expected-like objects
+     * @brief Monadic transform_error operation for types that provide a transform_error() member function
      *
-     * TransformErrorWrapper provides a way to chain error transformation operations on fxt::expected objects
-     * in a functional style. It creates a higher-order function that applies the
-     * provided function to the error inside an expected object using transform_error,
-     * but only if the expected object contains an error.
+     * This is a generic function object that works with any type that has a transform_error() member
+     * function, such as fxt::expected. It forwards the provided function to the container's
+     * transform_error() member function, enabling monadic error transformation.
+     *
+     * @tparam TFunction The type of the function to apply via transform_error()
+     * @param f The function to forward to the container's transform_error() member function
+     * @return A callable that accepts any container with a transform_error() member function
+     *
+     * @section Concepts
+     * The returned callable accepts any type that satisfies:
+     * - Has a member function named transform_error() that accepts the provided function
+     * - Supports both lvalue and rvalue references
+     *
+     * @section Usage
+     * @code
+     * // Pipe operator usage
+     * auto result1 = divide(10, 0) | fxt::transform_error(to_string);
+     * auto result2 = parse_int("abc") | fxt::transform_error(wrap_error);
+     *
+     * // Function call syntax
+     * auto result3 = fxt::transform_error(to_string)(divide(10, 0));
+     *
+     * // Chaining operations
+     * auto result4 = parse_int("abc")
+     *              | fxt::transform_error(add_context)
+     *              | fxt::transform_error(log_error)
+     *              | fxt::transform_error(to_user_message);
+     * @endcode
      */
-    struct TransformErrorWrapper
-    {
-        /**
-         * @brief Creates a function that applies transform_error with the provided function
-         *
-         * @tparam TFunction Type of the function to apply via transform_error
-         * @param f The function to apply to the expected's error
-         * @return A lambda that takes an expected object and applies the function via transform_error
-         *
-         * The returned lambda preserves perfect forwarding of the function and handles
-         * the transform_error operation on any fxt::expected instance. The resulting expected object
-         * will contain the transformed error if the original expected contained an error,
-         * or the original value if it contained a value.
-         */
-        template<typename TFunction>
-        auto operator()(TFunction&& f) const
-        {
-            return [f = std::forward<TFunction>(f)]<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) {
-                return ex.transform_error(f);
-            };
-        }
+    inline constexpr auto transform_error = []<typename TFunction>(TFunction&& f) {
+        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+            requires requires(TContainer&& c) { c.transform_error(f); }
+        { return std::forward<TContainer>(container).transform_error(f); };
     };
-
-    inline constexpr TransformErrorWrapper transform_error = {};
 }    // namespace fxt
