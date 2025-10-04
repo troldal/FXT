@@ -1,5 +1,5 @@
 //
-// Created by kenne on 30-09-2025.
+// Created by kenne on 10/04/2025.
 //
 
 #pragma once
@@ -32,12 +32,6 @@ namespace fxt::impl
         { t.value() } -> std::convertible_to<typename T::value_type>;
         { *t } -> std::convertible_to<typename T::value_type>;
 
-        // Reset operation (optional specific)
-        t.reset();
-
-        // Optional: Monadic operations (uncomment if you want to enforce these)
-        // { t.transform(std::declval<std::function<int(typename T::value_type)>>()) };
-        // { t.and_then(std::declval<std::function<T(typename T::value_type)>>()) };
     } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
 
     /**
@@ -45,30 +39,16 @@ namespace fxt::impl
      *
      * This is a more restrictive check that verifies the type is exactly
      * a specialization of fxt::optional, useful when you need to distinguish
-     * between fxt::optional and other optional-like types (e.g., std::optional).
+     * between fxt::optional and other optional-like types.
      */
     template<typename T>
     struct is_fxt_optional : std::false_type {};
 
-    template<typename TValue>
-    struct is_fxt_optional<fxt::optional<TValue>> : std::true_type {};
+    template<typename T>
+    struct is_fxt_optional<fxt::optional<T>> : std::true_type {};
 
     template<typename T>
-    concept is_fxt_optional_v = is_fxt_optional<std::decay_t<T>>::value;
-
-    /**
-     * @brief Helper to check if a type is std::optional specifically
-     *
-     * Useful for distinguishing between std::optional and other optional-like types
-     * when you need library-specific behavior.
-     */
-    template<typename T>
-    struct is_std_optional : std::false_type {};
-
-    template<typename TValue>
-    struct is_std_optional<std::optional<TValue>> : std::true_type {};
-
-    template<typename T>
-    concept is_std_optional_v = is_std_optional<std::decay_t<T>>::value;
+    inline constexpr bool is_fxt_optional_v = is_fxt_optional<T>::value;
 
 }    // namespace fxt::impl
+
