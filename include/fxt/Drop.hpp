@@ -20,8 +20,6 @@ namespace fxt
      * @param tpl The input tuple (lvalue or rvalue reference)
      * @return A new tuple containing all but the first X elements of the input tuple
      *
-     * @throws static_assert If X exceeds the size of the tuple
-     *
      * @section Usage
      * @code
      * // With lvalue
@@ -58,8 +56,6 @@ namespace fxt
      * @tparam X The number of elements to drop from the end of the tuple
      * @param tpl The input tuple (lvalue or rvalue reference)
      * @return A new tuple containing all but the last X elements of the input tuple
-     *
-     * @throws static_assert If X exceeds the size of the tuple
      *
      * @section Usage
      * @code
