@@ -77,6 +77,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_curry_demo demo/Curry.cpp)
     target_link_libraries(fxt_curry_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_drop_demo demo/Drop.cpp)
+    target_link_libraries(fxt_drop_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
