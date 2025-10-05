@@ -5,6 +5,8 @@ target_include_directories(Catch2ForFXT SYSTEM PUBLIC Catch2)
 add_executable(fxt_tests
         TransformTests.cpp
         AndThenTests.cpp
+        OrElseTests.cpp
+        ValueOrTests.cpp
 )
 
 target_link_libraries(fxt_tests

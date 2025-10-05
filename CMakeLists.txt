@@ -68,6 +68,12 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_transform_demo demo/Transform.cpp)
     target_link_libraries(fxt_transform_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_or_else_demo demo/OrElse.cpp)
+    target_link_libraries(fxt_or_else_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_value_or_demo demo/ValueOr.cpp)
+    target_link_libraries(fxt_value_or_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
