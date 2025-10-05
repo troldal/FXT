@@ -15,6 +15,7 @@
 #include "fxt/Get.hpp"
 #include "fxt/Lift.hpp"
 #include "fxt/LogicalOr.hpp"
+#include "fxt/Match.hpp"
 #include "fxt/Optional.hpp"
 #include "fxt/OrElse.hpp"
 #include "fxt/Overload.hpp"
