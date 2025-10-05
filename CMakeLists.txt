@@ -74,6 +74,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_value_or_demo demo/ValueOr.cpp)
     target_link_libraries(fxt_value_or_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_curry_demo demo/Curry.cpp)
+    target_link_libraries(fxt_curry_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
