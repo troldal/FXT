@@ -30,10 +30,10 @@ namespace fxt::impl
         { t.has_value() } -> std::convertible_to<bool>;
         { static_cast<bool>(t) } -> std::convertible_to<bool>;
 
-        // Value access operations
-        { t.value() } -> std::convertible_to<typename T::value_type>;
-        { t.error() } -> std::convertible_to<typename T::error_type>;
-        { *t } -> std::convertible_to<typename T::value_type>;
+        // Value access operations (just check they exist, don't require convertibility for move-only types)
+        t.value();
+        t.error();
+        *t;
 
         // Optional: Monadic operations (uncomment if you want to enforce these)
         // { t.transform(std::declval<std::function<int(typename T::value_type)>>()) };

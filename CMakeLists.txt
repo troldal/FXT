@@ -83,6 +83,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_take_demo demo/Take.cpp)
     target_link_libraries(fxt_take_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_match_demo demo/Match.cpp)
+    target_link_libraries(fxt_match_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================

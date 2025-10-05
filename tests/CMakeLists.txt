@@ -10,6 +10,7 @@ add_executable(fxt_tests
         CurryTests.cpp
         DropTests.cpp
         TakeTests.cpp
+        MatchTests.cpp
 )
 
 target_link_libraries(fxt_tests

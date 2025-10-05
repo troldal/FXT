@@ -28,9 +28,9 @@ namespace fxt::impl
         { t.has_value() } -> std::convertible_to<bool>;
         { static_cast<bool>(t) } -> std::convertible_to<bool>;
 
-        // Value access operations
-        { t.value() } -> std::convertible_to<typename T::value_type>;
-        { *t } -> std::convertible_to<typename T::value_type>;
+        // Value access operations (just check they exist, don't require convertibility for move-only types)
+        t.value();
+        *t;
 
     } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
 
@@ -51,4 +51,3 @@ namespace fxt::impl
     inline constexpr bool is_fxt_optional_v = is_fxt_optional<T>::value;
 
 }    // namespace fxt::impl
-

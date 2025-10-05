@@ -25,11 +25,7 @@ namespace fxt
             // Rvalue reference overload for expected
             template<template<typename, typename> class TExpected, typename T, typename E>
                 requires impl::expected_like<TExpected<T, E>>
-            constexpr auto operator()(TExpected<T, E>&& exp) &&
-                -> std::common_type_t<
-                    std::invoke_result_t<OnValue, T&&>,
-                    std::invoke_result_t<OnError, E&&>
-                >
+            constexpr auto operator()(TExpected<T, E>&& exp) && -> decltype(auto)
             {
                 if (exp.has_value()) {
                     return std::move(on_value)(std::move(*exp));
@@ -41,11 +37,7 @@ namespace fxt
             // Const lvalue reference overload for expected
             template<template<typename, typename> class TExpected, typename T, typename E>
                 requires impl::expected_like<TExpected<T, E>>
-            constexpr auto operator()(const TExpected<T, E>& exp) const&
-                -> std::common_type_t<
-                    std::invoke_result_t<OnValue, const T&>,
-                    std::invoke_result_t<OnError, const E&>
-                >
+            constexpr auto operator()(const TExpected<T, E>& exp) const& -> decltype(auto)
             {
                 if (exp.has_value()) {
                     return on_value(*exp);
@@ -57,11 +49,7 @@ namespace fxt
             // Non-const lvalue reference overload for expected
             template<template<typename, typename> class TExpected, typename T, typename E>
                 requires impl::expected_like<TExpected<T, E>>
-            constexpr auto operator()(TExpected<T, E>& exp) &
-                -> std::common_type_t<
-                    std::invoke_result_t<OnValue, T&>,
-                    std::invoke_result_t<OnError, E&>
-                >
+            constexpr auto operator()(TExpected<T, E>& exp) & -> decltype(auto)
             {
                 if (exp.has_value()) {
                     return on_value(*exp);
@@ -83,11 +71,7 @@ namespace fxt
             // Rvalue reference overload for optional
             template<template<typename> class TOptional, typename T>
                 requires impl::optional_like<TOptional<T>>
-            constexpr auto operator()(TOptional<T>&& opt) &&
-                -> std::common_type_t<
-                    std::invoke_result_t<OnValue, T&&>,
-                    std::invoke_result_t<OnNone>
-                >
+            constexpr auto operator()(TOptional<T>&& opt) && -> decltype(auto)
             {
                 if (opt.has_value()) {
                     return std::move(on_value)(std::move(*opt));
@@ -99,11 +83,7 @@ namespace fxt
             // Const lvalue reference overload for optional
             template<template<typename> class TOptional, typename T>
                 requires impl::optional_like<TOptional<T>>
-            constexpr auto operator()(const TOptional<T>& opt) const&
-                -> std::common_type_t<
-                    std::invoke_result_t<OnValue, const T&>,
-                    std::invoke_result_t<OnNone>
-                >
+            constexpr auto operator()(const TOptional<T>& opt) const& -> decltype(auto)
             {
                 if (opt.has_value()) {
                     return on_value(*opt);
@@ -115,11 +95,7 @@ namespace fxt
             // Non-const lvalue reference overload for optional
             template<template<typename> class TOptional, typename T>
                 requires impl::optional_like<TOptional<T>>
-            constexpr auto operator()(TOptional<T>& opt) &
-                -> std::common_type_t<
-                    std::invoke_result_t<OnValue, T&>,
-                    std::invoke_result_t<OnNone>
-                >
+            constexpr auto operator()(TOptional<T>& opt) & -> decltype(auto)
             {
                 if (opt.has_value()) {
                     return on_value(*opt);
@@ -183,14 +159,14 @@ namespace fxt
             {
                 // Handle expected
                 using match_t = detail::match_expected_t<
-                    std::decay_t<OnValue>,
-                    std::decay_t<OnError>
+                    std::decay_t<decltype(on_value)>,
+                    std::decay_t<decltype(on_error)>
                 >;
 
-                return match_t{
-                    std::forward<OnValue>(on_value),
-                    std::forward<OnError>(on_error)
-                }(std::forward<TMonad>(monad));
+                return std::move(match_t{
+                    std::move(on_value),
+                    std::move(on_error)
+                })(std::forward<TMonad>(monad));
             }
             // Check if it's an optional-like type
             else if constexpr (requires {
@@ -200,14 +176,14 @@ namespace fxt
             {
                 // Handle optional (on_error acts as on_none)
                 using match_t = detail::match_optional_t<
-                    std::decay_t<OnValue>,
-                    std::decay_t<OnError>
+                    std::decay_t<decltype(on_value)>,
+                    std::decay_t<decltype(on_error)>
                 >;
 
-                return match_t{
-                    std::forward<OnValue>(on_value),
-                    std::forward<OnError>(on_error)
-                }(std::forward<TMonad>(monad));
+                return std::move(match_t{
+                    std::move(on_value),
+                    std::move(on_error)
+                })(std::forward<TMonad>(monad));
             }
             else
             {
@@ -217,4 +193,3 @@ namespace fxt
     };
 
 }    // namespace fxt
-
