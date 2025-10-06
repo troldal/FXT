@@ -49,30 +49,123 @@ namespace fxt
      */
     inline constexpr auto tap = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+            requires requires {container.has_value();container.value();}
         {
-            // Check if the container has a transform method (like expected/optional)
-            if constexpr (requires { container.transform(f); })
-            {
-                // For monadic types, use transform but return the original container
-                // We need to execute the side effect without changing the value
-                if constexpr (requires { container.has_value(); })
-                {
-                    if (container.has_value())
-                    {
-                        // Execute side effect on the contained value
-                        f(*container);
-                    }
-                }
-                return std::forward<TContainer>(container);
+            if (container.has_value()) {
+                // Execute side effect on the contained value
+                f(container.value());
             }
-            else
-            {
-                // For non-monadic types, execute side effect and return the value
-                f(container);
-                return std::forward<TContainer>(container);
+
+            // Always return the original container unchanged
+            return std::forward<TContainer>(container);
+        };
+    };
+
+    /**
+     * @brief Tap error operation for injecting side effects on error values in expected-like types
+     *
+     * This is the complementary operation to tap, specifically for handling error cases in expected types.
+     * The side effect is only executed if the container holds an error value.
+     * The container is passed through unchanged after the side effect function is executed.
+     *
+     * @tparam TFunction The type of the side effect function to execute
+     * @param f The function to execute as a side effect (should accept the error value)
+     * @return A callable that accepts an expected-like value and returns it unchanged after executing the side effect
+     *
+     * @section Usage
+     * @code
+     * // With expected types - success case (side effect not executed)
+     * auto result1 = fxt::expected<int, std::string>{42}
+     *              | fxt::tap_error([](const std::string& err) {
+     *                  std::cout << "Error: " << err << '\n';
+     *              });
+     * // Nothing is logged, result1 contains 42
+     *
+     * // With expected types - error case
+     * auto result2 = fxt::expected<int, std::string>{fxt::unexpected("failed")}
+     *              | fxt::tap_error([](const std::string& err) {
+     *                  std::cout << "Error: " << err << '\n';
+     *              })
+     *              | fxt::or_else([](const std::string&) {
+     *                  return fxt::expected<int, std::string>{0};
+     *              });
+     * // Logs "Error: failed" and result2 contains 0
+     *
+     * // Combined with tap for complete logging
+     * auto result3 = some_operation()
+     *              | fxt::tap([](int x) { std::cout << "Success: " << x << '\n'; })
+     *              | fxt::tap_error([](const Error& e) { std::cout << "Error: " << e << '\n'; });
+     * // Logs either success or error, never both
+     * @endcode
+     */
+    inline constexpr auto tap_error = []<typename TFunction>(TFunction&& f) {
+        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+            requires requires { container.has_value(); container.error(); }
+        {
+            if (!container.has_value()) {
+                // Execute side effect on the error value
+                f(container.error());
             }
+
+            // Always return the original container unchanged
+            return std::forward<TContainer>(container);
+        };
+    };
+
+    /**
+     * @brief Tap none operation for injecting side effects on empty optional-like types
+     *
+     * This is the complementary operation to tap, specifically for handling empty cases in optional types.
+     * The side effect is only executed if the container is empty (has no value).
+     * The container is passed through unchanged after the side effect function is executed.
+     *
+     * Note: Since there's no value to pass when the optional is empty, the function takes no parameters.
+     *
+     * @tparam TFunction The type of the side effect function to execute (should take no parameters)
+     * @param f The function to execute as a side effect (takes no parameters)
+     * @return A callable that accepts an optional-like value and returns it unchanged after executing the side effect
+     *
+     * @section Usage
+     * @code
+     * // With optional types - has value (side effect not executed)
+     * auto result1 = fxt::optional<int>{42}
+     *              | fxt::tap_none([] { std::cout << "Empty!\n"; });
+     * // Nothing is logged, result1 contains 42
+     *
+     * // With optional types - empty case
+     * auto result2 = fxt::optional<int>{fxt::nullopt}
+     *              | fxt::tap_none([] { std::cout << "No value found\n"; })
+     *              | fxt::or_else([]() { return fxt::optional<int>{0}; });
+     * // Logs "No value found" and result2 contains 0
+     *
+     * // Combined with tap for complete logging
+     * auto result3 = find_user(id)
+     *              | fxt::tap([](const User& u) {
+     *                  std::cout << "Found: " << u.name << '\n';
+     *              })
+     *              | fxt::tap_none([] {
+     *                  std::cout << "User not found\n";
+     *              });
+     * // Logs either the user name or "User not found", never both
+     *
+     * // Counting empty optionals
+     * int empty_count = 0;
+     * auto result4 = some_optional()
+     *              | fxt::tap_none([&empty_count] { empty_count++; });
+     * @endcode
+     */
+    inline constexpr auto tap_none = []<typename TFunction>(TFunction&& f) {
+        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+            requires requires { container.has_value(); }
+        {
+            if (!container.has_value()) {
+                // Execute side effect (no value to pass)
+                f();
+            }
+
+            // Always return the original container unchanged
+            return std::forward<TContainer>(container);
         };
     };
 
 }    // namespace fxt
-
