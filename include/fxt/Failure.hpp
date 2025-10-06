@@ -7,8 +7,11 @@
 #include <exception>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <ostream>
+#include <compare>
+#include <functional>
 
 /**
  * @namespace fxt
@@ -23,6 +26,8 @@ namespace fxt
      * The Failure class encapsulates error information, providing both a string message
      * and an optional exception pointer. It can be constructed from either a message
      * or an exception, and provides implicit conversions to both string and exception_ptr.
+     *
+     * @note This class is fully comparable and hashable in C++23
      */
     class Failure
     {
@@ -65,10 +70,12 @@ namespace fxt
         {}
 
         Failure(const Failure&) = default;
-        Failure(Failure&&) = default;
+        Failure(Failure&&) noexcept = default;
 
         Failure& operator=(const Failure&) = default;
-        Failure& operator=(Failure&&) = default;
+        Failure& operator=(Failure&&) noexcept = default;
+
+        ~Failure() = default;
 
         Failure& operator=(std::exception_ptr exception)    // NOLINT
         {
@@ -82,6 +89,36 @@ namespace fxt
             m_message = std::move(message);
             m_exception = {};
             return *this;
+        }
+
+        /**
+         * @brief Factory method to create a Failure from a message
+         * @param message The error message
+         * @return A new Failure object
+         */
+        [[nodiscard]] static Failure from_message(std::string message)
+        {
+            return {std::move(message)};
+        }
+
+        /**
+         * @brief Factory method to create a Failure from an exception pointer
+         * @param exception The exception pointer
+         * @return A new Failure object
+         */
+        [[nodiscard]] static Failure from_exception(std::exception_ptr exception)
+        {
+            return {exception};
+        }
+
+        /**
+         * @brief Factory method to create a Failure from the current exception
+         * @return A new Failure object containing the current exception
+         * @note Should be called from within a catch block
+         */
+        [[nodiscard]] static Failure from_current_exception()
+        {
+            return {std::current_exception()};
         }
 
         /**
@@ -115,16 +152,60 @@ namespace fxt
         [[nodiscard]] const std::string& message() const noexcept { return m_message; }
 
         /**
+         * @brief Gets the error message as a string_view (zero-copy access)
+         * @return A string_view of the error message
+         */
+        [[nodiscard]] std::string_view message_view() const noexcept { return m_message; }
+
+        /**
+         * @brief Gets the error message as a C-string (exception-like interface)
+         * @return A pointer to the error message C-string
+         */
+        [[nodiscard]] const char* what() const noexcept { return m_message.c_str(); }
+
+        /**
          * @brief Gets the stored exception
          * @return The exception pointer
          */
         [[nodiscard]] std::exception_ptr exception() const noexcept { return m_exception; }
 
+        /**
+         * @brief Three-way comparison operator for Failure objects
+         * @param other The Failure object to compare with
+         * @return The ordering relationship
+         * @note Compares based on the error message only
+         */
+        [[nodiscard]] auto operator<=>(const Failure& other) const noexcept
+        {
+            return m_message <=> other.m_message;
+        }
+
+        /**
+         * @brief Equality comparison operator
+         * @param other The Failure object to compare with
+         * @return true if both Failures have the same message, false otherwise
+         */
+        [[nodiscard]] bool operator==(const Failure& other) const noexcept
+        {
+            return m_message == other.m_message;
+        }
+
+        /**
+         * @brief Stream output operator
+         * @param os The output stream
+         * @param failure The Failure object to output
+         * @return The output stream
+         */
         friend std::ostream& operator<<(std::ostream& os, const Failure& failure)
         {
             os << failure.message();
             return os;
         }
+
+        /**
+         * @brief Hash support for use in unordered containers
+         */
+        friend struct std::hash<fxt::Failure>;
 
     private:
         std::string        m_message {};      ///< The error message
@@ -132,3 +213,27 @@ namespace fxt
     };
 
 }    // namespace fxt
+
+/**
+ * @brief Hash specialization for fxt::Failure
+ * @note Combines hashes of both message and exception pointer for better distribution
+ */
+template<>
+struct std::hash<fxt::Failure>
+{
+    [[nodiscard]] std::size_t operator()(const fxt::Failure& failure) const noexcept
+    {
+        std::size_t h1 = std::hash<std::string>{}(failure.message());
+
+        // Hash the exception pointer using its address
+        std::size_t h2 = 0;
+        auto exc = failure.exception();
+        if (exc) {
+            // Hash the pointer by converting to size_t
+            h2 = std::hash<std::size_t>{}(reinterpret_cast<std::size_t>(&exc));
+        }
+
+        // Combine hashes using a common technique (boost::hash_combine style)
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
