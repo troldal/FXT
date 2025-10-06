@@ -12,6 +12,7 @@ add_executable(fxt_tests
         DropTests.cpp
         TakeTests.cpp
         MatchTests.cpp
+        ToOptionalTests.cpp
 )
 
 target_link_libraries(fxt_tests
