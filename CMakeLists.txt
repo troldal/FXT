@@ -86,6 +86,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_match_demo demo/Match.cpp)
     target_link_libraries(fxt_match_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_transform_error_demo demo/TransformError.cpp)
+    target_link_libraries(fxt_transform_error_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================

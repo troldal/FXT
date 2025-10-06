@@ -4,6 +4,7 @@ target_include_directories(Catch2ForFXT SYSTEM PUBLIC Catch2)
 # Add test executable
 add_executable(fxt_tests
         TransformTests.cpp
+        TransformErrorTests.cpp
         AndThenTests.cpp
         OrElseTests.cpp
         ValueOrTests.cpp
