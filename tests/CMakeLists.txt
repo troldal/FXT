@@ -13,6 +13,7 @@ add_executable(fxt_tests
         TakeTests.cpp
         MatchTests.cpp
         ToOptionalTests.cpp
+        ToExpectedTests.cpp
 )
 
 target_link_libraries(fxt_tests
