@@ -6,6 +6,7 @@ add_executable(fxt_tests
         AppendTests.cpp
         ApplyTests.cpp
         FailureTests.cpp
+        GetTests.cpp
         ValueTests.cpp
         TransformTests.cpp
         TransformErrorTests.cpp
