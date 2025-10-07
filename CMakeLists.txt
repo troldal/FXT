@@ -113,6 +113,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_get_demo demo/Get.cpp)
     target_link_libraries(fxt_get_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_select_demo demo/Select.cpp)
+    target_link_libraries(fxt_select_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
