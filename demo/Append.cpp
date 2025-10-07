@@ -1,137 +1,160 @@
 //
-// Created by kenne on 30-09-2025.
+// Demo: fxt::append
+//
+// This demo shows how to use fxt::append to build up tuples within
+// monadic containers (fxt::expected and fxt::optional) using the pipe operator.
 //
 
-#include <fxt.hpp>
 #include <iostream>
 #include <string>
-#include <tuple>
+#include <fxt.hpp>
 
-// Helper function to print tuples
-template<typename... Args>
-void print_tuple(const std::tuple<Args...>& t) {
-    std::cout << "(";
-    std::apply([](const auto&... args) {
-        std::size_t n = 0;
-        ((std::cout << args << (++n != sizeof...(args) ? ", " : "")), ...);
-    }, t);
-    std::cout << ")";
-}
+int main()
+{
+    std::cout << "=== fxt::append Demo ===" << std::endl;
+    std::cout << std::endl;
 
-int main() {
-    std::cout << "=== fxt::append Demo ===\n\n";
+    // =========================================================================
+    // Part 1: Using append with fxt::expected
+    // =========================================================================
+    std::cout << "Part 1: Using append with fxt::expected" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 
-    // Example 1: Appending a plain value to an expected tuple
-    std::cout << "1. Appending plain values to expected<tuple>:\n";
-    auto result1 = fxt::expected<std::tuple<int, double>, std::string>{std::tuple{42, 3.14}}
-        | fxt::append(std::string{"hello"});
+    // Start with an expected containing a tuple with one element
+    auto exp1 = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
 
-    if (result1) {
-        std::cout << "   Result: ";
-        print_tuple(*result1);
-        std::cout << "\n\n";
+    // Append a string value to the tuple
+    auto exp2 = exp1 | fxt::append(std::string{"hello"});
+
+    // Append a double value
+    auto exp3 = exp2 | fxt::append(3.14);
+
+    if (exp3) {
+        auto [i, s, d] = *exp3;
+        std::cout << "Success: (" << i << ", \"" << s << "\", " << d << ")" << std::endl;
+    } else {
+        std::cout << "Error: " << exp3.error() << std::endl;
     }
 
-    // Example 2: Chaining multiple appends
-    std::cout << "2. Chaining multiple appends:\n";
-    auto result2 = fxt::expected<std::tuple<int>, std::string>{std::tuple{1}}
-        | fxt::append(2)
-        | fxt::append(3.0)
-        | fxt::append(std::string{"four"});
+    // Chain multiple appends in one expression
+    std::cout << "\nChaining multiple appends:" << std::endl;
+    auto chained = fxt::expected<std::tuple<int>, std::string>{std::tuple{100}}
+        | fxt::append(std::string{"world"})
+        | fxt::append(2.71)
+        | fxt::append(true);
 
-    if (result2) {
-        std::cout << "   Result: ";
-        print_tuple(*result2);
-        std::cout << "\n\n";
+    if (chained) {
+        auto [i, s, d, b] = *chained;
+        std::cout << "Result: (" << i << ", \"" << s << "\", " << d << ", "
+                  << std::boolalpha << b << ")" << std::endl;
     }
 
-    // Example 3: Error propagation
-    std::cout << "3. Error propagation:\n";
-    auto result3 = fxt::expected<std::tuple<int, int>, std::string>{fxt::unexpected{"Error!"}}
-        | fxt::append(100);
+    // Demonstrate error propagation
+    std::cout << "\nError propagation:" << std::endl;
+    auto error_exp = fxt::expected<std::tuple<int>, std::string>{
+        fxt::unexpected<std::string>("Something went wrong")
+    };
 
-    if (!result3) {
-        std::cout << "   Error: " << result3.error() << "\n\n";
+    auto result_with_error = error_exp
+        | fxt::append(std::string{"this won't be added"})
+        | fxt::append(999);
+
+    if (result_with_error) {
+        std::cout << "Unexpected success" << std::endl;
+    } else {
+        std::cout << "Error propagated: " << result_with_error.error() << std::endl;
     }
 
-    // Example 4: Appending an expected value to a tuple
-    std::cout << "4. Appending expected<int> to expected<tuple>:\n";
-    auto value = fxt::expected<int, std::string>{999};
-    auto result4 = fxt::expected<std::tuple<std::string>, std::string>{std::tuple{"start"}}
-        | fxt::append(value);
+    // Append from another expected
+    std::cout << "\nAppending from another expected:" << std::endl;
+    auto exp_value = fxt::expected<std::string, std::string>{std::string{"from expected"}};
+    auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{std::tuple{777}};
 
-    if (result4) {
-        std::cout << "   Result: ";
-        print_tuple(*result4);
-        std::cout << "\n\n";
+    auto combined = exp_tuple | fxt::append(exp_value);
+
+    if (combined) {
+        auto [i, s] = *combined;
+        std::cout << "Combined: (" << i << ", \"" << s << "\")" << std::endl;
+    } else {
+        std::cout << "Error: " << combined.error() << std::endl;
     }
 
-    // Example 5: Error in appended expected
-    std::cout << "5. Error in appended expected:\n";
-    auto error_value = fxt::expected<int, std::string>{fxt::unexpected{"Parse failed"}};
-    auto result5 = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}}
-        | fxt::append(error_value);
+    // =========================================================================
+    // Part 2: Using append with fxt::optional
+    // =========================================================================
+    std::cout << "\n\nPart 2: Using append with fxt::optional" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 
-    if (!result5) {
-        std::cout << "   Error: " << result5.error() << "\n\n";
+    // Start with an optional containing a tuple
+    auto opt1 = fxt::optional<std::tuple<int>>{std::tuple{42}};
+
+    // Append values to build up the tuple
+    auto opt2 = opt1 | fxt::append(std::string{"hello"});
+    auto opt3 = opt2 | fxt::append(3.14);
+
+    if (opt3) {
+        auto [i, s, d] = *opt3;
+        std::cout << "Success: (" << i << ", \"" << s << "\", " << d << ")" << std::endl;
+    } else {
+        std::cout << "No value" << std::endl;
     }
 
-    // Example 6: Optional with append
-    std::cout << "6. Appending to optional<tuple>:\n";
-    auto result6 = fxt::optional<std::tuple<int, int>>{std::tuple{10, 20}}
-        | fxt::append(30)
-        | fxt::append(std::string{"end"});
+    // Chain multiple appends with optional
+    std::cout << "\nChaining multiple appends:" << std::endl;
+    auto chained_opt = fxt::optional<std::tuple<int>>{std::tuple{200}}
+        | fxt::append(std::string{"optional"})
+        | fxt::append(1.41)
+        | fxt::append(false);
 
-    if (result6) {
-        std::cout << "   Result: ";
-        print_tuple(*result6);
-        std::cout << "\n\n";
+    if (chained_opt) {
+        auto [i, s, d, b] = *chained_opt;
+        std::cout << "Result: (" << i << ", \"" << s << "\", " << d << ", "
+                  << std::boolalpha << b << ")" << std::endl;
     }
 
-    // Example 7: Empty optional
-    std::cout << "7. Empty optional:\n";
-    auto result7 = fxt::optional<std::tuple<int>>{fxt::nullopt}
-        | fxt::append(100);
+    // Demonstrate empty optional propagation
+    std::cout << "\nEmpty optional propagation:" << std::endl;
+    auto empty_opt = fxt::optional<std::tuple<int>>{};
 
-    if (!result7) {
-        std::cout << "   Result: nullopt\n\n";
+    auto result_with_empty = empty_opt
+        | fxt::append(std::string{"won't be added"})
+        | fxt::append(999);
+
+    if (result_with_empty) {
+        std::cout << "Unexpected value" << std::endl;
+    } else {
+        std::cout << "Empty optional propagated correctly" << std::endl;
     }
 
-    // Example 8: Appending optional to optional
-    std::cout << "8. Appending optional<int> to optional<tuple>:\n";
-    auto opt_value = fxt::optional<int>{777};
-    auto result8 = fxt::optional<std::tuple<std::string>>{std::tuple{"data"}}
-        | fxt::append(opt_value);
+    // Append from another optional
+    std::cout << "\nAppending from another optional:" << std::endl;
+    auto opt_value = fxt::optional<std::string>{std::string{"from optional"}};
+    auto opt_tuple = fxt::optional<std::tuple<int>>{std::tuple{888}};
 
-    if (result8) {
-        std::cout << "   Result: ";
-        print_tuple(*result8);
-        std::cout << "\n\n";
+    auto combined_opt = opt_tuple | fxt::append(opt_value);
+
+    if (combined_opt) {
+        auto [i, s] = *combined_opt;
+        std::cout << "Combined: (" << i << ", \"" << s << "\")" << std::endl;
+    } else {
+        std::cout << "No value" << std::endl;
     }
 
-    // Example 9: Appending empty optional
-    std::cout << "9. Appending empty optional:\n";
-    auto empty_opt = fxt::optional<int>{fxt::nullopt};
-    auto result9 = fxt::optional<std::tuple<int>>{std::tuple{42}}
-        | fxt::append(empty_opt);
+    // Append empty optional to tuple
+    std::cout << "\nAppending empty optional:" << std::endl;
+    auto empty_value = fxt::optional<std::string>{};
+    auto tuple_opt = fxt::optional<std::tuple<int>>{std::tuple{999}};
 
-    if (!result9) {
-        std::cout << "   Result: nullopt\n\n";
+    auto result_empty = tuple_opt | fxt::append(empty_value);
+
+    if (result_empty) {
+        std::cout << "Unexpected value" << std::endl;
+    } else {
+        std::cout << "Result is empty (as expected)" << std::endl;
     }
 
-    // Example 10: Real-world scenario - building a result tuple
-    std::cout << "10. Real-world: Building a configuration tuple:\n";
-    auto config = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(std::string{"AppName"})
-        | fxt::append(42)                    // version
-        | fxt::append(true)                  // debug mode
-        | fxt::append(3.14);                 // scaling factor
-
-    if (config) {
-        std::cout << "   Config: ";
-        print_tuple(*config);
-        std::cout << "\n";
-    }
+    std::cout << "\n=== Demo Complete ===" << std::endl;
 
     return 0;
 }
+

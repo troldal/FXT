@@ -54,6 +54,5 @@ namespace fxt
                 return container.value();
             }
         };
-    }();
-
+    };
 }    // namespace fxt

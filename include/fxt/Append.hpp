@@ -126,8 +126,10 @@ namespace fxt
             return [value = optionalValue]<template<typename> class TOptionalOutput, typename TTuple>(
                        const TOptionalOutput<TTuple>& tupleOptional)
             {
-                return value ? tupleOptional.transform([value](const TTuple& tuple) { return impl::tuple_append(tuple, *value); })
-                             : TOptionalOutput {};
+                if (!value) {
+                    return TOptionalOutput<decltype(impl::tuple_append(std::declval<TTuple>(), *value))>{};
+                }
+                return tupleOptional.transform([value](const TTuple& tuple) { return impl::tuple_append(tuple, *value); });
             };
         }
 
@@ -154,24 +156,26 @@ namespace fxt
         {
             return [value = std::move(optionalValue)]<template<typename> class TOptionalOutput, typename TTuple>(
                        const TOptionalOutput<TTuple>& tupleOptional) mutable {
-                return value ? tupleOptional.transform([value = std::move(value)](const TTuple& tuple) mutable {
+                if (!value) {
+                    return TOptionalOutput<decltype(impl::tuple_append(std::declval<TTuple>(), std::move(*value)))>{};
+                }
+                return tupleOptional.transform([value = std::move(value)](const TTuple& tuple) mutable {
                     return impl::tuple_append(tuple, std::move(*value));
-                })
-                             : TOptionalOutput {};
+                });
             };
         }
 
         /**
-         * @brief Append an arbitrary value to a tuple in an expected-like container
+         * @brief Append an arbitrary value to a tuple in a monadic container
          *
          * This overload handles regular values (not expected-like or optional-like) and appends them
-         * to a tuple contained in an expected. Uses deducing this (C++23) to handle both lvalue and
-         * rvalue references with a single overload.
+         * to a tuple contained in either an expected or optional. Uses deducing this (C++23) to handle
+         * both lvalue and rvalue references with a single overload.
          *
          * @tparam Self The type of this (deduced via explicit this parameter)
-         * @tparam TValue The type of value to append (must not be expected-like)
+         * @tparam TValue The type of value to append (must not be expected-like or optional-like)
          * @param value The value to append (perfectly forwarded)
-         * @return A lambda that takes an expected-like container with a tuple and returns a new expected with the value appended
+         * @return An overloaded lambda that works with both expected-like and optional-like containers
          *
          * @note The NotExpectedLike constraint ensures this overload doesn't conflict with the expected-like overloads
          * @note Requires C++23 support for deducing this
@@ -180,18 +184,21 @@ namespace fxt
          * @code
          * std::expected<std::tuple<int>, Error> tuple_exp = std::tuple{42};
          * auto result = tuple_exp | fxt::append(std::string{"hello"}); // Appends plain string
+         *
+         * std::optional<std::tuple<int>> tuple_opt = std::tuple{42};
+         * auto result2 = tuple_opt | fxt::append(std::string{"world"}); // Also works with optional
          * @endcode
          */
         template<typename Self, typename TValue>
-            requires NotExpectedLike<TValue>
+            requires NotExpectedLike<TValue> && (!impl::optional_like<std::remove_cvref_t<TValue>>)
         auto operator()(this Self&&, TValue&& value)
         {
-            return [value = std::forward<TValue>(value)]<template<typename, typename> class TExpected, typename TTuple, typename TError>(
-                       const TExpected<TTuple, TError>& tupleExpected) mutable
-                requires impl::expected_like<TExpected<TTuple, TError>>
+            return [value = std::forward<TValue>(value)]<typename TContainer>(const TContainer& container) mutable
             {
-                return tupleExpected.transform(
-                    [value = std::move(value)](const TTuple& tuple) mutable { return impl::tuple_append(tuple, std::move(value)); });
+                return container.transform(
+                    [value = std::move(value)](const auto& tuple) mutable {
+                        return impl::tuple_append(tuple, std::move(value));
+                    });
             };
         }
     };

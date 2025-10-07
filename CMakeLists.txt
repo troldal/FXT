@@ -63,9 +63,6 @@ if(PROJECT_IS_TOP_LEVEL)
     add_executable(fxt_and_then_demo demo/AndThen.cpp)
     target_link_libraries(fxt_and_then_demo PRIVATE fxt::fxt)
 
-    add_executable(fxt_append_demo demo/Append.cpp)
-    target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
-
     add_executable(fxt_transform_demo demo/Transform.cpp)
     target_link_libraries(fxt_transform_demo PRIVATE fxt::fxt)
 
@@ -107,6 +104,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_failure_demo demo/Failure.cpp)
     target_link_libraries(fxt_failure_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_append_demo demo/Append.cpp)
+    target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
