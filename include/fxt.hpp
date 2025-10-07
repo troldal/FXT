@@ -7,7 +7,6 @@
 #include "fxt/AndThen.hpp"
 #include "fxt/Append.hpp"
 #include "fxt/Apply.hpp"
-#include "fxt/As.hpp"
 #include "fxt/Curry.hpp"
 #include "fxt/Drop.hpp"
 #include "fxt/Expected.hpp"

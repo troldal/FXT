@@ -107,6 +107,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_append_demo demo/Append.cpp)
     target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_apply_demo demo/Apply.cpp)
+    target_link_libraries(fxt_apply_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
