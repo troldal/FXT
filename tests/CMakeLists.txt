@@ -22,6 +22,7 @@ add_executable(fxt_tests
         ToExpectedTests.cpp
         TapTests.cpp
         TapErrorAndNoneTests.cpp
+        TypeTests.cpp
 )
 
 target_link_libraries(fxt_tests
