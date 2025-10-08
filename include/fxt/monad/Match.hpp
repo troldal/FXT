@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include "../impl/concepts/IsExpected.hpp"
+#include "../impl/concepts/IsOptional.hpp"
 #include <type_traits>
 #include <utility>
-#include "impl/concepts/IsExpected.hpp"
-#include "impl/concepts/IsOptional.hpp"
 
 namespace fxt
 {

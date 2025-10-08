@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../../Expected.hpp"
-#include <type_traits>
+#include "../../monad/Expected.hpp"
 #include <concepts>
+#include <type_traits>
 
 namespace fxt::impl
 {

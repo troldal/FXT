@@ -3,13 +3,9 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/Value.hpp>
-#include <fxt/Expected.hpp>
-#include <fxt/Optional.hpp>
-#include <fxt/Transform.hpp>
-#include <fxt/AndThen.hpp>
-#include <string>
+#include <fxt.hpp>
 #include <memory>
+#include <string>
 
 TEST_CASE("value - fxt::optional with lvalue", "[value]")
 {

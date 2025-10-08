@@ -3,12 +3,9 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/Apply.hpp>
-#include <fxt/Append.hpp>
-#include <fxt/Expected.hpp>
-#include <fxt/Optional.hpp>
-#include <string>
+#include <fxt.hpp>
 #include <memory>
+#include <string>
 #include <tuple>
 
 TEST_CASE("apply - fxt::expected with regular return values", "[apply]")

@@ -4,11 +4,11 @@
 
 #pragma once
 
+#include "../monad/Expected.hpp"
+#include "../monad/Optional.hpp"
+#include "../utils/Overload.hpp"
 #include <cstddef>
 #include <tuple>
-#include "Expected.hpp"
-#include "Optional.hpp"
-#include "Overload.hpp"
 
 namespace fxt
 {

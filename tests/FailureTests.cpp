@@ -3,12 +3,12 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/Failure.hpp>
-#include <stdexcept>
+#include <fxt.hpp>
 #include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
-#include <sstream>
 
 TEST_CASE("Failure - Construction from message", "[failure]")
 {

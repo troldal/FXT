@@ -2,12 +2,12 @@
 // Created by AI Assistant on 07/10/2025.
 //
 
-#include <fxt/Type.hpp>
+#include <fxt.hpp>
+#include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-#include <algorithm>
 
 // ============================================================================
 // Example 1: Tag Dispatch Pattern

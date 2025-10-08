@@ -3,10 +3,7 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/Select.hpp>
-#include <fxt/Append.hpp>
-#include <fxt/Expected.hpp>
-#include <fxt/Optional.hpp>
+#include <fxt.hpp>
 #include <string>
 #include <tuple>
 

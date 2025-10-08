@@ -2,15 +2,10 @@
 // Created by AI Assistant
 //
 
-#include <fxt/Value.hpp>
-#include <fxt/ValueOr.hpp>
-#include <fxt/Expected.hpp>
-#include <fxt/Optional.hpp>
-#include <fxt/Transform.hpp>
-#include <fxt/AndThen.hpp>
+#include <fxt.hpp>
+#include <cmath>
 #include <iostream>
 #include <string>
-#include <cmath>
 
 // Helper function to simulate a database lookup
 fxt::optional<std::string> find_user(int id)

@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "Expected.hpp"
-#include "Optional.hpp"
-#include "Overload.hpp"
+#include "../monad/Expected.hpp"
+#include "../monad/Optional.hpp"
+#include "../utils/Overload.hpp"
 #include <tuple>
 
 namespace fxt

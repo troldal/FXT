@@ -2,12 +2,11 @@
 // Created by AI Assistant
 //
 
-#include <fxt/Failure.hpp>
-#include <fxt/Expected.hpp>
+#include <fxt.hpp>
 #include <iostream>
 #include <stdexcept>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 // Helper function to simulate file operations
 fxt::expected<std::string, fxt::Failure> read_file(const std::string& filename)

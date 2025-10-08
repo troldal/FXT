@@ -3,10 +3,10 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/Type.hpp>
+#include <fxt.hpp>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 // ============================================================================
 // Test Primary Template (Type Tag)
