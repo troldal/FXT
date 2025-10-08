@@ -237,72 +237,86 @@
 #include <fxt.hpp>
 
 
-auto someFunc(fxt::Type<int>) {
-    std::cout << "int" << std::endl;
-}
+// auto someFunc(fxt::Type<int>) {
+//     std::cout << "int" << std::endl;
+// }
+//
+// auto someFunc(fxt::Type<std::string>) {
+//     std::cout << "string" << std::endl;
+// }
+//
+// // Example usage:
+// int main() {
+//
+//     using namespace std::literals;
+//
+//     // Our tuple of tuples. Each inner tuple has a key (std::string_view) and additional values.
+//     // In this example the tail contains an int and a double.
+//     auto tupleOfTuples = std::make_tuple(
+//         std::make_tuple("apple"sv, 42, 3.14),
+//         std::make_tuple("banana"sv, 7, 2.71),
+//         std::make_tuple("cherry"sv, 11, "1.61"),
+//         std::make_tuple("banana"sv, 8, 3.71)
+//     );
+//
+//     // Define a function object that accepts the tail of a tuple (an int and a double) and returns a string.
+//     // auto fun = [](const auto& tail) -> std::string {
+//     //     int a;
+//     //     double b;
+//     //     std::tie(a, b) = tail;
+//     //     return "Processed values: " + std::to_string(a) + " and " + std::to_string(b);
+//     // };
+//
+//     auto fun2 = [](int a, auto b) {
+//         //int a;
+//         //double b;
+//         //std::tie(a, b) = tail;
+//         if constexpr (std::is_same_v<decltype(b), double>)
+//             return "Processed values: " + std::to_string(a) + " and " + std::to_string(b);
+//         else
+//             return "Processed values: " + std::to_string(a) + " and " + b;
+//     };
+//
+//     try {
+//         // Visit the tuple with key "banana".
+//         std::string result = fxt::visit_element("banana", fun2, tupleOfTuples).value_or("No element found");
+//         std::cout << result << "\n";
+//     } catch (const std::runtime_error& err) {
+//         std::cerr << "Error: " << err.what() << "\n";
+//     }
+//
+//     // Using like the original Type class
+//     fxt::Type<int> typeOnly;
+//     using IntType = typename fxt::Type<int>::type; // IntType is int
+//     IntType valueOnly = 42; // valueOnly is 42
+//
+//     // Using like the original TypeValue class
+//     fxt::Type<std::string, double> typeWithValue(3.14);
+//     using StringType = typename fxt::Type<std::string, double>::type; // StringType is std::string
+//     double value = typeWithValue.value(); // value is 3.14
+//
+//     std::cout << "Value: " << value << std::endl;
+//
+//     someFunc(42);
+//     someFunc("Hello"s);
+//
+//     auto inp = fxt::expected<std::string, int>("Input");
+//     auto out = inp | fxt::transform([](std::string) { return "Hello, World"; });
+//     std::cout << *out << std::endl;
+//
+//     return 0;
+// }
 
-auto someFunc(fxt::Type<std::string>) {
-    std::cout << "string" << std::endl;
-}
+#include <fxt.hpp>
+#include <iostream>
+#include <string>
 
-// Example usage:
-int main() {
+int main()
+{
+    fxt::expected<int, std::string> v1 = fxt::unexpected(std::string("Error"));
+    fxt::expected<int, std::string> v2 = fxt::unexpected(std::string("Error"));
 
-    using namespace std::literals;
-
-    // Our tuple of tuples. Each inner tuple has a key (std::string_view) and additional values.
-    // In this example the tail contains an int and a double.
-    auto tupleOfTuples = std::make_tuple(
-        std::make_tuple("apple"sv, 42, 3.14),
-        std::make_tuple("banana"sv, 7, 2.71),
-        std::make_tuple("cherry"sv, 11, "1.61"),
-        std::make_tuple("banana"sv, 8, 3.71)
-    );
-
-    // Define a function object that accepts the tail of a tuple (an int and a double) and returns a string.
-    // auto fun = [](const auto& tail) -> std::string {
-    //     int a;
-    //     double b;
-    //     std::tie(a, b) = tail;
-    //     return "Processed values: " + std::to_string(a) + " and " + std::to_string(b);
-    // };
-
-    auto fun2 = [](int a, auto b) {
-        //int a;
-        //double b;
-        //std::tie(a, b) = tail;
-        if constexpr (std::is_same_v<decltype(b), double>)
-            return "Processed values: " + std::to_string(a) + " and " + std::to_string(b);
-        else
-            return "Processed values: " + std::to_string(a) + " and " + b;
-    };
-
-    try {
-        // Visit the tuple with key "banana".
-        std::string result = fxt::visit_element("banana", fun2, tupleOfTuples).value_or("No element found");
-        std::cout << result << "\n";
-    } catch (const std::runtime_error& err) {
-        std::cerr << "Error: " << err.what() << "\n";
-    }
-
-    // Using like the original Type class
-    fxt::Type<int> typeOnly;
-    using IntType = typename fxt::Type<int>::type; // IntType is int
-    IntType valueOnly = 42; // valueOnly is 42
-
-    // Using like the original TypeValue class
-    fxt::Type<std::string, double> typeWithValue(3.14);
-    using StringType = typename fxt::Type<std::string, double>::type; // StringType is std::string
-    double value = typeWithValue.value(); // value is 3.14
-
-    std::cout << "Value: " << value << std::endl;
-
-    someFunc(42);
-    someFunc("Hello"s);
-
-    auto inp = fxt::expected<std::string, int>("Input");
-    auto out = inp | fxt::transform([](std::string) { return "Hello, World"; });
-    std::cout << *out << std::endl;
+    auto res = v1 || v2 | fxt::value_or(42);
 
     return 0;
 }
