@@ -153,6 +153,101 @@ int main()
         std::cout << "Result is empty (as expected)" << std::endl;
     }
 
+    // =========================================================================
+    // Part 3: Using append with fxt::flat_tuple
+    // =========================================================================
+    std::cout << "\n\nPart 3: Using append with fxt::flat_tuple" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+
+    // Start with an expected containing a flat_tuple with one element
+    auto flat_exp1 = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
+
+    // Append a string value to the flat_tuple
+    auto flat_exp2 = flat_exp1 | fxt::append(std::string{"hello"});
+
+    // Append a double value
+    auto flat_exp3 = flat_exp2 | fxt::append(3.14);
+
+    if (flat_exp3) {
+        std::cout << "Success: (" << fxt::get<0>(*flat_exp3) << ", \""
+                  << fxt::get<1>(*flat_exp3) << "\", " << fxt::get<2>(*flat_exp3) << ")" << std::endl;
+    } else {
+        std::cout << "Error: " << flat_exp3.error() << std::endl;
+    }
+
+    // Chain multiple appends with flat_tuple in one expression
+    std::cout << "\nChaining multiple appends with flat_tuple:" << std::endl;
+    auto chained_flat = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{100}}
+        | fxt::append(std::string{"flat"})
+        | fxt::append(2.71)
+        | fxt::append(true);
+
+    if (chained_flat) {
+        std::cout << "Result: (" << fxt::get<0>(*chained_flat) << ", \""
+                  << fxt::get<1>(*chained_flat) << "\", " << fxt::get<2>(*chained_flat)
+                  << ", " << std::boolalpha << fxt::get<3>(*chained_flat) << ")" << std::endl;
+    }
+
+    // Using flat_tuple with optional
+    std::cout << "\nUsing flat_tuple with optional:" << std::endl;
+    auto flat_opt1 = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{555}};
+
+    // Append values to build up the flat_tuple
+    auto flat_opt2 = flat_opt1 | fxt::append(std::string{"flat_optional"});
+    auto flat_opt3 = flat_opt2 | fxt::append(1.618);
+
+    if (flat_opt3) {
+        std::cout << "Success: (" << fxt::get<0>(*flat_opt3) << ", \""
+                  << fxt::get<1>(*flat_opt3) << "\", " << fxt::get<2>(*flat_opt3) << ")" << std::endl;
+    } else {
+        std::cout << "No value" << std::endl;
+    }
+
+    // Demonstrate error propagation with flat_tuple
+    std::cout << "\nError propagation with flat_tuple:" << std::endl;
+    auto error_flat_exp = fxt::expected<fxt::flat_tuple<int>, std::string>{
+        fxt::unexpected<std::string>("Flat tuple error")
+    };
+
+    auto result_flat_error = error_flat_exp
+        | fxt::append(std::string{"won't be added"})
+        | fxt::append(999);
+
+    if (result_flat_error) {
+        std::cout << "Unexpected success" << std::endl;
+    } else {
+        std::cout << "Error propagated: " << result_flat_error.error() << std::endl;
+    }
+
+    // Append from another expected to flat_tuple
+    std::cout << "\nAppending from expected to flat_tuple:" << std::endl;
+    auto flat_exp_value = fxt::expected<std::string, std::string>{std::string{"from expected"}};
+    auto flat_exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{777}};
+
+    auto combined_flat = flat_exp_tuple | fxt::append(flat_exp_value);
+
+    if (combined_flat) {
+        std::cout << "Combined: (" << fxt::get<0>(*combined_flat) << ", \""
+                  << fxt::get<1>(*combined_flat) << "\")" << std::endl;
+    } else {
+        std::cout << "Error: " << combined_flat.error() << std::endl;
+    }
+
+    // Mixing std::tuple and flat_tuple behavior comparison
+    std::cout << "\nComparison: std::tuple vs flat_tuple:" << std::endl;
+    auto std_result = fxt::expected<std::tuple<int>, std::string>{std::tuple{10}}
+        | fxt::append(20) | fxt::append(30);
+
+    auto flat_result = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{10}}
+        | fxt::append(20) | fxt::append(30);
+
+    if (std_result && flat_result) {
+        auto [a, b, c] = *std_result;
+        std::cout << "std::tuple result: (" << a << ", " << b << ", " << c << ")" << std::endl;
+        std::cout << "flat_tuple result: (" << fxt::get<0>(*flat_result) << ", "
+                  << fxt::get<1>(*flat_result) << ", " << fxt::get<2>(*flat_result) << ")" << std::endl;
+    }
+
     std::cout << "\n=== Demo Complete ===" << std::endl;
 
     return 0;
