@@ -24,6 +24,7 @@
 #include "fxt/tuple/Get.hpp"
 #include "fxt/tuple/Select.hpp"
 #include "fxt/tuple/Take.hpp"
+#include "fxt/tuple/Tuple.hpp"
 #include "fxt/utils/Curry.hpp"
 #include "fxt/utils/Failure.hpp"
 #include "fxt/utils/Lift.hpp"
