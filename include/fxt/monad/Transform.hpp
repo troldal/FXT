@@ -40,8 +40,8 @@ namespace fxt
      *              | fxt::transform(to_string);
      * @endcode
      */
-    inline constexpr auto transform = []<typename TFunction>(TFunction&& f) {
-        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+    inline constexpr auto transform = []<typename TFunction>(const TFunction& f) {
+        return [f]<typename TContainer>(TContainer&& container)
             requires requires(TContainer&& c) { c.transform(f); }
         { return std::forward<TContainer>(container).transform(f); };
     };

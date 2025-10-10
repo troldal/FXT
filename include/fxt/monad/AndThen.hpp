@@ -39,8 +39,8 @@ namespace fxt
      *              | fxt::and_then(double_it);
      * @endcode
      */
-    inline constexpr auto and_then = []<typename TFunction>(TFunction&& f) {
-        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+    inline constexpr auto and_then = []<typename TFunction>(const TFunction& f) {
+        return [f]<typename TContainer>(TContainer&& container)
             requires requires(TContainer&& c) { c.and_then(f); }
         { return std::forward<TContainer>(container).and_then(f); };
     };

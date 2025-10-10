@@ -40,8 +40,8 @@ namespace fxt
      *              | fxt::transform_error(to_user_message);
      * @endcode
      */
-    inline constexpr auto transform_error = []<typename TFunction>(TFunction&& f) {
-        return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+    inline constexpr auto transform_error = []<typename TFunction>(const TFunction& f) {
+        return [f]<typename TContainer>(TContainer&& container)
             requires requires(TContainer&& c) { c.transform_error(f); }
         { return std::forward<TContainer>(container).transform_error(f); };
     };

@@ -42,8 +42,8 @@ namespace fxt
      *              | fxt::value_or(0);
      * @endcode
      */
-    inline constexpr auto value_or = []<typename TAlternative>(TAlternative&& val) {
-        return [val = std::forward<TAlternative>(val)]<typename TContainer>(TContainer&& container)
+    inline constexpr auto value_or = []<typename TAlternative>(const TAlternative& val) {
+        return [val]<typename TContainer>(TContainer&& container)
             requires requires(TContainer&& c) { c.value_or(val); }
         { return std::forward<TContainer>(container).value_or(val); };
     };
