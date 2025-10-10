@@ -26,6 +26,7 @@
 #include "fxt/tuple/Take.hpp"
 #include "fxt/tuple/Tuple.hpp"
 #include "fxt/tuple/TupleAppend.hpp"
+#include "fxt/tuple/TupleElement.hpp"
 #include "fxt/tuple/TupleSize.hpp"
 #include "fxt/utils/Curry.hpp"
 #include "fxt/utils/Failure.hpp"

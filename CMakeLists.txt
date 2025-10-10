@@ -131,6 +131,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_tuple_append_demo demo/TupleAppend.cpp)
     target_link_libraries(fxt_tuple_append_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_tuple_element_demo demo/TupleElement.cpp)
+    target_link_libraries(fxt_tuple_element_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
