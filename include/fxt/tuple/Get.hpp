@@ -32,7 +32,7 @@ namespace fxt
      *   auto result = opt | fxt::get<0>();  // result contains 1
      */
     template<size_t I>
-    auto get()
+    auto mget()
     {
         return overload{
             // Handle expected-like containers
@@ -68,7 +68,7 @@ namespace fxt
      *   auto result = opt | fxt::get<std::string>();  // result contains "three"
      */
     template<typename T>
-    auto get()
+    auto mget()
     {
         return overload{
             // Handle expected-like containers

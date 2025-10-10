@@ -28,7 +28,7 @@ int main() {
     print_tuple(tuple1);
     std::cout << "\n";
 
-    auto drop1 = fxt::drop<2>(tuple1);
+    auto drop1 = fxt::mdrop<2>(tuple1);
     std::cout << "   After drop<2>: ";
     print_tuple(drop1);
     std::cout << "\n\n";
@@ -40,7 +40,7 @@ int main() {
     print_tuple(tuple2);
     std::cout << "\n";
 
-    auto drop_last2 = fxt::drop_last<2>(tuple2);
+    auto drop_last2 = fxt::mdrop_last<2>(tuple2);
     std::cout << "   After drop_last<2>: ";
     print_tuple(drop_last2);
     std::cout << "\n\n";
@@ -52,7 +52,7 @@ int main() {
     print_tuple(mixed);
     std::cout << "\n";
 
-    auto mixed_drop = fxt::drop<2>(mixed);
+    auto mixed_drop = fxt::mdrop<2>(mixed);
     std::cout << "   After drop<2>: ";
     print_tuple(mixed_drop);
     std::cout << "\n\n";
@@ -64,7 +64,7 @@ int main() {
     print_tuple(mixed2);
     std::cout << "\n";
 
-    auto mixed_drop_last = fxt::drop_last<2>(mixed2);
+    auto mixed_drop_last = fxt::mdrop_last<2>(mixed2);
     std::cout << "   After drop_last<2>: ";
     print_tuple(mixed_drop_last);
     std::cout << "\n\n";
@@ -76,7 +76,7 @@ int main() {
     print_tuple(tuple3);
     std::cout << "\n";
 
-    auto no_drop = fxt::drop<0>(tuple3);
+    auto no_drop = fxt::mdrop<0>(tuple3);
     std::cout << "   After drop<0>: ";
     print_tuple(no_drop);
     std::cout << "\n\n";
@@ -88,7 +88,7 @@ int main() {
     print_tuple(tuple4);
     std::cout << "\n";
 
-    auto all_dropped = fxt::drop<3>(tuple4);
+    auto all_dropped = fxt::mdrop<3>(tuple4);
     std::cout << "   After drop<3>: ";
     print_tuple(all_dropped);
     std::cout << " (empty tuple)\n\n";
@@ -100,12 +100,12 @@ int main() {
     print_tuple(tuple5);
     std::cout << "\n";
 
-    auto first_drop = fxt::drop<2>(tuple5);
+    auto first_drop = fxt::mdrop<2>(tuple5);
     std::cout << "   After drop<2>: ";
     print_tuple(first_drop);
     std::cout << "\n";
 
-    auto both_dropped = fxt::drop_last<3>(first_drop);
+    auto both_dropped = fxt::mdrop_last<3>(first_drop);
     std::cout << "   Then drop_last<3>: ";
     print_tuple(both_dropped);
     std::cout << "\n\n";
@@ -123,24 +123,24 @@ int main() {
     print_tuple(strings);
     std::cout << "\n";
 
-    auto dropped_strings = fxt::drop<1>(strings);
+    auto dropped_strings = fxt::mdrop<1>(strings);
     std::cout << "   After drop<1>: ";
     print_tuple(dropped_strings);
     std::cout << "\n";
 
-    auto final_strings = fxt::drop_last<1>(dropped_strings);
+    auto final_strings = fxt::mdrop_last<1>(dropped_strings);
     std::cout << "   Then drop_last<1>: ";
     print_tuple(final_strings);
     std::cout << "\n\n";
 
     // Example 9: Using with rvalues
     std::cout << "9. Using with temporary (rvalue) tuples:\n";
-    auto result = fxt::drop<2>(std::make_tuple(100, 200, 300, 400, 500));
+    auto result = fxt::mdrop<2>(std::make_tuple(100, 200, 300, 400, 500));
     std::cout << "   drop<2> from temporary: ";
     print_tuple(result);
     std::cout << "\n";
 
-    auto result2 = fxt::drop_last<2>(std::make_tuple(100, 200, 300, 400, 500));
+    auto result2 = fxt::mdrop_last<2>(std::make_tuple(100, 200, 300, 400, 500));
     std::cout << "   drop_last<2> from temporary: ";
     print_tuple(result2);
     std::cout << "\n\n";
@@ -153,7 +153,7 @@ int main() {
     std::cout << "\n";
 
     // Drop first 2 elements, then drop last 2 elements
-    auto middle = fxt::drop_last<2>(fxt::drop<2>(data));
+    auto middle = fxt::mdrop_last<2>(fxt::mdrop<2>(data));
     std::cout << "   Middle elements (drop<2> then drop_last<2>): ";
     print_tuple(middle);
     std::cout << "\n\n";
@@ -175,8 +175,8 @@ int main() {
     std::cout << "\n";
 
     // Extract payload by dropping header fields and checksum
-    auto without_header = fxt::drop<3>(message);  // Skip header, version, type
-    auto payload = fxt::drop_last<1>(without_header);  // Skip checksum
+    auto without_header = fxt::mdrop<3>(message);  // Skip header, version, type
+    auto payload = fxt::mdrop_last<1>(without_header);  // Skip checksum
     std::cout << "   Extracted payload (data only): ";
     print_tuple(payload);
     std::cout << "\n\n";
@@ -188,12 +188,12 @@ int main() {
     print_tuple(large);
     std::cout << "\n";
 
-    auto trimmed = fxt::drop<5>(large);
+    auto trimmed = fxt::mdrop<5>(large);
     std::cout << "   After drop<5>: ";
     print_tuple(trimmed);
     std::cout << "\n";
 
-    auto final = fxt::drop_last<5>(trimmed);
+    auto final = fxt::mdrop_last<5>(trimmed);
     std::cout << "   Then drop_last<5>: ";
     print_tuple(final);
     std::cout << "\n";

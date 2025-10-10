@@ -23,9 +23,9 @@ int main()
 
     // Apply a function to compute the sum (using temporary directly)
     auto exp2 = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(5)
-        | fxt::append(10)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(5)
+        | fxt::mappend(10)
+        | fxt::mapply([](int a, int b) {
             std::cout << "Computing: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
         });
@@ -38,13 +38,13 @@ int main()
     // Chain multiple apply operations
     std::cout << "\nChaining multiple apply operations:" << std::endl;
     auto exp3 = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(3)
-        | fxt::append(4)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(3)
+        | fxt::mappend(4)
+        | fxt::mapply([](int a, int b) {
             std::cout << "  Step 1: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
         })
-        | fxt::apply([](int a, int b, int sum) {
+        | fxt::mapply([](int a, int b, int sum) {
             std::cout << "  Step 2: " << sum << " * 2 = " << (sum * 2) << std::endl;
             return sum * 2;
         });
@@ -62,9 +62,9 @@ int main()
 
     // Start with an error
     auto result_with_error = fxt::expected<std::tuple<>, std::string>{fxt::unexpected("Initial error")}
-        | fxt::append(1)
-        | fxt::append(2)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(1)
+        | fxt::mappend(2)
+        | fxt::mapply([](int a, int b) {
             std::cout << "This won't be called" << std::endl;
             return a + b;
         });
@@ -83,9 +83,9 @@ int main()
 
     // Apply a function that can fail
     auto exp_monadic = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(10.0)
-        | fxt::append(2.0)
-        | fxt::apply([](double a, double b) -> fxt::expected<double, std::string> {
+        | fxt::mappend(10.0)
+        | fxt::mappend(2.0)
+        | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
             std::cout << "Dividing: " << a << " / " << b << std::endl;
             if (b == 0.0) {
                 return fxt::unexpected("Division by zero");
@@ -103,9 +103,9 @@ int main()
     // Example with error in the applied function
     std::cout << "\nWith division by zero:" << std::endl;
     auto exp_error = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(10.0)
-        | fxt::append(0.0)
-        | fxt::apply([](double a, double b) -> fxt::expected<double, std::string> {
+        | fxt::mappend(10.0)
+        | fxt::mappend(0.0)
+        | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
             std::cout << "Attempting: " << a << " / " << b << std::endl;
             if (b == 0.0) {
                 return fxt::unexpected("Division by zero");
@@ -126,9 +126,9 @@ int main()
     std::cout << "------------------------------------------------------------" << std::endl;
 
     auto exp_void = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(42)
-        | fxt::append(std::string{"hello"})
-        | fxt::apply([](int x, const std::string& s) {
+        | fxt::mappend(42)
+        | fxt::mappend(std::string{"hello"})
+        | fxt::mapply([](int x, const std::string& s) {
             std::cout << "Side effect: logging " << x << " and '" << s << "'" << std::endl;
         });
 
@@ -145,9 +145,9 @@ int main()
 
     // Apply a function to compute the product (using temporary directly)
     auto opt2 = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::append(7)
-        | fxt::append(8)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(7)
+        | fxt::mappend(8)
+        | fxt::mapply([](int a, int b) {
             std::cout << "Computing: " << a << " * " << b << " = " << (a * b) << std::endl;
             return a * b;
         });
@@ -160,13 +160,13 @@ int main()
     // Chain multiple apply operations
     std::cout << "\nChaining multiple apply operations:" << std::endl;
     auto opt3 = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::append(2)
-        | fxt::append(3)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(2)
+        | fxt::mappend(3)
+        | fxt::mapply([](int a, int b) {
             std::cout << "  Step 1: " << a << " * " << b << " = " << (a * b) << std::endl;
             return a * b;
         })
-        | fxt::apply([](int a, int b, int product) {
+        | fxt::mapply([](int a, int b, int product) {
             std::cout << "  Step 2: " << product << " + 10 = " << (product + 10) << std::endl;
             return product + 10;
         });
@@ -184,9 +184,9 @@ int main()
 
     // Start with an empty optional
     auto result_with_empty = fxt::optional<std::tuple<>>{}
-        | fxt::append(1)
-        | fxt::append(2)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(1)
+        | fxt::mappend(2)
+        | fxt::mapply([](int a, int b) {
             std::cout << "This won't be called" << std::endl;
             return a + b;
         });
@@ -205,8 +205,8 @@ int main()
 
     // Apply a function that returns optional
     auto opt_monadic = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::append(16.0)
-        | fxt::apply([](double x) -> fxt::optional<double> {
+        | fxt::mappend(16.0)
+        | fxt::mapply([](double x) -> fxt::optional<double> {
             std::cout << "Computing sqrt of " << x << std::endl;
             if (x < 0.0) {
                 return fxt::nullopt;
@@ -224,8 +224,8 @@ int main()
     // Example with failure
     std::cout << "\nWith negative number:" << std::endl;
     auto opt_fail = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::append(-16.0)
-        | fxt::apply([](double x) -> fxt::optional<double> {
+        | fxt::mappend(-16.0)
+        | fxt::mapply([](double x) -> fxt::optional<double> {
             std::cout << "Attempting sqrt of " << x << std::endl;
             if (x < 0.0) {
                 return fxt::nullopt;
@@ -246,9 +246,9 @@ int main()
     std::cout << "------------------------------------------------------------" << std::endl;
 
     auto opt_void = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::append(99)
-        | fxt::append(std::string{"world"})
-        | fxt::apply([](int x, const std::string& s) {
+        | fxt::mappend(99)
+        | fxt::mappend(std::string{"world"})
+        | fxt::mapply([](int x, const std::string& s) {
             std::cout << "Side effect: processing " << x << " and '" << s << "'" << std::endl;
         });
 
@@ -265,17 +265,17 @@ int main()
 
     std::cout << "Building a calculation pipeline..." << std::endl;
     auto complex = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(5)
-        | fxt::append(3)
-        | fxt::apply([](int a, int b) {
+        | fxt::mappend(5)
+        | fxt::mappend(3)
+        | fxt::mapply([](int a, int b) {
             std::cout << "  Computing sum: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
         })
-        | fxt::apply([](int a, int b, int sum) {
+        | fxt::mapply([](int a, int b, int sum) {
             std::cout << "  Computing product: " << a << " * " << b << " = " << (a * b) << std::endl;
             return a * b;
         })
-        | fxt::apply([](int a, int b, int sum, int product) {
+        | fxt::mapply([](int a, int b, int sum, int product) {
             std::cout << "  Computing average: (" << sum << " + " << product << ") / 2 = "
                       << ((sum + product) / 2.0) << std::endl;
             return (sum + product) / 2.0;
@@ -297,10 +297,10 @@ int main()
     std::cout << "----------------------------" << std::endl;
 
     auto mixed = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::append(std::string{"Hello"})
-        | fxt::append(42)
-        | fxt::append(3.14)
-        | fxt::apply([](const std::string& s, int i, double d) {
+        | fxt::mappend(std::string{"Hello"})
+        | fxt::mappend(42)
+        | fxt::mappend(3.14)
+        | fxt::mapply([](const std::string& s, int i, double d) {
             std::cout << "Building message from: \"" << s << "\", " << i << ", " << d << std::endl;
             return s + " " + std::to_string(i) + " " + std::to_string(d);
         });

@@ -88,7 +88,7 @@ namespace fxt
             -> TContainer<std::tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>>
         {
             return tupleContainer
-                ? append(std::apply(function, *std::forward<decltype(tupleContainer)>(tupleContainer)))(std::forward<decltype(tupleContainer)>(tupleContainer))
+                ? mappend(std::apply(function, *std::forward<decltype(tupleContainer)>(tupleContainer)))(std::forward<decltype(tupleContainer)>(tupleContainer))
                 : fxt::nullopt;
         }
 
@@ -102,7 +102,7 @@ namespace fxt
             -> TExpected<std::tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>, TError>
         {
             return tupleExpected
-                ? append(std::apply(function, *std::forward<decltype(tupleExpected)>(tupleExpected)))(std::forward<decltype(tupleExpected)>(tupleExpected))
+                ? mappend(std::apply(function, *std::forward<decltype(tupleExpected)>(tupleExpected)))(std::forward<decltype(tupleExpected)>(tupleExpected))
                 : typename std::invoke_result_t<TFunction, TElems...>::unexpected_type(tupleExpected.error());
         }
 
@@ -209,6 +209,6 @@ namespace fxt
         }
     };
 
-    inline constexpr apply_fn apply{};
+    inline constexpr apply_fn mapply{};
 
 }    // namespace fxt

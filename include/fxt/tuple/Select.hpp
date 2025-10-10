@@ -36,7 +36,7 @@ namespace fxt
      *   auto result = opt | fxt::select<0, 2>();  // result contains std::tuple<int, std::string>{1, "three"}
      */
     template<size_t... Is>
-    auto select()
+    auto mselect()
     {
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
 
@@ -76,7 +76,7 @@ namespace fxt
      *   auto result = opt | fxt::select<int, std::string>();  // result contains std::tuple<int, std::string>{1, "three"}
      */
     template<typename... Ts>
-    auto select()
+    auto mselect()
     {
         static_assert(sizeof...(Ts) >= 1, "At least one type must be provided");
 

@@ -28,7 +28,7 @@ int main() {
     print_tuple(tuple1);
     std::cout << "\n";
 
-    auto take2 = fxt::take<2>(tuple1);
+    auto take2 = fxt::mtake<2>(tuple1);
     std::cout << "   After take<2>: ";
     print_tuple(take2);
     std::cout << "\n\n";
@@ -40,7 +40,7 @@ int main() {
     print_tuple(tuple2);
     std::cout << "\n";
 
-    auto take_last2 = fxt::take_last<2>(tuple2);
+    auto take_last2 = fxt::mtake_last<2>(tuple2);
     std::cout << "   After take_last<2>: ";
     print_tuple(take_last2);
     std::cout << "\n\n";
@@ -52,7 +52,7 @@ int main() {
     print_tuple(mixed);
     std::cout << "\n";
 
-    auto mixed_take = fxt::take<3>(mixed);
+    auto mixed_take = fxt::mtake<3>(mixed);
     std::cout << "   After take<3>: ";
     print_tuple(mixed_take);
     std::cout << "\n\n";
@@ -64,7 +64,7 @@ int main() {
     print_tuple(mixed2);
     std::cout << "\n";
 
-    auto mixed_take_last = fxt::take_last<3>(mixed2);
+    auto mixed_take_last = fxt::mtake_last<3>(mixed2);
     std::cout << "   After take_last<3>: ";
     print_tuple(mixed_take_last);
     std::cout << "\n\n";
@@ -76,7 +76,7 @@ int main() {
     print_tuple(tuple3);
     std::cout << "\n";
 
-    auto no_take = fxt::take<0>(tuple3);
+    auto no_take = fxt::mtake<0>(tuple3);
     std::cout << "   After take<0>: ";
     print_tuple(no_take);
     std::cout << " (empty tuple)\n\n";
@@ -88,7 +88,7 @@ int main() {
     print_tuple(tuple4);
     std::cout << "\n";
 
-    auto all_taken = fxt::take<3>(tuple4);
+    auto all_taken = fxt::mtake<3>(tuple4);
     std::cout << "   After take<3>: ";
     print_tuple(all_taken);
     std::cout << "\n\n";
@@ -100,12 +100,12 @@ int main() {
     print_tuple(tuple5);
     std::cout << "\n";
 
-    auto first_take = fxt::take<7>(tuple5);
+    auto first_take = fxt::mtake<7>(tuple5);
     std::cout << "   After take<7>: ";
     print_tuple(first_take);
     std::cout << "\n";
 
-    auto middle = fxt::take_last<5>(first_take);
+    auto middle = fxt::mtake_last<5>(first_take);
     std::cout << "   Then take_last<5>: ";
     print_tuple(middle);
     std::cout << " (elements 3-7)\n\n";
@@ -117,12 +117,12 @@ int main() {
     print_tuple(tuple6);
     std::cout << "\n";
 
-    auto last_take = fxt::take_last<5>(tuple6);
+    auto last_take = fxt::mtake_last<5>(tuple6);
     std::cout << "   After take_last<5>: ";
     print_tuple(last_take);
     std::cout << "\n";
 
-    auto middle2 = fxt::take<3>(last_take);
+    auto middle2 = fxt::mtake<3>(last_take);
     std::cout << "   Then take<3>: ";
     print_tuple(middle2);
     std::cout << " (elements 3-5)\n\n";
@@ -140,24 +140,24 @@ int main() {
     print_tuple(strings);
     std::cout << "\n";
 
-    auto first_two = fxt::take<2>(strings);
+    auto first_two = fxt::mtake<2>(strings);
     std::cout << "   First two: ";
     print_tuple(first_two);
     std::cout << "\n";
 
-    auto last_two = fxt::take_last<2>(strings);
+    auto last_two = fxt::mtake_last<2>(strings);
     std::cout << "   Last two: ";
     print_tuple(last_two);
     std::cout << "\n\n";
 
     // Example 10: Using with rvalues (temporary tuples)
     std::cout << "10. Using with temporary (rvalue) tuples:\n";
-    auto result1 = fxt::take<3>(std::make_tuple(100, 200, 300, 400, 500));
+    auto result1 = fxt::mtake<3>(std::make_tuple(100, 200, 300, 400, 500));
     std::cout << "   take<3> from temporary: ";
     print_tuple(result1);
     std::cout << "\n";
 
-    auto result2 = fxt::take_last<3>(std::make_tuple(100, 200, 300, 400, 500));
+    auto result2 = fxt::mtake_last<3>(std::make_tuple(100, 200, 300, 400, 500));
     std::cout << "   take_last<3> from temporary: ";
     print_tuple(result2);
     std::cout << "\n\n";
@@ -169,8 +169,8 @@ int main() {
     print_tuple(data);
     std::cout << "\n";
 
-    auto first_part = fxt::take<4>(data);
-    auto last_part = fxt::take_last<3>(data);
+    auto first_part = fxt::mtake<4>(data);
+    auto last_part = fxt::mtake_last<3>(data);
     std::cout << "   First part (take<4>): ";
     print_tuple(first_part);
     std::cout << "\n";
@@ -195,13 +195,13 @@ int main() {
     std::cout << "\n";
 
     // Extract only basic info (first 3 fields)
-    auto basic_info = fxt::take<3>(record);
+    auto basic_info = fxt::mtake<3>(record);
     std::cout << "   Basic info (take<3>): ";
     print_tuple(basic_info);
     std::cout << "\n";
 
     // Extract employment info (last 3 fields)
-    auto employment_info = fxt::take_last<3>(record);
+    auto employment_info = fxt::mtake_last<3>(record);
     std::cout << "   Employment info (take_last<3>): ";
     print_tuple(employment_info);
     std::cout << "\n\n";
@@ -213,12 +213,12 @@ int main() {
     print_tuple(tuple7);
     std::cout << "\n";
 
-    auto first = fxt::take<1>(tuple7);
+    auto first = fxt::mtake<1>(tuple7);
     std::cout << "   First element (take<1>): ";
     print_tuple(first);
     std::cout << "\n";
 
-    auto last = fxt::take_last<1>(tuple7);
+    auto last = fxt::mtake_last<1>(tuple7);
     std::cout << "   Last element (take_last<1>): ";
     print_tuple(last);
     std::cout << "\n\n";
@@ -230,12 +230,12 @@ int main() {
     print_tuple(large);
     std::cout << "\n";
 
-    auto first_half = fxt::take<8>(large);
+    auto first_half = fxt::mtake<8>(large);
     std::cout << "   First half (take<8>): ";
     print_tuple(first_half);
     std::cout << "\n";
 
-    auto last_half = fxt::take_last<8>(large);
+    auto last_half = fxt::mtake_last<8>(large);
     std::cout << "   Last half (take_last<8>): ";
     print_tuple(last_half);
     std::cout << "\n";

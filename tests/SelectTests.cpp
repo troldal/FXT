@@ -14,7 +14,7 @@ TEST_CASE("select - fxt::expected by index", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(42, 3.14, "hello")
         };
-        auto result = exp | fxt::select<0, 2>();
+        auto result = exp | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         auto [i, s] = *result;
@@ -27,7 +27,7 @@ TEST_CASE("select - fxt::expected by index", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string, bool>, std::string>{
             std::make_tuple(99, 2.71, "world", true)
         };
-        auto result = exp | fxt::select<0, 1, 3>();
+        auto result = exp | fxt::mselect<0, 1, 3>();
 
         REQUIRE(result.has_value());
         auto [i, d, b] = *result;
@@ -41,7 +41,7 @@ TEST_CASE("select - fxt::expected by index", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(77, 1.41, "single")
         };
-        auto result = exp | fxt::select<1>();
+        auto result = exp | fxt::mselect<1>();
 
         REQUIRE(result.has_value());
         auto [d] = *result;
@@ -53,7 +53,7 @@ TEST_CASE("select - fxt::expected by index", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(1, 2.0, "three")
         };
-        auto result = exp | fxt::select<2, 0>();
+        auto result = exp | fxt::mselect<2, 0>();
 
         REQUIRE(result.has_value());
         auto [s, i] = *result;
@@ -66,7 +66,7 @@ TEST_CASE("select - fxt::expected by index", "[select]")
         auto exp = fxt::expected<std::tuple<int, int, int, int, int>, std::string>{
             std::make_tuple(1, 2, 3, 4, 5)
         };
-        auto result = exp | fxt::select<0, 2, 4>();
+        auto result = exp | fxt::mselect<0, 2, 4>();
 
         REQUIRE(result.has_value());
         auto [a, c, e] = *result;
@@ -80,7 +80,7 @@ TEST_CASE("select - fxt::expected by index", "[select]")
         auto exp = fxt::expected<std::tuple<int, int, int>, std::string>{
             std::make_tuple(10, 20, 30)
         };
-        auto result = exp | fxt::select<0, 0, 1>();
+        auto result = exp | fxt::mselect<0, 0, 1>();
 
         REQUIRE(result.has_value());
         auto [a, b, c] = *result;
@@ -97,7 +97,7 @@ TEST_CASE("select - fxt::expected by type", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(42, 3.14, "hello")
         };
-        auto result = exp | fxt::select<int, std::string>();
+        auto result = exp | fxt::mselect<int, std::string>();
 
         REQUIRE(result.has_value());
         auto [i, s] = *result;
@@ -110,7 +110,7 @@ TEST_CASE("select - fxt::expected by type", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string, bool>, std::string>{
             std::make_tuple(99, 2.71, "world", false)
         };
-        auto result = exp | fxt::select<double, bool, int>();
+        auto result = exp | fxt::mselect<double, bool, int>();
 
         REQUIRE(result.has_value());
         auto [d, b, i] = *result;
@@ -124,7 +124,7 @@ TEST_CASE("select - fxt::expected by type", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(77, 1.41, "single")
         };
-        auto result = exp | fxt::select<std::string>();
+        auto result = exp | fxt::mselect<std::string>();
 
         REQUIRE(result.has_value());
         auto [s] = *result;
@@ -137,7 +137,7 @@ TEST_CASE("select - fxt::expected by type", "[select]")
         auto exp = fxt::expected<std::tuple<Point, int, double>, std::string>{
             std::make_tuple(Point{10, 20}, 42, 3.14)
         };
-        auto result = exp | fxt::select<Point, double>();
+        auto result = exp | fxt::mselect<Point, double>();
 
         REQUIRE(result.has_value());
         auto [p, d] = *result;
@@ -154,7 +154,7 @@ TEST_CASE("select - fxt::expected error propagation", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             fxt::unexpected("error occurred")
         };
-        auto result = exp | fxt::select<0, 2>();
+        auto result = exp | fxt::mselect<0, 2>();
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error occurred");
@@ -165,7 +165,7 @@ TEST_CASE("select - fxt::expected error propagation", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             fxt::unexpected("type error")
         };
-        auto result = exp | fxt::select<int, std::string>();
+        auto result = exp | fxt::mselect<int, std::string>();
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "type error");
@@ -179,7 +179,7 @@ TEST_CASE("select - fxt::optional by index", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(55, 6.28, "optional")
         };
-        auto result = opt | fxt::select<0, 2>();
+        auto result = opt | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         auto [i, s] = *result;
@@ -192,7 +192,7 @@ TEST_CASE("select - fxt::optional by index", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string, bool>>{
             std::make_tuple(11, 2.22, "test", true)
         };
-        auto result = opt | fxt::select<1, 2, 3>();
+        auto result = opt | fxt::mselect<1, 2, 3>();
 
         REQUIRE(result.has_value());
         auto [d, s, b] = *result;
@@ -206,7 +206,7 @@ TEST_CASE("select - fxt::optional by index", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(88, 4.44, "one")
         };
-        auto result = opt | fxt::select<2>();
+        auto result = opt | fxt::mselect<2>();
 
         REQUIRE(result.has_value());
         auto [s] = *result;
@@ -218,7 +218,7 @@ TEST_CASE("select - fxt::optional by index", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(1, 2.0, "three")
         };
-        auto result = opt | fxt::select<2, 1, 0>();
+        auto result = opt | fxt::mselect<2, 1, 0>();
 
         REQUIRE(result.has_value());
         auto [s, d, i] = *result;
@@ -232,7 +232,7 @@ TEST_CASE("select - fxt::optional by index", "[select]")
         auto opt = fxt::optional<std::tuple<int, int, int, int, int>>{
             std::make_tuple(5, 4, 3, 2, 1)
         };
-        auto result = opt | fxt::select<4, 2, 0>();
+        auto result = opt | fxt::mselect<4, 2, 0>();
 
         REQUIRE(result.has_value());
         auto [a, c, e] = *result;
@@ -246,7 +246,7 @@ TEST_CASE("select - fxt::optional by index", "[select]")
         auto opt = fxt::optional<std::tuple<int, int, int>>{
             std::make_tuple(100, 200, 300)
         };
-        auto result = opt | fxt::select<1, 1, 1>();
+        auto result = opt | fxt::mselect<1, 1, 1>();
 
         REQUIRE(result.has_value());
         auto [a, b, c] = *result;
@@ -263,7 +263,7 @@ TEST_CASE("select - fxt::optional by type", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(123, 4.56, "type")
         };
-        auto result = opt | fxt::select<double, int>();
+        auto result = opt | fxt::mselect<double, int>();
 
         REQUIRE(result.has_value());
         auto [d, i] = *result;
@@ -276,7 +276,7 @@ TEST_CASE("select - fxt::optional by type", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string, bool>>{
             std::make_tuple(33, 5.55, "multi", false)
         };
-        auto result = opt | fxt::select<std::string, bool, double>();
+        auto result = opt | fxt::mselect<std::string, bool, double>();
 
         REQUIRE(result.has_value());
         auto [s, b, d] = *result;
@@ -290,7 +290,7 @@ TEST_CASE("select - fxt::optional by type", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(999, 7.77, "solo")
         };
-        auto result = opt | fxt::select<int>();
+        auto result = opt | fxt::mselect<int>();
 
         REQUIRE(result.has_value());
         auto [i] = *result;
@@ -302,7 +302,7 @@ TEST_CASE("select - fxt::optional by type", "[select]")
         auto opt = fxt::optional<std::tuple<bool, int, std::string>>{
             std::make_tuple(true, 42, "bool")
         };
-        auto result = opt | fxt::select<bool, std::string>();
+        auto result = opt | fxt::mselect<bool, std::string>();
 
         REQUIRE(result.has_value());
         auto [b, s] = *result;
@@ -316,7 +316,7 @@ TEST_CASE("select - fxt::optional empty propagation", "[select]")
     SECTION("empty propagates through select by index")
     {
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{};
-        auto result = opt | fxt::select<0, 2>();
+        auto result = opt | fxt::mselect<0, 2>();
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -324,7 +324,7 @@ TEST_CASE("select - fxt::optional empty propagation", "[select]")
     SECTION("empty propagates through select by type")
     {
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{};
-        auto result = opt | fxt::select<int, std::string>();
+        auto result = opt | fxt::mselect<int, std::string>();
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -337,7 +337,7 @@ TEST_CASE("select - direct call syntax", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(11, 2.2, "direct")
         };
-        auto result = fxt::select<0, 2>()(exp);
+        auto result = fxt::mselect<0, 2>()(exp);
 
         REQUIRE(result.has_value());
         auto [i, s] = *result;
@@ -350,7 +350,7 @@ TEST_CASE("select - direct call syntax", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(22, 3.3, "call")
         };
-        auto result = fxt::select<double, int>()(exp);
+        auto result = fxt::mselect<double, int>()(exp);
 
         REQUIRE(result.has_value());
         auto [d, i] = *result;
@@ -363,7 +363,7 @@ TEST_CASE("select - direct call syntax", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(33, 4.4, "opt")
         };
-        auto result = fxt::select<1, 2>()(opt);
+        auto result = fxt::mselect<1, 2>()(opt);
 
         REQUIRE(result.has_value());
         auto [d, s] = *result;
@@ -376,7 +376,7 @@ TEST_CASE("select - direct call syntax", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(44, 5.5, "syntax")
         };
-        auto result = fxt::select<std::string, int>()(opt);
+        auto result = fxt::mselect<std::string, int>()(opt);
 
         REQUIRE(result.has_value());
         auto [s, i] = *result;
@@ -393,8 +393,8 @@ TEST_CASE("select - chaining operations", "[select]")
             std::make_tuple(1, 2, 3, 4, 5)
         };
 
-        auto first = exp | fxt::select<1, 2, 3>();
-        auto second = first | fxt::select<0, 2>();
+        auto first = exp | fxt::mselect<1, 2, 3>();
+        auto second = first | fxt::mselect<0, 2>();
 
         REQUIRE(second.has_value());
         auto [a, c] = *second;
@@ -408,8 +408,8 @@ TEST_CASE("select - chaining operations", "[select]")
             std::make_tuple(10, 20, 30, 40, 50)
         };
 
-        auto first = opt | fxt::select<0, 2, 4>();
-        auto second = first | fxt::select<1, 2>();
+        auto first = opt | fxt::mselect<0, 2, 4>();
+        auto second = first | fxt::mselect<1, 2>();
 
         REQUIRE(second.has_value());
         auto [b, c] = *second;
@@ -423,11 +423,11 @@ TEST_CASE("select - with append", "[select]")
     SECTION("build tuple with append and select (expected)")
     {
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-            | fxt::append(100)
-            | fxt::append(200)
-            | fxt::append(300)
-            | fxt::append(400)
-            | fxt::select<0, 2>();
+            | fxt::mappend(100)
+            | fxt::mappend(200)
+            | fxt::mappend(300)
+            | fxt::mappend(400)
+            | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         auto [a, c] = *result;
@@ -438,10 +438,10 @@ TEST_CASE("select - with append", "[select]")
     SECTION("build tuple with append and select (optional)")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
-            | fxt::append(10)
-            | fxt::append(20)
-            | fxt::append(30)
-            | fxt::select<1, 2>();
+            | fxt::mappend(10)
+            | fxt::mappend(20)
+            | fxt::mappend(30)
+            | fxt::mselect<1, 2>();
 
         REQUIRE(result.has_value());
         auto [b, c] = *result;
@@ -457,7 +457,7 @@ TEST_CASE("select - const correctness", "[select]")
         const auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(42, 3.14, "const")
         };
-        auto result = exp | fxt::select<0, 2>();
+        auto result = exp | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         auto [i, s] = *result;
@@ -470,7 +470,7 @@ TEST_CASE("select - const correctness", "[select]")
         const auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(99, 2.71, "const_opt")
         };
-        auto result = opt | fxt::select<1, 2>();
+        auto result = opt | fxt::mselect<1, 2>();
 
         REQUIRE(result.has_value());
         auto [d, s] = *result;
@@ -486,7 +486,7 @@ TEST_CASE("select - type deduction", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(1, 2.0, "three")
         };
-        auto result = exp | fxt::select<0, 2>();
+        auto result = exp | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::expected<std::tuple<int, std::string>, std::string>>);
@@ -497,7 +497,7 @@ TEST_CASE("select - type deduction", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(1, 2.0, "three")
         };
-        auto result = opt | fxt::select<1, 2>();
+        auto result = opt | fxt::mselect<1, 2>();
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::optional<std::tuple<double, std::string>>>);
@@ -508,7 +508,7 @@ TEST_CASE("select - type deduction", "[select]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, int>{
             std::make_tuple(1, 2.0, "three")
         };
-        auto result = exp | fxt::select<std::string, int>();
+        auto result = exp | fxt::mselect<std::string, int>();
 
         static_assert(std::is_same_v<decltype(result), fxt::expected<std::tuple<std::string, int>, int>>);
     }
@@ -521,7 +521,7 @@ TEST_CASE("select - edge cases", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, int>>{
             std::make_tuple(0, 0.0, 1)
         };
-        auto result = opt | fxt::select<0, 1>();
+        auto result = opt | fxt::mselect<0, 1>();
 
         REQUIRE(result.has_value());
         auto [i, d] = *result;
@@ -534,7 +534,7 @@ TEST_CASE("select - edge cases", "[select]")
         auto opt = fxt::optional<std::tuple<bool, int, bool>>{
             std::make_tuple(false, 42, true)
         };
-        auto result = opt | fxt::select<0, 2>();
+        auto result = opt | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         auto [b1, b2] = *result;
@@ -547,7 +547,7 @@ TEST_CASE("select - edge cases", "[select]")
         auto exp = fxt::expected<std::tuple<std::string, int, std::string>, int>{
             std::make_tuple("", 42, "nonempty")
         };
-        auto result = exp | fxt::select<0, 2>();
+        auto result = exp | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
         auto [s1, s2] = *result;
@@ -560,7 +560,7 @@ TEST_CASE("select - edge cases", "[select]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(1, 2.0, "three")
         };
-        auto result = opt | fxt::select<0, 1, 2>();
+        auto result = opt | fxt::mselect<0, 1, 2>();
 
         REQUIRE(result.has_value());
         auto [i, d, s] = *result;
@@ -577,7 +577,7 @@ TEST_CASE("select - large tuples", "[select]")
         auto exp = fxt::expected<std::tuple<int, int, int, int, int, int, int, int, int, int>, std::string>{
             std::make_tuple(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
         };
-        auto result = exp | fxt::select<0, 3, 6, 9>();
+        auto result = exp | fxt::mselect<0, 3, 6, 9>();
 
         REQUIRE(result.has_value());
         auto [a, d, g, j] = *result;
@@ -595,7 +595,7 @@ TEST_CASE("select - mixed element selection", "[select]")
         auto opt = fxt::optional<std::tuple<std::string, int, bool, double, char>>{
             std::make_tuple("hello", 42, true, 3.14, 'X')
         };
-        auto result = opt | fxt::select<4, 1, 0>();
+        auto result = opt | fxt::mselect<4, 1, 0>();
 
         REQUIRE(result.has_value());
         auto [c, i, s] = *result;

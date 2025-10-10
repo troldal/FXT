@@ -53,7 +53,7 @@ namespace fxt
     public:
         // Constructor for non-empty tuples
         template<size_t... Is>
-        flat_tuple(std::index_sequence<Is...>, Ts... args)
+        explicit flat_tuple(std::index_sequence<Is...>, Ts... args)
             : values{variant_t(std::in_place_index<Is>, indexed<Is, Ts>{std::move(args)})...} {}
 
         // Default constructor for empty tuples
@@ -62,7 +62,7 @@ namespace fxt
         // Constructor that forwards to the index_sequence version (only enabled for non-empty)
         template<typename... Args>
             requires (sizeof...(Args) > 0 && sizeof...(Args) == sizeof...(Ts))
-        flat_tuple(Args&&... args)
+        explicit flat_tuple(Args&&... args)
             : flat_tuple(std::index_sequence_for<Ts...>{}, std::forward<Args>(args)...) {}
 
         // template<class F>

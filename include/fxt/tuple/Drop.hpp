@@ -37,7 +37,7 @@ namespace fxt
      * @endcode
      */
     template<std::size_t X>
-    inline constexpr auto drop = []<typename Tuple>(Tuple&& tpl) {
+    inline constexpr auto mdrop = []<typename Tuple>(Tuple&& tpl) {
         constexpr std::size_t tupleSize = std::tuple_size_v<std::remove_reference_t<Tuple>>;
         static_assert(X <= tupleSize, "Cannot drop more elements than the tuple size");
 
@@ -75,7 +75,7 @@ namespace fxt
      * @endcode
      */
     template<std::size_t X>
-    inline constexpr auto drop_last = []<typename Tuple>(Tuple&& tpl) {
+    inline constexpr auto mdrop_last = []<typename Tuple>(Tuple&& tpl) {
         constexpr std::size_t tupleSize = std::tuple_size_v<std::remove_reference_t<Tuple>>;
         static_assert(X <= tupleSize, "Cannot drop more elements than the tuple size");
 

@@ -40,7 +40,7 @@ namespace fxt
      * @endcode
      */
     template<std::size_t X>
-    inline constexpr auto take = []<typename Tuple>(Tuple&& tpl) {
+    inline constexpr auto mtake = []<typename Tuple>(Tuple&& tpl) {
         constexpr std::size_t tupleSize = std::tuple_size_v<std::remove_reference_t<Tuple>>;
         static_assert(X <= tupleSize, "Cannot take more elements than the tuple size");
 
@@ -80,7 +80,7 @@ namespace fxt
      * @endcode
      */
     template<std::size_t X>
-    inline constexpr auto take_last = []<typename Tuple>(Tuple&& tpl) {
+    inline constexpr auto mtake_last = []<typename Tuple>(Tuple&& tpl) {
         constexpr std::size_t tupleSize = std::tuple_size_v<std::remove_reference_t<Tuple>>;
         static_assert(X <= tupleSize, "Cannot take more elements than the tuple size");
 

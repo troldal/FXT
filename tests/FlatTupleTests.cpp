@@ -1,5 +1,5 @@
 //
-// Test suite for fxt::flat_tuple and fxt::get
+// Test suite for fxt::flat_tuple and fxt::mget
 //
 
 #include "Catch2/catch_amalgamated.hpp"

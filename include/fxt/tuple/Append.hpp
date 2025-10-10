@@ -216,6 +216,6 @@ namespace fxt
      * // result: std::expected<std::tuple<int, std::string, double>, Error>
      * @endcode
      */
-    inline constexpr AppendWrapper append = {};
+    inline constexpr AppendWrapper mappend = {};
 
 }    // namespace fxt

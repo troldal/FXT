@@ -24,10 +24,10 @@ int main()
     auto exp1 = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
 
     // Append a string value to the tuple
-    auto exp2 = exp1 | fxt::append(std::string{"hello"});
+    auto exp2 = exp1 | fxt::mappend(std::string{"hello"});
 
     // Append a double value
-    auto exp3 = exp2 | fxt::append(3.14);
+    auto exp3 = exp2 | fxt::mappend(3.14);
 
     if (exp3) {
         auto [i, s, d] = *exp3;
@@ -39,9 +39,9 @@ int main()
     // Chain multiple appends in one expression
     std::cout << "\nChaining multiple appends:" << std::endl;
     auto chained = fxt::expected<std::tuple<int>, std::string>{std::tuple{100}}
-        | fxt::append(std::string{"world"})
-        | fxt::append(2.71)
-        | fxt::append(true);
+        | fxt::mappend(std::string{"world"})
+        | fxt::mappend(2.71)
+        | fxt::mappend(true);
 
     if (chained) {
         auto [i, s, d, b] = *chained;
@@ -56,8 +56,8 @@ int main()
     };
 
     auto result_with_error = error_exp
-        | fxt::append(std::string{"this won't be added"})
-        | fxt::append(999);
+        | fxt::mappend(std::string{"this won't be added"})
+        | fxt::mappend(999);
 
     if (result_with_error) {
         std::cout << "Unexpected success" << std::endl;
@@ -70,7 +70,7 @@ int main()
     auto exp_value = fxt::expected<std::string, std::string>{std::string{"from expected"}};
     auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{std::tuple{777}};
 
-    auto combined = exp_tuple | fxt::append(exp_value);
+    auto combined = exp_tuple | fxt::mappend(exp_value);
 
     if (combined) {
         auto [i, s] = *combined;
@@ -89,8 +89,8 @@ int main()
     auto opt1 = fxt::optional<std::tuple<int>>{std::tuple{42}};
 
     // Append values to build up the tuple
-    auto opt2 = opt1 | fxt::append(std::string{"hello"});
-    auto opt3 = opt2 | fxt::append(3.14);
+    auto opt2 = opt1 | fxt::mappend(std::string{"hello"});
+    auto opt3 = opt2 | fxt::mappend(3.14);
 
     if (opt3) {
         auto [i, s, d] = *opt3;
@@ -102,9 +102,9 @@ int main()
     // Chain multiple appends with optional
     std::cout << "\nChaining multiple appends:" << std::endl;
     auto chained_opt = fxt::optional<std::tuple<int>>{std::tuple{200}}
-        | fxt::append(std::string{"optional"})
-        | fxt::append(1.41)
-        | fxt::append(false);
+        | fxt::mappend(std::string{"optional"})
+        | fxt::mappend(1.41)
+        | fxt::mappend(false);
 
     if (chained_opt) {
         auto [i, s, d, b] = *chained_opt;
@@ -117,8 +117,8 @@ int main()
     auto empty_opt = fxt::optional<std::tuple<int>>{};
 
     auto result_with_empty = empty_opt
-        | fxt::append(std::string{"won't be added"})
-        | fxt::append(999);
+        | fxt::mappend(std::string{"won't be added"})
+        | fxt::mappend(999);
 
     if (result_with_empty) {
         std::cout << "Unexpected value" << std::endl;
@@ -131,7 +131,7 @@ int main()
     auto opt_value = fxt::optional<std::string>{std::string{"from optional"}};
     auto opt_tuple = fxt::optional<std::tuple<int>>{std::tuple{888}};
 
-    auto combined_opt = opt_tuple | fxt::append(opt_value);
+    auto combined_opt = opt_tuple | fxt::mappend(opt_value);
 
     if (combined_opt) {
         auto [i, s] = *combined_opt;
@@ -145,7 +145,7 @@ int main()
     auto empty_value = fxt::optional<std::string>{};
     auto tuple_opt = fxt::optional<std::tuple<int>>{std::tuple{999}};
 
-    auto result_empty = tuple_opt | fxt::append(empty_value);
+    auto result_empty = tuple_opt | fxt::mappend(empty_value);
 
     if (result_empty) {
         std::cout << "Unexpected value" << std::endl;
@@ -163,10 +163,10 @@ int main()
     auto flat_exp1 = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
 
     // Append a string value to the flat_tuple
-    auto flat_exp2 = flat_exp1 | fxt::append(std::string{"hello"});
+    auto flat_exp2 = flat_exp1 | fxt::mappend(std::string{"hello"});
 
     // Append a double value
-    auto flat_exp3 = flat_exp2 | fxt::append(3.14);
+    auto flat_exp3 = flat_exp2 | fxt::mappend(3.14);
 
     if (flat_exp3) {
         std::cout << "Success: (" << fxt::get<0>(*flat_exp3) << ", \""
@@ -178,9 +178,9 @@ int main()
     // Chain multiple appends with flat_tuple in one expression
     std::cout << "\nChaining multiple appends with flat_tuple:" << std::endl;
     auto chained_flat = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{100}}
-        | fxt::append(std::string{"flat"})
-        | fxt::append(2.71)
-        | fxt::append(true);
+        | fxt::mappend(std::string{"flat"})
+        | fxt::mappend(2.71)
+        | fxt::mappend(true);
 
     if (chained_flat) {
         std::cout << "Result: (" << fxt::get<0>(*chained_flat) << ", \""
@@ -193,8 +193,8 @@ int main()
     auto flat_opt1 = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{555}};
 
     // Append values to build up the flat_tuple
-    auto flat_opt2 = flat_opt1 | fxt::append(std::string{"flat_optional"});
-    auto flat_opt3 = flat_opt2 | fxt::append(1.618);
+    auto flat_opt2 = flat_opt1 | fxt::mappend(std::string{"flat_optional"});
+    auto flat_opt3 = flat_opt2 | fxt::mappend(1.618);
 
     if (flat_opt3) {
         std::cout << "Success: (" << fxt::get<0>(*flat_opt3) << ", \""
@@ -210,8 +210,8 @@ int main()
     };
 
     auto result_flat_error = error_flat_exp
-        | fxt::append(std::string{"won't be added"})
-        | fxt::append(999);
+        | fxt::mappend(std::string{"won't be added"})
+        | fxt::mappend(999);
 
     if (result_flat_error) {
         std::cout << "Unexpected success" << std::endl;
@@ -224,7 +224,7 @@ int main()
     auto flat_exp_value = fxt::expected<std::string, std::string>{std::string{"from expected"}};
     auto flat_exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{777}};
 
-    auto combined_flat = flat_exp_tuple | fxt::append(flat_exp_value);
+    auto combined_flat = flat_exp_tuple | fxt::mappend(flat_exp_value);
 
     if (combined_flat) {
         std::cout << "Combined: (" << fxt::get<0>(*combined_flat) << ", \""
@@ -236,10 +236,10 @@ int main()
     // Mixing std::tuple and flat_tuple behavior comparison
     std::cout << "\nComparison: std::tuple vs flat_tuple:" << std::endl;
     auto std_result = fxt::expected<std::tuple<int>, std::string>{std::tuple{10}}
-        | fxt::append(20) | fxt::append(30);
+        | fxt::mappend(20) | fxt::mappend(30);
 
     auto flat_result = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{10}}
-        | fxt::append(20) | fxt::append(30);
+        | fxt::mappend(20) | fxt::mappend(30);
 
     if (std_result && flat_result) {
         auto [a, b, c] = *std_result;

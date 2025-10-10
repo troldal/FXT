@@ -14,7 +14,7 @@ TEST_CASE("get - fxt::expected by index", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(42, 3.14, "hello")
         };
-        auto result = exp | fxt::get<0>();
+        auto result = exp | fxt::mget<0>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 42);
@@ -25,7 +25,7 @@ TEST_CASE("get - fxt::expected by index", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(42, 3.14, "hello")
         };
-        auto result = exp | fxt::get<1>();
+        auto result = exp | fxt::mget<1>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 3.14);
@@ -36,7 +36,7 @@ TEST_CASE("get - fxt::expected by index", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(42, 3.14, "hello")
         };
-        auto result = exp | fxt::get<2>();
+        auto result = exp | fxt::mget<2>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "hello");
@@ -45,13 +45,13 @@ TEST_CASE("get - fxt::expected by index", "[get]")
     SECTION("get from tuple built with append")
     {
         auto exp = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-            | fxt::append(100)
-            | fxt::append(200)
-            | fxt::append(300);
+            | fxt::mappend(100)
+            | fxt::mappend(200)
+            | fxt::mappend(300);
 
-        auto first = exp | fxt::get<0>();
-        auto second = exp | fxt::get<1>();
-        auto third = exp | fxt::get<2>();
+        auto first = exp | fxt::mget<0>();
+        auto second = exp | fxt::mget<1>();
+        auto third = exp | fxt::mget<2>();
 
         REQUIRE(first.has_value());
         REQUIRE(*first == 100);
@@ -67,11 +67,11 @@ TEST_CASE("get - fxt::expected by index", "[get]")
             std::make_tuple(1, 2, 3, 4, 5)
         };
 
-        REQUIRE(*( exp | fxt::get<0>()) == 1);
-        REQUIRE(*( exp | fxt::get<1>()) == 2);
-        REQUIRE(*( exp | fxt::get<2>()) == 3);
-        REQUIRE(*( exp | fxt::get<3>()) == 4);
-        REQUIRE(*( exp | fxt::get<4>()) == 5);
+        REQUIRE(*( exp | fxt::mget<0>()) == 1);
+        REQUIRE(*( exp | fxt::mget<1>()) == 2);
+        REQUIRE(*( exp | fxt::mget<2>()) == 3);
+        REQUIRE(*( exp | fxt::mget<3>()) == 4);
+        REQUIRE(*( exp | fxt::mget<4>()) == 5);
     }
 }
 
@@ -82,7 +82,7 @@ TEST_CASE("get - fxt::expected by type", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(99, 2.71, "world")
         };
-        auto result = exp | fxt::get<int>();
+        auto result = exp | fxt::mget<int>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 99);
@@ -93,7 +93,7 @@ TEST_CASE("get - fxt::expected by type", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(99, 2.71, "world")
         };
-        auto result = exp | fxt::get<double>();
+        auto result = exp | fxt::mget<double>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 2.71);
@@ -104,7 +104,7 @@ TEST_CASE("get - fxt::expected by type", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             std::make_tuple(99, 2.71, "world")
         };
-        auto result = exp | fxt::get<std::string>();
+        auto result = exp | fxt::mget<std::string>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "world");
@@ -117,8 +117,8 @@ TEST_CASE("get - fxt::expected by type", "[get]")
             std::make_tuple(Point{10, 20}, 42)
         };
 
-        auto point_result = exp | fxt::get<Point>();
-        auto int_result = exp | fxt::get<int>();
+        auto point_result = exp | fxt::mget<Point>();
+        auto int_result = exp | fxt::mget<int>();
 
         REQUIRE(point_result.has_value());
         REQUIRE(point_result->x == 10);
@@ -135,7 +135,7 @@ TEST_CASE("get - fxt::expected error propagation", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             fxt::unexpected("error occurred")
         };
-        auto result = exp | fxt::get<0>();
+        auto result = exp | fxt::mget<0>();
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error occurred");
@@ -146,7 +146,7 @@ TEST_CASE("get - fxt::expected error propagation", "[get]")
         auto exp = fxt::expected<std::tuple<int, double, std::string>, std::string>{
             fxt::unexpected("type error")
         };
-        auto result = exp | fxt::get<std::string>();
+        auto result = exp | fxt::mget<std::string>();
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "type error");
@@ -158,9 +158,9 @@ TEST_CASE("get - fxt::expected error propagation", "[get]")
             fxt::unexpected("initial error")
         };
 
-        auto r1 = exp | fxt::get<0>();
-        auto r2 = exp | fxt::get<1>();
-        auto r3 = exp | fxt::get<2>();
+        auto r1 = exp | fxt::mget<0>();
+        auto r2 = exp | fxt::mget<1>();
+        auto r3 = exp | fxt::mget<2>();
 
         REQUIRE_FALSE(r1.has_value());
         REQUIRE_FALSE(r2.has_value());
@@ -176,7 +176,7 @@ TEST_CASE("get - fxt::optional by index", "[get]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(77, 1.41, "optional")
         };
-        auto result = opt | fxt::get<0>();
+        auto result = opt | fxt::mget<0>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 77);
@@ -187,7 +187,7 @@ TEST_CASE("get - fxt::optional by index", "[get]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(77, 1.41, "optional")
         };
-        auto result = opt | fxt::get<1>();
+        auto result = opt | fxt::mget<1>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 1.41);
@@ -198,7 +198,7 @@ TEST_CASE("get - fxt::optional by index", "[get]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(77, 1.41, "optional")
         };
-        auto result = opt | fxt::get<2>();
+        auto result = opt | fxt::mget<2>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "optional");
@@ -207,13 +207,13 @@ TEST_CASE("get - fxt::optional by index", "[get]")
     SECTION("get from tuple built with append")
     {
         auto opt = fxt::optional<std::tuple<>>{std::tuple{}}
-            | fxt::append(10)
-            | fxt::append(20)
-            | fxt::append(30);
+            | fxt::mappend(10)
+            | fxt::mappend(20)
+            | fxt::mappend(30);
 
-        auto first = opt | fxt::get<0>();
-        auto second = opt | fxt::get<1>();
-        auto third = opt | fxt::get<2>();
+        auto first = opt | fxt::mget<0>();
+        auto second = opt | fxt::mget<1>();
+        auto third = opt | fxt::mget<2>();
 
         REQUIRE(first.has_value());
         REQUIRE(*first == 10);
@@ -229,11 +229,11 @@ TEST_CASE("get - fxt::optional by index", "[get]")
             std::make_tuple(5, 4, 3, 2, 1)
         };
 
-        REQUIRE(*( opt | fxt::get<0>()) == 5);
-        REQUIRE(*( opt | fxt::get<1>()) == 4);
-        REQUIRE(*( opt | fxt::get<2>()) == 3);
-        REQUIRE(*( opt | fxt::get<3>()) == 2);
-        REQUIRE(*( opt | fxt::get<4>()) == 1);
+        REQUIRE(*( opt | fxt::mget<0>()) == 5);
+        REQUIRE(*( opt | fxt::mget<1>()) == 4);
+        REQUIRE(*( opt | fxt::mget<2>()) == 3);
+        REQUIRE(*( opt | fxt::mget<3>()) == 2);
+        REQUIRE(*( opt | fxt::mget<4>()) == 1);
     }
 }
 
@@ -244,7 +244,7 @@ TEST_CASE("get - fxt::optional by type", "[get]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(55, 6.28, "type")
         };
-        auto result = opt | fxt::get<int>();
+        auto result = opt | fxt::mget<int>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 55);
@@ -255,7 +255,7 @@ TEST_CASE("get - fxt::optional by type", "[get]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(55, 6.28, "type")
         };
-        auto result = opt | fxt::get<double>();
+        auto result = opt | fxt::mget<double>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 6.28);
@@ -266,7 +266,7 @@ TEST_CASE("get - fxt::optional by type", "[get]")
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{
             std::make_tuple(55, 6.28, "type")
         };
-        auto result = opt | fxt::get<std::string>();
+        auto result = opt | fxt::mget<std::string>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "type");
@@ -278,9 +278,9 @@ TEST_CASE("get - fxt::optional by type", "[get]")
             std::make_tuple(true, 42, "test")
         };
 
-        auto bool_result = opt | fxt::get<bool>();
-        auto int_result = opt | fxt::get<int>();
-        auto str_result = opt | fxt::get<std::string>();
+        auto bool_result = opt | fxt::mget<bool>();
+        auto int_result = opt | fxt::mget<int>();
+        auto str_result = opt | fxt::mget<std::string>();
 
         REQUIRE(bool_result.has_value());
         REQUIRE(*bool_result == true);
@@ -296,7 +296,7 @@ TEST_CASE("get - fxt::optional empty propagation", "[get]")
     SECTION("empty propagates through get by index")
     {
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{};
-        auto result = opt | fxt::get<0>();
+        auto result = opt | fxt::mget<0>();
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -304,7 +304,7 @@ TEST_CASE("get - fxt::optional empty propagation", "[get]")
     SECTION("empty propagates through get by type")
     {
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{};
-        auto result = opt | fxt::get<std::string>();
+        auto result = opt | fxt::mget<std::string>();
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -313,9 +313,9 @@ TEST_CASE("get - fxt::optional empty propagation", "[get]")
     {
         auto opt = fxt::optional<std::tuple<int, double, std::string>>{};
 
-        auto r1 = opt | fxt::get<0>();
-        auto r2 = opt | fxt::get<1>();
-        auto r3 = opt | fxt::get<2>();
+        auto r1 = opt | fxt::mget<0>();
+        auto r2 = opt | fxt::mget<1>();
+        auto r3 = opt | fxt::mget<2>();
 
         REQUIRE_FALSE(r1.has_value());
         REQUIRE_FALSE(r2.has_value());
@@ -331,7 +331,7 @@ TEST_CASE("get - direct call syntax", "[get]")
             std::make_tuple(123, 4.56)
         };
 
-        auto result = fxt::get<0>()(exp);
+        auto result = fxt::mget<0>()(exp);
         REQUIRE(result.has_value());
         REQUIRE(*result == 123);
     }
@@ -342,7 +342,7 @@ TEST_CASE("get - direct call syntax", "[get]")
             std::make_tuple(123, 4.56)
         };
 
-        auto result = fxt::get<double>()(exp);
+        auto result = fxt::mget<double>()(exp);
         REQUIRE(result.has_value());
         REQUIRE(*result == 4.56);
     }
@@ -353,7 +353,7 @@ TEST_CASE("get - direct call syntax", "[get]")
             std::make_tuple(789, 1.23)
         };
 
-        auto result = fxt::get<0>()(opt);
+        auto result = fxt::mget<0>()(opt);
         REQUIRE(result.has_value());
         REQUIRE(*result == 789);
     }
@@ -364,7 +364,7 @@ TEST_CASE("get - direct call syntax", "[get]")
             std::make_tuple(789, 1.23)
         };
 
-        auto result = fxt::get<double>()(opt);
+        auto result = fxt::mget<double>()(opt);
         REQUIRE(result.has_value());
         REQUIRE(*result == 1.23);
     }
@@ -379,7 +379,7 @@ TEST_CASE("get - chaining with other operations", "[get]")
         };
 
         auto result = exp
-            | fxt::get<0>()
+            | fxt::mget<0>()
             | fxt::transform([](int x) { return x * 2; });
 
         REQUIRE(result.has_value());
@@ -393,7 +393,7 @@ TEST_CASE("get - chaining with other operations", "[get]")
         };
 
         auto result = opt
-            | fxt::get<0>()
+            | fxt::mget<0>()
             | fxt::transform([](int x) { return x + 5; });
 
         REQUIRE(result.has_value());
@@ -406,9 +406,9 @@ TEST_CASE("get - chaining with other operations", "[get]")
             std::make_tuple(1, 2, 3)
         };
 
-        auto a = exp | fxt::get<0>();
-        auto b = exp | fxt::get<1>();
-        auto c = exp | fxt::get<2>();
+        auto a = exp | fxt::mget<0>();
+        auto b = exp | fxt::mget<1>();
+        auto c = exp | fxt::mget<2>();
 
         REQUIRE(*a == 1);
         REQUIRE(*b == 2);
@@ -421,7 +421,7 @@ TEST_CASE("get - single element tuple", "[get]")
     SECTION("get from single element tuple (expected)")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::make_tuple(42)};
-        auto result = exp | fxt::get<0>();
+        auto result = exp | fxt::mget<0>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 42);
@@ -430,7 +430,7 @@ TEST_CASE("get - single element tuple", "[get]")
     SECTION("get from single element tuple (optional)")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::make_tuple(99)};
-        auto result = opt | fxt::get<0>();
+        auto result = opt | fxt::mget<0>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 99);
@@ -439,7 +439,7 @@ TEST_CASE("get - single element tuple", "[get]")
     SECTION("get by type from single element tuple")
     {
         auto exp = fxt::expected<std::tuple<std::string>, int>{std::make_tuple("solo")};
-        auto result = exp | fxt::get<std::string>();
+        auto result = exp | fxt::mget<std::string>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "solo");
@@ -454,7 +454,7 @@ TEST_CASE("get - const correctness", "[get]")
             std::make_tuple(100, 2.0)
         };
 
-        auto result = exp | fxt::get<0>();
+        auto result = exp | fxt::mget<0>();
         REQUIRE(result.has_value());
         REQUIRE(*result == 100);
     }
@@ -465,7 +465,7 @@ TEST_CASE("get - const correctness", "[get]")
             std::make_tuple(200, 3.0)
         };
 
-        auto result = opt | fxt::get<0>();
+        auto result = opt | fxt::mget<0>();
         REQUIRE(result.has_value());
         REQUIRE(*result == 200);
     }
@@ -477,7 +477,7 @@ TEST_CASE("get - const correctness", "[get]")
             std::make_tuple(s, 42)
         };
 
-        auto result = opt | fxt::get<std::string>();
+        auto result = opt | fxt::mget<std::string>();
         REQUIRE(result.has_value());
         REQUIRE(*result == "const");
     }
@@ -491,7 +491,7 @@ TEST_CASE("get - type deduction", "[get]")
             std::make_tuple(1, 2.0, "three")
         };
 
-        auto result = exp | fxt::get<0>();
+        auto result = exp | fxt::mget<0>();
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::expected<int, std::string>>);
     }
@@ -502,7 +502,7 @@ TEST_CASE("get - type deduction", "[get]")
             std::make_tuple(1, 2.0, "three")
         };
 
-        auto result = opt | fxt::get<0>();
+        auto result = opt | fxt::mget<0>();
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::optional<int>>);
     }
@@ -513,7 +513,7 @@ TEST_CASE("get - type deduction", "[get]")
             std::make_tuple(42, "text")
         };
 
-        auto result = exp | fxt::get<std::string>();
+        auto result = exp | fxt::mget<std::string>();
         static_assert(std::is_same_v<decltype(result), fxt::expected<std::string, int>>);
     }
 }
@@ -524,8 +524,8 @@ TEST_CASE("get - edge cases", "[get]")
     {
         auto opt = fxt::optional<std::tuple<int, double>>{std::make_tuple(0, 0.0)};
 
-        auto int_result = opt | fxt::get<0>();
-        auto double_result = opt | fxt::get<1>();
+        auto int_result = opt | fxt::mget<0>();
+        auto double_result = opt | fxt::mget<1>();
 
         REQUIRE(int_result.has_value());
         REQUIRE(*int_result == 0);
@@ -536,7 +536,7 @@ TEST_CASE("get - edge cases", "[get]")
     SECTION("get with false value")
     {
         auto opt = fxt::optional<std::tuple<bool, int>>{std::make_tuple(false, 1)};
-        auto result = opt | fxt::get<0>();
+        auto result = opt | fxt::mget<0>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == false);
@@ -547,7 +547,7 @@ TEST_CASE("get - edge cases", "[get]")
         auto exp = fxt::expected<std::tuple<std::string, int>, int>{
             std::make_tuple("", 42)
         };
-        auto result = exp | fxt::get<std::string>();
+        auto result = exp | fxt::mget<std::string>();
 
         REQUIRE(result.has_value());
         REQUIRE(*result == "");
@@ -560,9 +560,9 @@ TEST_CASE("get - edge cases", "[get]")
         };
 
         // Can only get by index, not by type (ambiguous)
-        REQUIRE(*( opt | fxt::get<0>()) == 1);
-        REQUIRE(*( opt | fxt::get<1>()) == 2);
-        REQUIRE(*( opt | fxt::get<2>()) == 3);
+        REQUIRE(*( opt | fxt::mget<0>()) == 1);
+        REQUIRE(*( opt | fxt::mget<1>()) == 2);
+        REQUIRE(*( opt | fxt::mget<2>()) == 3);
     }
 }
 
@@ -574,15 +574,15 @@ TEST_CASE("get - mixed types", "[get]")
             std::make_tuple("test", 42, true, 9.99)
         };
 
-        REQUIRE(*( opt | fxt::get<0>()) == "test");
-        REQUIRE(*( opt | fxt::get<1>()) == 42);
-        REQUIRE(*( opt | fxt::get<2>()) == true);
-        REQUIRE(*( opt | fxt::get<3>()) == 9.99);
+        REQUIRE(*( opt | fxt::mget<0>()) == "test");
+        REQUIRE(*( opt | fxt::mget<1>()) == 42);
+        REQUIRE(*( opt | fxt::mget<2>()) == true);
+        REQUIRE(*( opt | fxt::mget<3>()) == 9.99);
 
-        REQUIRE(*( opt | fxt::get<std::string>()) == "test");
-        REQUIRE(*( opt | fxt::get<int>()) == 42);
-        REQUIRE(*( opt | fxt::get<bool>()) == true);
-        REQUIRE(*( opt | fxt::get<double>()) == 9.99);
+        REQUIRE(*( opt | fxt::mget<std::string>()) == "test");
+        REQUIRE(*( opt | fxt::mget<int>()) == 42);
+        REQUIRE(*( opt | fxt::mget<bool>()) == true);
+        REQUIRE(*( opt | fxt::mget<double>()) == 9.99);
     }
 }
 
@@ -598,8 +598,8 @@ TEST_CASE("get - large tuples", "[get]")
             // We can't template this in a loop, but we can test a few
         }
 
-        REQUIRE(*( exp | fxt::get<0>()) == 0);
-        REQUIRE(*( exp | fxt::get<5>()) == 5);
-        REQUIRE(*( exp | fxt::get<9>()) == 9);
+        REQUIRE(*( exp | fxt::mget<0>()) == 0);
+        REQUIRE(*( exp | fxt::mget<5>()) == 5);
+        REQUIRE(*( exp | fxt::mget<9>()) == 9);
     }
 }

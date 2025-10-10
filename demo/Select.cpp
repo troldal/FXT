@@ -28,14 +28,14 @@ int main()
     std::cout << "Original tuple: (42, 3.14, \"hello\", true, 'A')" << std::endl;
 
     // Select elements at indices 0 and 2
-    auto result1 = exp1 | fxt::select<0, 2>();
+    auto result1 = exp1 | fxt::mselect<0, 2>();
     if (result1) {
         auto [i, s] = *result1;
         std::cout << "Selected indices 0, 2: (" << i << ", \"" << s << "\")" << std::endl;
     }
 
     // Select elements at indices 1, 3, and 4
-    auto result2 = exp1 | fxt::select<1, 3, 4>();
+    auto result2 = exp1 | fxt::mselect<1, 3, 4>();
     if (result2) {
         auto [d, b, c] = *result2;
         std::cout << "Selected indices 1, 3, 4: (" << d << ", " << std::boolalpha << b << ", '" << c << "')" << std::endl;
@@ -43,7 +43,7 @@ int main()
 
     // Select all elements in different order
     std::cout << "\nReordering elements:" << std::endl;
-    auto reordered = exp1 | fxt::select<4, 2, 0>();
+    auto reordered = exp1 | fxt::mselect<4, 2, 0>();
     if (reordered) {
         auto [c, s, i] = *reordered;
         std::cout << "Selected indices 4, 2, 0: ('" << c << "', \"" << s << "\", " << i << ")" << std::endl;
@@ -62,14 +62,14 @@ int main()
     std::cout << "Original tuple: (99, 2.71, \"world\", false)" << std::endl;
 
     // Select elements by type
-    auto type_result1 = exp2 | fxt::select<int, std::string>();
+    auto type_result1 = exp2 | fxt::mselect<int, std::string>();
     if (type_result1) {
         auto [i, s] = *type_result1;
         std::cout << "Selected int, string: (" << i << ", \"" << s << "\")" << std::endl;
     }
 
     // Select different types
-    auto type_result2 = exp2 | fxt::select<double, bool>();
+    auto type_result2 = exp2 | fxt::mselect<double, bool>();
     if (type_result2) {
         auto [d, b] = *type_result2;
         std::cout << "Selected double, bool: (" << d << ", " << std::boolalpha << b << ")" << std::endl;
@@ -85,7 +85,7 @@ int main()
         fxt::unexpected("Error occurred")
     };
 
-    auto error_result = exp_error | fxt::select<0, 2>();
+    auto error_result = exp_error | fxt::mselect<0, 2>();
 
     if (error_result) {
         std::cout << "Unexpected success" << std::endl;
@@ -107,14 +107,14 @@ int main()
     std::cout << "Original tuple: (77, 1.41, \"optional\", true, 'Z')" << std::endl;
 
     // Select elements at indices 0 and 2
-    auto opt_result1 = opt1 | fxt::select<0, 2>();
+    auto opt_result1 = opt1 | fxt::mselect<0, 2>();
     if (opt_result1) {
         auto [i, s] = *opt_result1;
         std::cout << "Selected indices 0, 2: (" << i << ", \"" << s << "\")" << std::endl;
     }
 
     // Select elements at indices 1, 3, and 4
-    auto opt_result2 = opt1 | fxt::select<1, 3, 4>();
+    auto opt_result2 = opt1 | fxt::mselect<1, 3, 4>();
     if (opt_result2) {
         auto [d, b, c] = *opt_result2;
         std::cout << "Selected indices 1, 3, 4: (" << d << ", " << std::boolalpha << b << ", '" << c << "')" << std::endl;
@@ -122,7 +122,7 @@ int main()
 
     // Select in reverse order
     std::cout << "\nReversing elements:" << std::endl;
-    auto reversed = opt1 | fxt::select<4, 3, 2, 1, 0>();
+    auto reversed = opt1 | fxt::mselect<4, 3, 2, 1, 0>();
     if (reversed) {
         auto [c, b, s, d, i] = *reversed;
         std::cout << "Selected indices 4, 3, 2, 1, 0: ('" << c << "', " << std::boolalpha << b
@@ -142,14 +142,14 @@ int main()
     std::cout << "Original tuple: (55, 6.28, \"type\", true)" << std::endl;
 
     // Select elements by type
-    auto opt_type_result1 = opt2 | fxt::select<int, std::string>();
+    auto opt_type_result1 = opt2 | fxt::mselect<int, std::string>();
     if (opt_type_result1) {
         auto [i, s] = *opt_type_result1;
         std::cout << "Selected int, string: (" << i << ", \"" << s << "\")" << std::endl;
     }
 
     // Select all types
-    auto opt_type_result2 = opt2 | fxt::select<double, bool, int>();
+    auto opt_type_result2 = opt2 | fxt::mselect<double, bool, int>();
     if (opt_type_result2) {
         auto [d, b, i] = *opt_type_result2;
         std::cout << "Selected double, bool, int: (" << d << ", " << std::boolalpha << b << ", " << i << ")" << std::endl;
@@ -163,7 +163,7 @@ int main()
 
     auto opt_empty = fxt::optional<std::tuple<int, double, std::string>>{};
 
-    auto empty_result = opt_empty | fxt::select<0, 2>();
+    auto empty_result = opt_empty | fxt::mselect<0, 2>();
 
     if (empty_result) {
         std::cout << "Unexpected value" << std::endl;
@@ -178,16 +178,16 @@ int main()
     std::cout << "---------------------------------------------------------" << std::endl;
 
     auto built = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(100)
-        | fxt::append(200)
-        | fxt::append(300)
-        | fxt::append(400)
-        | fxt::append(500);
+        | fxt::mappend(100)
+        | fxt::mappend(200)
+        | fxt::mappend(300)
+        | fxt::mappend(400)
+        | fxt::mappend(500);
 
     std::cout << "Built tuple: (100, 200, 300, 400, 500)" << std::endl;
 
     // Select subset
-    auto subset = built | fxt::select<0, 2, 4>();
+    auto subset = built | fxt::mselect<0, 2, 4>();
     if (subset) {
         auto [a, c, e] = *subset;
         std::cout << "Selected indices 0, 2, 4: (" << a << ", " << c << ", " << e << ")" << std::endl;
@@ -200,16 +200,16 @@ int main()
     std::cout << "-----------------------------------" << std::endl;
 
     auto computed = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::append(5)
-        | fxt::append(10)
-        | fxt::append(15)
-        | fxt::apply([](int a, int b, int c) { return a + b + c; })
-        | fxt::apply([](int a, int b, int c, int sum) { return a * b * c; });
+        | fxt::mappend(5)
+        | fxt::mappend(10)
+        | fxt::mappend(15)
+        | fxt::mapply([](int a, int b, int c) { return a + b + c; })
+        | fxt::mapply([](int a, int b, int c, int sum) { return a * b * c; });
 
     std::cout << "Computed tuple: (5, 10, 15, 30, 750)" << std::endl;
 
     // Select specific computed values
-    auto selected_computed = computed | fxt::select<0, 3, 4>();
+    auto selected_computed = computed | fxt::mselect<0, 3, 4>();
     if (selected_computed) {
         auto [first, sum, product] = *selected_computed;
         std::cout << "Selected first, sum, product: (" << first << ", " << sum << ", " << product << ")" << std::endl;
@@ -228,14 +228,14 @@ int main()
     std::cout << "Original tuple: (1, 2, 3, 4, 5)" << std::endl;
 
     // First selection
-    auto first_select = original | fxt::select<1, 2, 3>();
+    auto first_select = original | fxt::mselect<1, 2, 3>();
     if (first_select) {
         auto [a, b, c] = *first_select;
         std::cout << "After first select<1, 2, 3>: (" << a << ", " << b << ", " << c << ")" << std::endl;
     }
 
     // Second selection from the result
-    auto second_select = first_select | fxt::select<0, 2>();
+    auto second_select = first_select | fxt::mselect<0, 2>();
     if (second_select) {
         auto [x, z] = *second_select;
         std::cout << "After second select<0, 2>: (" << x << ", " << z << ")" << std::endl;
@@ -252,7 +252,7 @@ int main()
     };
 
     // Using direct call syntax
-    auto direct_result = fxt::select<0, 2>()(exp3);
+    auto direct_result = fxt::mselect<0, 2>()(exp3);
     if (direct_result) {
         auto [i, s] = *direct_result;
         std::cout << "Direct call select<0, 2>: (" << i << ", \"" << s << "\")" << std::endl;
@@ -269,7 +269,7 @@ int main()
     };
 
     // Select just one element (returns tuple with one element)
-    auto single = tuple5 | fxt::select<1>();
+    auto single = tuple5 | fxt::mselect<1>();
     if (single) {
         auto [d] = *single;
         std::cout << "Selected single element at index 1: (" << d << ")" << std::endl;
@@ -291,21 +291,21 @@ int main()
     std::cout << "  [host, port, endpoint, ssl_enabled, timeout]" << std::endl;
 
     // Extract network settings (host, port)
-    auto network_settings = config | fxt::select<0, 1>();
+    auto network_settings = config | fxt::mselect<0, 1>();
     if (network_settings) {
         auto [host, port] = *network_settings;
         std::cout << "\nNetwork settings: " << host << ":" << port << std::endl;
     }
 
     // Extract API settings (endpoint, ssl_enabled)
-    auto api_settings = config | fxt::select<2, 3>();
+    auto api_settings = config | fxt::mselect<2, 3>();
     if (api_settings) {
         auto [endpoint, ssl] = *api_settings;
         std::cout << "API settings: " << endpoint << " (SSL: " << std::boolalpha << ssl << ")" << std::endl;
     }
 
     // Extract timeout setting
-    auto timeout_setting = config | fxt::select<4>();
+    auto timeout_setting = config | fxt::mselect<4>();
     if (timeout_setting) {
         auto [timeout] = *timeout_setting;
         std::cout << "Timeout: " << timeout << " seconds" << std::endl;
@@ -324,7 +324,7 @@ int main()
     std::cout << "Original tuple: (10, 20, 30)" << std::endl;
 
     // Select same element multiple times
-    auto duplicates = tuple6 | fxt::select<0, 0, 1, 0>();
+    auto duplicates = tuple6 | fxt::mselect<0, 0, 1, 0>();
     if (duplicates) {
         auto [a, b, c, d] = *duplicates;
         std::cout << "Selected indices 0, 0, 1, 0: (" << a << ", " << b << ", " << c << ", " << d << ")" << std::endl;

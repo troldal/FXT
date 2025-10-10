@@ -5,6 +5,7 @@
 #pragma once
 
 #include <tuple>
+#include <fxt/tuple/FlatTuple.hpp>
 
 namespace fxt
 {
@@ -14,16 +15,16 @@ namespace fxt
 
     // Forward declaration of get
     template<size_t I, class... Ts>
-    auto& get(flat_tuple<Ts...>& tuple);
+    auto& mget(flat_tuple<Ts...>& tuple);
 
     template<size_t I, class... Ts>
-    const auto& get(const flat_tuple<Ts...>& tuple);
+    const auto& mget(const flat_tuple<Ts...>& tuple);
 
     template<size_t I, class... Ts>
-    auto&& get(flat_tuple<Ts...>&& tuple);
+    auto&& mget(flat_tuple<Ts...>&& tuple);
 
     template<size_t I, class... Ts>
-    const auto&& get(const flat_tuple<Ts...>&& tuple);
+    const auto&& mget(const flat_tuple<Ts...>&& tuple);
 }
 
 namespace fxt::impl
