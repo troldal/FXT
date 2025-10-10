@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../../monad/Expected.hpp"
+#include "../monad/Expected.hpp"
 #include <concepts>
 #include <type_traits>
 

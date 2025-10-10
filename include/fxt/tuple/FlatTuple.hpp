@@ -7,6 +7,7 @@
 #include <array>
 #include <utility>
 #include <variant>
+#include <concepts>
 
 namespace fxt
 {
@@ -107,6 +108,64 @@ namespace fxt
     template<size_t I, class... Ts>
     const auto&& get(const flat_tuple<Ts...>&& tuple) {
         return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
+    }
+
+    /**
+     * @brief Pipe operator for fxt::flat_tuple with callable (lvalue reference)
+     *
+     * Allows piping a flat_tuple to a callable function, enabling functional-style composition.
+     * The callable receives the flat_tuple and returns the result.
+     *
+     * @tparam Ts Types in the flat_tuple
+     * @tparam Callable Type of the callable
+     * @param tuple The flat_tuple to pipe
+     * @param callable The callable to apply to the flat_tuple
+     * @return The result of invoking the callable with the flat_tuple
+     *
+     * @code
+     * fxt::flat_tuple<int, double> t{42, 3.14};
+     * auto result = t | fxt::get<0>;  // Returns 42
+     * @endcode
+     */
+    template<typename... Ts, typename Callable>
+    requires requires(flat_tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
+    constexpr auto operator|(flat_tuple<Ts...>& tuple, Callable&& callable)
+        -> decltype(std::invoke(std::forward<Callable>(callable), tuple))
+    {
+        return std::invoke(std::forward<Callable>(callable), tuple);
+    }
+
+    /**
+     * @brief Pipe operator for fxt::flat_tuple with callable (const lvalue reference)
+     */
+    template<typename... Ts, typename Callable>
+    requires requires(const flat_tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
+    constexpr auto operator|(const flat_tuple<Ts...>& tuple, Callable&& callable)
+        -> decltype(std::invoke(std::forward<Callable>(callable), tuple))
+    {
+        return std::invoke(std::forward<Callable>(callable), tuple);
+    }
+
+    /**
+     * @brief Pipe operator for fxt::flat_tuple with callable (rvalue reference)
+     */
+    template<typename... Ts, typename Callable>
+    requires requires(flat_tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
+    constexpr auto operator|(flat_tuple<Ts...>&& tuple, Callable&& callable)
+        -> decltype(std::invoke(std::forward<Callable>(callable), std::move(tuple)))
+    {
+        return std::invoke(std::forward<Callable>(callable), std::move(tuple));
+    }
+
+    /**
+     * @brief Pipe operator for fxt::flat_tuple with callable (const rvalue reference)
+     */
+    template<typename... Ts, typename Callable>
+    requires requires(const flat_tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
+    constexpr auto operator|(const flat_tuple<Ts...>&& tuple, Callable&& callable)
+        -> decltype(std::invoke(std::forward<Callable>(callable), std::move(tuple)))
+    {
+        return std::invoke(std::forward<Callable>(callable), std::move(tuple));
     }
 
 }
