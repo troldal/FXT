@@ -330,6 +330,382 @@ int main()
         std::cout << "Selected indices 0, 0, 1, 0: (" << a << ", " << b << ", " << c << ", " << d << ")" << std::endl;
     }
 
+    // =========================================================================
+    // Part 14: Using mselect with fxt::flat_tuple
+    // =========================================================================
+    std::cout << "\n\nPart 14: Using mselect with fxt::flat_tuple" << std::endl;
+    std::cout << "-------------------------------------------" << std::endl;
+
+    // Create a flat_tuple
+    auto ft1 = fxt::make_flat_tuple(100, 200, 300, 400, 500);
+    std::cout << "Original flat_tuple: (100, 200, 300, 400, 500)" << std::endl;
+
+    // Use mselect with pipe operator on flat_tuple
+    auto ft1_result = ft1 | fxt::mselect<0, 2, 4>();
+    std::cout << "After mselect<0, 2, 4>: ("
+              << fxt::get<0>(ft1_result) << ", "
+              << fxt::get<1>(ft1_result) << ", "
+              << fxt::get<2>(ft1_result) << ")" << std::endl;
+
+    // Select different indices
+    auto ft1_result2 = ft1 | fxt::mselect<1, 3>();
+    std::cout << "After mselect<1, 3>: ("
+              << fxt::get<0>(ft1_result2) << ", "
+              << fxt::get<1>(ft1_result2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 15: Using mselect with fxt::flat_tuple (mixed types)
+    // =========================================================================
+    std::cout << "\n\nPart 15: Using mselect with fxt::flat_tuple (mixed types)" << std::endl;
+    std::cout << "---------------------------------------------------------" << std::endl;
+
+    auto ft2 = fxt::make_flat_tuple(42, 3.14, std::string("hello"), 'X', true);
+    std::cout << "Original flat_tuple: (42, 3.14, \"hello\", 'X', true)" << std::endl;
+
+    // Select mixed types
+    auto ft2_result = ft2 | fxt::mselect<0, 2, 4>();
+    std::cout << "After mselect<0, 2, 4>: ("
+              << fxt::get<0>(ft2_result) << ", \""
+              << fxt::get<1>(ft2_result) << "\", "
+              << std::boolalpha << fxt::get<2>(ft2_result) << ")" << std::endl;
+
+    // Reorder elements
+    auto ft2_reordered = ft2 | fxt::mselect<4, 3, 2, 1, 0>();
+    std::cout << "Reordered (4,3,2,1,0): ("
+              << std::boolalpha << fxt::get<0>(ft2_reordered) << ", '"
+              << fxt::get<1>(ft2_reordered) << "', \""
+              << fxt::get<2>(ft2_reordered) << "\", "
+              << fxt::get<3>(ft2_reordered) << ", "
+              << fxt::get<4>(ft2_reordered) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 16: Using fxt::select on fxt::tuple (direct call)
+    // =========================================================================
+    std::cout << "\n\nPart 16: Using fxt::select on fxt::tuple (direct call)" << std::endl;
+    std::cout << "-------------------------------------------------------" << std::endl;
+
+    auto t1 = fxt::make_tuple(10, 20, 30, 40, 50);
+    std::cout << "Original fxt::tuple: (10, 20, 30, 40, 50)" << std::endl;
+
+    // Direct call syntax
+    auto t1_result = fxt::select<0, 2, 4>(t1);
+    std::cout << "fxt::select<0, 2, 4>(t1): ("
+              << std::get<0>(t1_result) << ", "
+              << std::get<1>(t1_result) << ", "
+              << std::get<2>(t1_result) << ")" << std::endl;
+
+    // Select different elements
+    auto t1_result2 = fxt::select<1, 3>(t1);
+    std::cout << "fxt::select<1, 3>(t1): ("
+              << std::get<0>(t1_result2) << ", "
+              << std::get<1>(t1_result2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 17: Using fxt::select on fxt::tuple (pipe operator)
+    // =========================================================================
+    std::cout << "\n\nPart 17: Using fxt::select on fxt::tuple (pipe operator)" << std::endl;
+    std::cout << "--------------------------------------------------------" << std::endl;
+
+    auto t2 = fxt::make_tuple(100, 200, 300, 400, 500, 600);
+    std::cout << "Original fxt::tuple: (100, 200, 300, 400, 500, 600)" << std::endl;
+
+    // Using pipe operator
+    auto t2_result = t2 | fxt::select<0, 2, 5>();
+    std::cout << "t2 | fxt::select<0, 2, 5>(): ("
+              << std::get<0>(t2_result) << ", "
+              << std::get<1>(t2_result) << ", "
+              << std::get<2>(t2_result) << ")" << std::endl;
+
+    // Select single element
+    auto t2_single = t2 | fxt::select<3>();
+    std::cout << "t2 | fxt::select<3>(): ("
+              << std::get<0>(t2_single) << ")" << std::endl;
+
+    // Select all elements in reverse
+    auto t2_reversed = t2 | fxt::select<5, 4, 3, 2, 1, 0>();
+    std::cout << "t2 | fxt::select<5, 4, 3, 2, 1, 0>(): ("
+              << std::get<0>(t2_reversed) << ", "
+              << std::get<1>(t2_reversed) << ", "
+              << std::get<2>(t2_reversed) << ", "
+              << std::get<3>(t2_reversed) << ", "
+              << std::get<4>(t2_reversed) << ", "
+              << std::get<5>(t2_reversed) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 18: Using fxt::select on fxt::tuple with mixed types
+    // =========================================================================
+    std::cout << "\n\nPart 18: Using fxt::select on fxt::tuple with mixed types" << std::endl;
+    std::cout << "---------------------------------------------------------" << std::endl;
+
+    auto t3 = fxt::make_tuple(99, 7.77, std::string("world"), 'Z', false);
+    std::cout << "Original fxt::tuple: (99, 7.77, \"world\", 'Z', false)" << std::endl;
+
+    // Direct call with mixed types
+    auto t3_result1 = fxt::select<0, 2>(t3);
+    std::cout << "fxt::select<0, 2>(t3): ("
+              << std::get<0>(t3_result1) << ", \""
+              << std::get<1>(t3_result1) << "\")" << std::endl;
+
+    // Pipe operator with mixed types
+    auto t3_result2 = t3 | fxt::select<1, 3, 4>();
+    std::cout << "t3 | fxt::select<1, 3, 4>(): ("
+              << std::get<0>(t3_result2) << ", '"
+              << std::get<1>(t3_result2) << "', "
+              << std::boolalpha << std::get<2>(t3_result2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 19: Using fxt::select by type on fxt::tuple (direct call)
+    // =========================================================================
+    std::cout << "\n\nPart 19: Using fxt::select by type on fxt::tuple (direct call)" << std::endl;
+    std::cout << "---------------------------------------------------------------" << std::endl;
+
+    auto t4 = fxt::make_tuple(42, 3.14, std::string("type"), 'A');
+    std::cout << "Original fxt::tuple: (42, 3.14, \"type\", 'A')" << std::endl;
+
+    // Select by type - direct call
+    auto t4_result1 = fxt::select<int, char>(t4);
+    std::cout << "fxt::select<int, char>(t4): ("
+              << std::get<0>(t4_result1) << ", '"
+              << std::get<1>(t4_result1) << "')" << std::endl;
+
+    // Select different types
+    auto t4_result2 = fxt::select<double, std::string>(t4);
+    std::cout << "fxt::select<double, std::string>(t4): ("
+              << std::get<0>(t4_result2) << ", \""
+              << std::get<1>(t4_result2) << "\")" << std::endl;
+
+    // =========================================================================
+    // Part 20: Using fxt::select by type on fxt::tuple (pipe operator)
+    // =========================================================================
+    std::cout << "\n\nPart 20: Using fxt::select by type on fxt::tuple (pipe operator)" << std::endl;
+    std::cout << "----------------------------------------------------------------" << std::endl;
+
+    auto t5 = fxt::make_tuple(123, 9.99, std::string("pipe"), true);
+    std::cout << "Original fxt::tuple: (123, 9.99, \"pipe\", true)" << std::endl;
+
+    // Select by type using pipe operator
+    auto t5_result1 = t5 | fxt::select<int, std::string>();
+    std::cout << "t5 | fxt::select<int, std::string>(): ("
+              << std::get<0>(t5_result1) << ", \""
+              << std::get<1>(t5_result1) << "\")" << std::endl;
+
+    // Select all types
+    auto t5_result2 = t5 | fxt::select<bool, double, int>();
+    std::cout << "t5 | fxt::select<bool, double, int>(): ("
+              << std::boolalpha << std::get<0>(t5_result2) << ", "
+              << std::get<1>(t5_result2) << ", "
+              << std::get<2>(t5_result2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 21: Using fxt::select on fxt::flat_tuple (direct call)
+    // =========================================================================
+    std::cout << "\n\nPart 21: Using fxt::select on fxt::flat_tuple (direct call)" << std::endl;
+    std::cout << "-----------------------------------------------------------" << std::endl;
+
+    auto ft3 = fxt::make_flat_tuple(5, 10, 15, 20, 25);
+    std::cout << "Original flat_tuple: (5, 10, 15, 20, 25)" << std::endl;
+
+    // Direct call syntax
+    auto ft3_result = fxt::select<0, 2, 4>(ft3);
+    std::cout << "fxt::select<0, 2, 4>(ft3): ("
+              << fxt::get<0>(ft3_result) << ", "
+              << fxt::get<1>(ft3_result) << ", "
+              << fxt::get<2>(ft3_result) << ")" << std::endl;
+
+    // Select consecutive elements
+    auto ft3_result2 = fxt::select<1, 2, 3>(ft3);
+    std::cout << "fxt::select<1, 2, 3>(ft3): ("
+              << fxt::get<0>(ft3_result2) << ", "
+              << fxt::get<1>(ft3_result2) << ", "
+              << fxt::get<2>(ft3_result2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 22: Using fxt::select on fxt::flat_tuple (pipe operator)
+    // =========================================================================
+    std::cout << "\n\nPart 22: Using fxt::select on fxt::flat_tuple (pipe operator)" << std::endl;
+    std::cout << "-------------------------------------------------------------" << std::endl;
+
+    auto ft4 = fxt::make_flat_tuple(11, 22, 33, 44, 55, 66);
+    std::cout << "Original flat_tuple: (11, 22, 33, 44, 55, 66)" << std::endl;
+
+    // Using pipe operator
+    auto ft4_result = ft4 | fxt::select<0, 3, 5>();
+    std::cout << "ft4 | fxt::select<0, 3, 5>(): ("
+              << fxt::get<0>(ft4_result) << ", "
+              << fxt::get<1>(ft4_result) << ", "
+              << fxt::get<2>(ft4_result) << ")" << std::endl;
+
+    // Select with duplicates
+    auto ft4_dup = ft4 | fxt::select<0, 0, 1>();
+    std::cout << "ft4 | fxt::select<0, 0, 1>(): ("
+              << fxt::get<0>(ft4_dup) << ", "
+              << fxt::get<1>(ft4_dup) << ", "
+              << fxt::get<2>(ft4_dup) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 23: Using fxt::select on fxt::flat_tuple with mixed types
+    // =========================================================================
+    std::cout << "\n\nPart 23: Using fxt::select on fxt::flat_tuple with mixed types" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+
+    auto ft5 = fxt::make_flat_tuple(777, 8.88, std::string("mixed"), 'M', true);
+    std::cout << "Original flat_tuple: (777, 8.88, \"mixed\", 'M', true)" << std::endl;
+
+    // Direct call
+    auto ft5_result1 = fxt::select<0, 2, 4>(ft5);
+    std::cout << "fxt::select<0, 2, 4>(ft5): ("
+              << fxt::get<0>(ft5_result1) << ", \""
+              << fxt::get<1>(ft5_result1) << "\", "
+              << std::boolalpha << fxt::get<2>(ft5_result1) << ")" << std::endl;
+
+    // Pipe operator
+    auto ft5_result2 = ft5 | fxt::select<1, 3>();
+    std::cout << "ft5 | fxt::select<1, 3>(): ("
+              << fxt::get<0>(ft5_result2) << ", '"
+              << fxt::get<1>(ft5_result2) << "')" << std::endl;
+
+    // =========================================================================
+    // Part 24: Chaining select with other operations on fxt::tuple
+    // =========================================================================
+    std::cout << "\n\nPart 24: Chaining select with other operations on fxt::tuple" << std::endl;
+    std::cout << "------------------------------------------------------------" << std::endl;
+
+    auto t6 = fxt::make_tuple(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    std::cout << "Original fxt::tuple: (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)" << std::endl;
+
+    // Chain drop and select
+    auto t6_chain1 = t6 | fxt::drop<2>() | fxt::select<0, 2, 4>();
+    std::cout << "After drop<2>() | select<0, 2, 4>(): ("
+              << std::get<0>(t6_chain1) << ", "
+              << std::get<1>(t6_chain1) << ", "
+              << std::get<2>(t6_chain1) << ")" << std::endl;
+
+    // Chain select and drop_last
+    auto t6_chain2 = t6 | fxt::select<1, 3, 5, 7, 9>() | fxt::drop_last<2>();
+    std::cout << "After select<1, 3, 5, 7, 9>() | drop_last<2>(): ("
+              << std::get<0>(t6_chain2) << ", "
+              << std::get<1>(t6_chain2) << ", "
+              << std::get<2>(t6_chain2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 25: Chaining select with other operations on fxt::flat_tuple
+    // =========================================================================
+    std::cout << "\n\nPart 25: Chaining select with other operations on fxt::flat_tuple" << std::endl;
+    std::cout << "-----------------------------------------------------------------" << std::endl;
+
+    auto ft6 = fxt::make_flat_tuple(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);
+    std::cout << "Original flat_tuple: (10, 20, 30, 40, 50, 60, 70, 80, 90, 100)" << std::endl;
+
+    // Chain drop and select
+    auto ft6_chain1 = ft6 | fxt::drop<3>() | fxt::select<0, 2, 4>();
+    std::cout << "After drop<3>() | select<0, 2, 4>(): ("
+              << fxt::get<0>(ft6_chain1) << ", "
+              << fxt::get<1>(ft6_chain1) << ", "
+              << fxt::get<2>(ft6_chain1) << ")" << std::endl;
+
+    // Chain select and drop
+    auto ft6_chain2 = ft6 | fxt::select<0, 2, 4, 6, 8>() | fxt::drop<1>();
+    std::cout << "After select<0, 2, 4, 6, 8>() | drop<1>(): ("
+              << fxt::get<0>(ft6_chain2) << ", "
+              << fxt::get<1>(ft6_chain2) << ", "
+              << fxt::get<2>(ft6_chain2) << ", "
+              << fxt::get<3>(ft6_chain2) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 26: Using select on rvalue tuples
+    // =========================================================================
+    std::cout << "\n\nPart 26: Using select on rvalue tuples" << std::endl;
+    std::cout << "--------------------------------------" << std::endl;
+
+    // fxt::tuple rvalue
+    auto t7_rvalue = fxt::make_tuple(11, 22, 33, 44, 55) | fxt::select<0, 2, 4>();
+    std::cout << "make_tuple(11,22,33,44,55) | select<0,2,4>(): ("
+              << std::get<0>(t7_rvalue) << ", "
+              << std::get<1>(t7_rvalue) << ", "
+              << std::get<2>(t7_rvalue) << ")" << std::endl;
+
+    // fxt::flat_tuple rvalue
+    auto ft7_rvalue = fxt::make_flat_tuple(111, 222, 333, 444) | fxt::select<1, 3>();
+    std::cout << "make_flat_tuple(111,222,333,444) | select<1,3>(): ("
+              << fxt::get<0>(ft7_rvalue) << ", "
+              << fxt::get<1>(ft7_rvalue) << ")" << std::endl;
+
+    // =========================================================================
+    // Part 27: Practical example - selecting data fields from tuples
+    // =========================================================================
+    std::cout << "\n\nPart 27: Practical example - selecting data fields" << std::endl;
+    std::cout << "--------------------------------------------------" << std::endl;
+
+    // Simulate a data record as fxt::tuple
+    auto person = fxt::make_tuple(
+        std::string("John Doe"),    // 0: name
+        35,                          // 1: age
+        std::string("Engineer"),     // 2: job
+        75000,                       // 3: salary
+        std::string("john@example.com") // 4: email
+    );
+
+    std::cout << "Person record: (\"John Doe\", 35, \"Engineer\", 75000, \"john@example.com\")" << std::endl;
+
+    // Select basic info (name, age)
+    auto basic_info = person | fxt::select<0, 1>();
+    std::cout << "Basic info (name, age): (\""
+              << std::get<0>(basic_info) << "\", "
+              << std::get<1>(basic_info) << ")" << std::endl;
+
+    // Select professional info (job, salary)
+    auto prof_info = person | fxt::select<2, 3>();
+    std::cout << "Professional info (job, salary): (\""
+              << std::get<0>(prof_info) << "\", "
+              << std::get<1>(prof_info) << ")" << std::endl;
+
+    // Select contact info (name, email)
+    auto contact_info = person | fxt::select<0, 4>();
+    std::cout << "Contact info (name, email): (\""
+              << std::get<0>(contact_info) << "\", \""
+              << std::get<1>(contact_info) << "\")" << std::endl;
+
+    // =========================================================================
+    // Part 28: Comparing mselect vs select behavior
+    // =========================================================================
+    std::cout << "\n\nPart 28: Comparing mselect vs select behavior" << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+
+    auto t8 = fxt::make_tuple(100, 200, 300, 400, 500);
+    std::cout << "Original fxt::tuple: (100, 200, 300, 400, 500)" << std::endl;
+
+    // Using mselect (works on tuples directly too)
+    auto mselect_result = t8 | fxt::mselect<0, 2, 4>();
+    std::cout << "Using mselect<0, 2, 4>: ("
+              << std::get<0>(mselect_result) << ", "
+              << std::get<1>(mselect_result) << ", "
+              << std::get<2>(mselect_result) << ")" << std::endl;
+
+    // Using select (direct tuple operation)
+    auto select_result = t8 | fxt::select<0, 2, 4>();
+    std::cout << "Using select<0, 2, 4>: ("
+              << std::get<0>(select_result) << ", "
+              << std::get<1>(select_result) << ", "
+              << std::get<2>(select_result) << ")" << std::endl;
+
+    std::cout << "\nBoth produce the same result!" << std::endl;
+
+    // Same comparison with flat_tuple
+    auto ft8 = fxt::make_flat_tuple(1.1, 2.2, 3.3, 4.4, 5.5);
+    std::cout << "\nOriginal flat_tuple: (1.1, 2.2, 3.3, 4.4, 5.5)" << std::endl;
+
+    auto ft_mselect = ft8 | fxt::mselect<1, 3>();
+    std::cout << "Using mselect<1, 3>: ("
+              << fxt::get<0>(ft_mselect) << ", "
+              << fxt::get<1>(ft_mselect) << ")" << std::endl;
+
+    auto ft_select = ft8 | fxt::select<1, 3>();
+    std::cout << "Using select<1, 3>: ("
+              << fxt::get<0>(ft_select) << ", "
+              << fxt::get<1>(ft_select) << ")" << std::endl;
+
+    std::cout << "\nBoth produce the same result!" << std::endl;
+
     std::cout << "\n=== Demo Complete ===" << std::endl;
 
     return 0;

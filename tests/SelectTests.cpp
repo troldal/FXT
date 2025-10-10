@@ -605,3 +605,557 @@ TEST_CASE("select - mixed element selection", "[select]")
     }
 }
 
+// ===== NEW TESTS: fxt::mselect with fxt::flat_tuple =====
+
+TEST_CASE("mselect - fxt::flat_tuple by index", "[select][flat_tuple][mselect]")
+{
+    SECTION("select two elements from flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(100, 200, 300, 400, 500);
+        auto result = ft | fxt::mselect<0, 2>();
+
+        REQUIRE(fxt::get<0>(result) == 100);
+        REQUIRE(fxt::get<1>(result) == 300);
+    }
+
+    SECTION("select three elements from flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(10, 20, 30, 40, 50);
+        auto result = ft | fxt::mselect<1, 3, 4>();
+
+        REQUIRE(fxt::get<0>(result) == 20);
+        REQUIRE(fxt::get<1>(result) == 40);
+        REQUIRE(fxt::get<2>(result) == 50);
+    }
+
+    SECTION("select single element from flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(777, 888, 999);
+        auto result = ft | fxt::mselect<1>();
+
+        REQUIRE(fxt::get<0>(result) == 888);
+    }
+
+    SECTION("select in reverse order from flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5);
+        auto result = ft | fxt::mselect<4, 3, 2, 1, 0>();
+
+        REQUIRE(fxt::get<0>(result) == 5);
+        REQUIRE(fxt::get<1>(result) == 4);
+        REQUIRE(fxt::get<2>(result) == 3);
+        REQUIRE(fxt::get<3>(result) == 2);
+        REQUIRE(fxt::get<4>(result) == 1);
+    }
+
+    SECTION("select with duplicate indices from flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(11, 22, 33);
+        auto result = ft | fxt::mselect<0, 0, 2>();
+
+        REQUIRE(fxt::get<0>(result) == 11);
+        REQUIRE(fxt::get<1>(result) == 11);
+        REQUIRE(fxt::get<2>(result) == 33);
+    }
+}
+
+TEST_CASE("mselect - fxt::flat_tuple with mixed types", "[select][flat_tuple][mselect]")
+{
+    SECTION("select mixed types from flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(42, 3.14, std::string("hello"), 'X', true);
+        auto result = ft | fxt::mselect<0, 2, 4>();
+
+        REQUIRE(fxt::get<0>(result) == 42);
+        REQUIRE(fxt::get<1>(result) == "hello");
+        REQUIRE(fxt::get<2>(result) == true);
+    }
+
+    SECTION("select and reorder mixed types")
+    {
+        auto ft = fxt::make_flat_tuple(99, 7.77, std::string("world"), 'Z', false);
+        auto result = ft | fxt::mselect<4, 3, 2, 1, 0>();
+
+        REQUIRE(fxt::get<0>(result) == false);
+        REQUIRE(fxt::get<1>(result) == 'Z');
+        REQUIRE(fxt::get<2>(result) == "world");
+        REQUIRE(fxt::get<3>(result) == 7.77);
+        REQUIRE(fxt::get<4>(result) == 99);
+    }
+
+    SECTION("select subset of mixed types")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2.5, std::string("test"), true, 'A');
+        auto result = ft | fxt::mselect<1, 3>();
+
+        REQUIRE(fxt::get<0>(result) == 2.5);
+        REQUIRE(fxt::get<1>(result) == true);
+    }
+}
+
+TEST_CASE("mselect - fxt::flat_tuple direct call", "[select][flat_tuple][mselect]")
+{
+    SECTION("direct call on flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(5, 10, 15, 20, 25);
+        auto result = fxt::mselect<0, 2, 4>()(ft);
+
+        REQUIRE(fxt::get<0>(result) == 5);
+        REQUIRE(fxt::get<1>(result) == 15);
+        REQUIRE(fxt::get<2>(result) == 25);
+    }
+
+    SECTION("direct call on const flat_tuple")
+    {
+        const auto ft = fxt::make_flat_tuple(100, 200, 300);
+        auto result = fxt::mselect<1, 2>()(ft);
+
+        REQUIRE(fxt::get<0>(result) == 200);
+        REQUIRE(fxt::get<1>(result) == 300);
+    }
+}
+
+// ===== NEW TESTS: fxt::select on fxt::tuple =====
+
+TEST_CASE("select - fxt::tuple by index (direct call)", "[select][tuple][direct]")
+{
+    SECTION("select two elements direct call")
+    {
+        auto t = fxt::make_tuple(10, 20, 30, 40, 50);
+        auto result = fxt::select<0, 2>(t);
+
+        REQUIRE(std::get<0>(result) == 10);
+        REQUIRE(std::get<1>(result) == 30);
+    }
+
+    SECTION("select three elements direct call")
+    {
+        auto t = fxt::make_tuple(1, 2, 3, 4, 5);
+        auto result = fxt::select<0, 2, 4>(t);
+
+        REQUIRE(std::get<0>(result) == 1);
+        REQUIRE(std::get<1>(result) == 3);
+        REQUIRE(std::get<2>(result) == 5);
+    }
+
+    SECTION("select single element direct call")
+    {
+        auto t = fxt::make_tuple(100, 200, 300);
+        auto result = fxt::select<1>(t);
+
+        REQUIRE(std::get<0>(result) == 200);
+    }
+
+    SECTION("select with mixed types direct call")
+    {
+        auto t = fxt::make_tuple(42, 3.14, std::string("test"), 'X');
+        auto result = fxt::select<0, 2>(t);
+
+        REQUIRE(std::get<0>(result) == 42);
+        REQUIRE(std::get<1>(result) == "test");
+    }
+
+    SECTION("select from const tuple direct call")
+    {
+        const auto t = fxt::make_tuple(5, 10, 15, 20);
+        auto result = fxt::select<1, 3>(t);
+
+        REQUIRE(std::get<0>(result) == 10);
+        REQUIRE(std::get<1>(result) == 20);
+    }
+}
+
+TEST_CASE("select - fxt::tuple by index (pipe operator)", "[select][tuple][pipe]")
+{
+    SECTION("select two elements with pipe")
+    {
+        auto t = fxt::make_tuple(100, 200, 300, 400, 500);
+        auto result = t | fxt::select<0, 2>();
+
+        REQUIRE(std::get<0>(result) == 100);
+        REQUIRE(std::get<1>(result) == 300);
+    }
+
+    SECTION("select three elements with pipe")
+    {
+        auto t = fxt::make_tuple(11, 22, 33, 44, 55);
+        auto result = t | fxt::select<1, 2, 4>();
+
+        REQUIRE(std::get<0>(result) == 22);
+        REQUIRE(std::get<1>(result) == 33);
+        REQUIRE(std::get<2>(result) == 55);
+    }
+
+    SECTION("select single element with pipe")
+    {
+        auto t = fxt::make_tuple(999, 888, 777);
+        auto result = t | fxt::select<2>();
+
+        REQUIRE(std::get<0>(result) == 777);
+    }
+
+    SECTION("select in reverse order with pipe")
+    {
+        auto t = fxt::make_tuple(1, 2, 3, 4, 5);
+        auto result = t | fxt::select<4, 3, 2, 1, 0>();
+
+        REQUIRE(std::get<0>(result) == 5);
+        REQUIRE(std::get<1>(result) == 4);
+        REQUIRE(std::get<2>(result) == 3);
+        REQUIRE(std::get<3>(result) == 2);
+        REQUIRE(std::get<4>(result) == 1);
+    }
+
+    SECTION("select with duplicates with pipe")
+    {
+        auto t = fxt::make_tuple(10, 20, 30);
+        auto result = t | fxt::select<0, 0, 1>();
+
+        REQUIRE(std::get<0>(result) == 10);
+        REQUIRE(std::get<1>(result) == 10);
+        REQUIRE(std::get<2>(result) == 20);
+    }
+
+    SECTION("select mixed types with pipe")
+    {
+        auto t = fxt::make_tuple(123, 4.56, std::string("pipe"), true);
+        auto result = t | fxt::select<0, 2>();
+
+        REQUIRE(std::get<0>(result) == 123);
+        REQUIRE(std::get<1>(result) == "pipe");
+    }
+}
+
+TEST_CASE("select - fxt::tuple by type (direct call)", "[select][tuple][type][direct]")
+{
+    SECTION("select by type direct call")
+    {
+        auto t = fxt::make_tuple(42, 3.14, std::string("hello"), 'X');
+        auto result = fxt::select<int, char>(t);
+
+        REQUIRE(std::get<0>(result) == 42);
+        REQUIRE(std::get<1>(result) == 'X');
+    }
+
+    SECTION("select multiple types direct call")
+    {
+        auto t = fxt::make_tuple(99, 7.77, std::string("test"));
+        auto result = fxt::select<double, std::string>(t);
+
+        REQUIRE(std::get<0>(result) == 7.77);
+        REQUIRE(std::get<1>(result) == "test");
+    }
+
+    SECTION("select single type direct call")
+    {
+        auto t = fxt::make_tuple(100, 2.5, std::string("solo"));
+        auto result = fxt::select<std::string>(t);
+
+        REQUIRE(std::get<0>(result) == "solo");
+    }
+
+    SECTION("select with bool type direct call")
+    {
+        auto t = fxt::make_tuple(true, 42, std::string("bool"));
+        auto result = fxt::select<bool, int>(t);
+
+        REQUIRE(std::get<0>(result) == true);
+        REQUIRE(std::get<1>(result) == 42);
+    }
+}
+
+TEST_CASE("select - fxt::tuple by type (pipe operator)", "[select][tuple][type][pipe]")
+{
+    SECTION("select by type with pipe")
+    {
+        auto t = fxt::make_tuple(123, 9.99, std::string("pipe"), true);
+        auto result = t | fxt::select<int, std::string>();
+
+        REQUIRE(std::get<0>(result) == 123);
+        REQUIRE(std::get<1>(result) == "pipe");
+    }
+
+    SECTION("select all types with pipe")
+    {
+        auto t = fxt::make_tuple(55, 6.28, std::string("all"));
+        auto result = t | fxt::select<std::string, double, int>();
+
+        REQUIRE(std::get<0>(result) == "all");
+        REQUIRE(std::get<1>(result) == 6.28);
+        REQUIRE(std::get<2>(result) == 55);
+    }
+
+    SECTION("select with char type with pipe")
+    {
+        auto t = fxt::make_tuple(999, 'Z', std::string("char"));
+        auto result = t | fxt::select<char, int>();
+
+        REQUIRE(std::get<0>(result) == 'Z');
+        REQUIRE(std::get<1>(result) == 999);
+    }
+}
+
+// ===== NEW TESTS: fxt::flat_tuple by index =====
+
+TEST_CASE("select - fxt::flat_tuple by index (direct call)", "[select][flat_tuple][direct]")
+{
+    SECTION("select two elements direct call")
+    {
+        auto ft = fxt::make_flat_tuple(5, 10, 15, 20, 25);
+        auto result = fxt::select<0, 2>(ft);
+
+        REQUIRE(fxt::get<0>(result) == 5);
+        REQUIRE(fxt::get<1>(result) == 15);
+    }
+
+    SECTION("select three elements direct call")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5);
+        auto result = fxt::select<0, 2, 4>(ft);
+
+        REQUIRE(fxt::get<0>(result) == 1);
+        REQUIRE(fxt::get<1>(result) == 3);
+        REQUIRE(fxt::get<2>(result) == 5);
+    }
+
+    SECTION("select single element direct call")
+    {
+        auto ft = fxt::make_flat_tuple(100, 200, 300);
+        auto result = fxt::select<1>(ft);
+
+        REQUIRE(fxt::get<0>(result) == 200);
+    }
+
+    SECTION("select with mixed types direct call")
+    {
+        auto ft = fxt::make_flat_tuple(777, 8.88, std::string("mixed"), 'M');
+        auto result = fxt::select<0, 2>(ft);
+
+        REQUIRE(fxt::get<0>(result) == 777);
+        REQUIRE(fxt::get<1>(result) == "mixed");
+    }
+
+    SECTION("select from const flat_tuple direct call")
+    {
+        const auto ft = fxt::make_flat_tuple(11, 22, 33, 44);
+        auto result = fxt::select<1, 3>(ft);
+
+        REQUIRE(fxt::get<0>(result) == 22);
+        REQUIRE(fxt::get<1>(result) == 44);
+    }
+}
+
+TEST_CASE("select - fxt::flat_tuple by index (pipe operator)", "[select][flat_tuple][pipe]")
+{
+    SECTION("select two elements with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(10, 20, 30, 40, 50);
+        auto result = ft | fxt::select<0, 3>();
+
+        REQUIRE(fxt::get<0>(result) == 10);
+        REQUIRE(fxt::get<1>(result) == 40);
+    }
+
+    SECTION("select three elements with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(5, 10, 15, 20, 25);
+        auto result = ft | fxt::select<1, 2, 4>();
+
+        REQUIRE(fxt::get<0>(result) == 10);
+        REQUIRE(fxt::get<1>(result) == 15);
+        REQUIRE(fxt::get<2>(result) == 25);
+    }
+
+    SECTION("select single element with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(111, 222, 333);
+        auto result = ft | fxt::select<2>();
+
+        REQUIRE(fxt::get<0>(result) == 333);
+    }
+
+    SECTION("select in reverse order with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5);
+        auto result = ft | fxt::select<4, 3, 2, 1, 0>();
+
+        REQUIRE(fxt::get<0>(result) == 5);
+        REQUIRE(fxt::get<1>(result) == 4);
+        REQUIRE(fxt::get<2>(result) == 3);
+        REQUIRE(fxt::get<3>(result) == 2);
+        REQUIRE(fxt::get<4>(result) == 1);
+    }
+
+    SECTION("select with duplicates with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(100, 200, 300);
+        auto result = ft | fxt::select<0, 0, 2>();
+
+        REQUIRE(fxt::get<0>(result) == 100);
+        REQUIRE(fxt::get<1>(result) == 100);
+        REQUIRE(fxt::get<2>(result) == 300);
+    }
+
+    SECTION("select mixed types with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(456, 7.89, std::string("flat"), false);
+        auto result = ft | fxt::select<0, 2, 3>();
+
+        REQUIRE(fxt::get<0>(result) == 456);
+        REQUIRE(fxt::get<1>(result) == "flat");
+        REQUIRE(fxt::get<2>(result) == false);
+    }
+}
+
+TEST_CASE("select - fxt::flat_tuple with rvalues", "[select][flat_tuple][rvalue]")
+{
+    SECTION("select from rvalue flat_tuple with pipe")
+    {
+        auto result = fxt::make_flat_tuple(11, 22, 33, 44) | fxt::select<1, 3>();
+
+        REQUIRE(fxt::get<0>(result) == 22);
+        REQUIRE(fxt::get<1>(result) == 44);
+    }
+
+    SECTION("select from rvalue flat_tuple direct call")
+    {
+        auto result = fxt::select<0, 2>(fxt::make_flat_tuple(100, 200, 300, 400));
+
+        REQUIRE(fxt::get<0>(result) == 100);
+        REQUIRE(fxt::get<1>(result) == 300);
+    }
+}
+
+// ===== NEW TESTS: Chaining operations =====
+
+TEST_CASE("select - chaining with other operations on fxt::tuple", "[select][tuple][chaining]")
+{
+    SECTION("chain drop and select on tuple")
+    {
+        auto t = fxt::make_tuple(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        auto result = t | fxt::drop<2>() | fxt::select<0, 2, 4>();
+
+        REQUIRE(std::get<0>(result) == 3);
+        REQUIRE(std::get<1>(result) == 5);
+        REQUIRE(std::get<2>(result) == 7);
+    }
+
+    SECTION("chain select and drop_last on tuple")
+    {
+        auto t = fxt::make_tuple(10, 20, 30, 40, 50, 60, 70);
+        auto result = t | fxt::select<1, 3, 5, 6>() | fxt::drop_last<1>();
+
+        REQUIRE(std::get<0>(result) == 20);
+        REQUIRE(std::get<1>(result) == 40);
+        REQUIRE(std::get<2>(result) == 60);
+    }
+
+    SECTION("chain multiple select operations on tuple")
+    {
+        auto t = fxt::make_tuple(1, 2, 3, 4, 5);
+        auto result = t | fxt::select<1, 2, 3, 4>() | fxt::select<0, 2>();
+
+        REQUIRE(std::get<0>(result) == 2);
+        REQUIRE(std::get<1>(result) == 4);
+    }
+}
+
+TEST_CASE("select - chaining with other operations on fxt::flat_tuple", "[select][flat_tuple][chaining]")
+{
+    SECTION("chain drop and select on flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);
+        auto result = ft | fxt::drop<3>() | fxt::select<0, 2, 4>();
+
+        REQUIRE(fxt::get<0>(result) == 40);
+        REQUIRE(fxt::get<1>(result) == 60);
+        REQUIRE(fxt::get<2>(result) == 80);
+    }
+
+    SECTION("chain select and drop on flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(5, 10, 15, 20, 25, 30);
+        auto result = ft | fxt::select<0, 2, 4, 5>() | fxt::drop<1>();
+
+        REQUIRE(fxt::get<0>(result) == 15);
+        REQUIRE(fxt::get<1>(result) == 25);
+        REQUIRE(fxt::get<2>(result) == 30);
+    }
+
+    SECTION("chain multiple select operations on flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5, 6);
+        auto result = ft | fxt::select<0, 2, 4, 5>() | fxt::select<1, 3>();
+
+        REQUIRE(fxt::get<0>(result) == 3);
+        REQUIRE(fxt::get<1>(result) == 6);
+    }
+}
+
+// ===== NEW TESTS: Comparing mselect vs select =====
+
+TEST_CASE("select - comparing mselect and select behavior", "[select][comparison]")
+{
+    SECTION("mselect and select produce same result on fxt::tuple")
+    {
+        auto t = fxt::make_tuple(100, 200, 300, 400, 500);
+
+        auto mselect_result = t | fxt::mselect<0, 2, 4>();
+        auto select_result = t | fxt::select<0, 2, 4>();
+
+        REQUIRE(std::get<0>(mselect_result) == std::get<0>(select_result));
+        REQUIRE(std::get<1>(mselect_result) == std::get<1>(select_result));
+        REQUIRE(std::get<2>(mselect_result) == std::get<2>(select_result));
+    }
+
+    SECTION("mselect and select produce same result on fxt::flat_tuple")
+    {
+        auto ft = fxt::make_flat_tuple(1.1, 2.2, 3.3, 4.4, 5.5);
+
+        auto mselect_result = ft | fxt::mselect<1, 3>();
+        auto select_result = ft | fxt::select<1, 3>();
+
+        REQUIRE(fxt::get<0>(mselect_result) == fxt::get<0>(select_result));
+        REQUIRE(fxt::get<1>(mselect_result) == fxt::get<1>(select_result));
+    }
+
+    SECTION("mselect and select work identically with mixed types")
+    {
+        auto t = fxt::make_tuple(42, 3.14, std::string("test"), true);
+
+        auto mselect_result = t | fxt::mselect<0, 2>();
+        auto select_result = t | fxt::select<0, 2>();
+
+        REQUIRE(std::get<0>(mselect_result) == std::get<0>(select_result));
+        REQUIRE(std::get<1>(mselect_result) == std::get<1>(select_result));
+    }
+}
+
+// ===== NEW TESTS: Type preservation =====
+
+TEST_CASE("select - type preservation", "[select][types]")
+{
+    SECTION("fxt::tuple preserves tuple type")
+    {
+        auto t = fxt::make_tuple(1, 2, 3, 4, 5);
+        auto result = t | fxt::select<0, 2>();
+
+        static_assert(std::is_same_v<decltype(result), fxt::tuple<int, int>>);
+    }
+
+    SECTION("fxt::flat_tuple preserves flat_tuple type")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5);
+        auto result = ft | fxt::select<0, 2>();
+
+        static_assert(std::is_same_v<decltype(result), fxt::flat_tuple<int, int>>);
+    }
+
+    SECTION("select preserves element types correctly")
+    {
+        auto t = fxt::make_tuple(42, 3.14, std::string("test"));
+        auto result = t | fxt::select<0, 1>();
+
+        static_assert(std::is_same_v<decltype(result), fxt::tuple<int, double>>);
+    }
+}
