@@ -111,6 +111,27 @@ namespace fxt
     }
 
     /**
+     * @brief Create a flat_tuple, deducing the target type from the types of arguments
+     *
+     * Similar to std::make_tuple but creates a flat_tuple instead.
+     * Automatically deduces types and uses std::decay to remove references and cv-qualifiers.
+     *
+     * @tparam Ts Types of the elements (deduced)
+     * @param args Values to initialize the flat_tuple with
+     * @return A flat_tuple containing the given values
+     *
+     * @code
+     * auto ft = fxt::make_flat_tuple(42, 3.14, 99.9f);
+     * // Creates fxt::flat_tuple<int, double, float>
+     * @endcode
+     */
+    template<typename... Ts>
+    constexpr auto make_flat_tuple(Ts&&... args)
+    {
+        return flat_tuple<std::decay_t<Ts>...>(std::forward<Ts>(args)...);
+    }
+
+    /**
      * @brief Pipe operator for fxt::flat_tuple with callable (lvalue reference)
      *
      * Allows piping a flat_tuple to a callable function, enabling functional-style composition.

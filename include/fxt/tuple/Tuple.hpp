@@ -19,6 +19,27 @@ namespace fxt
     using tuple = std::tuple<Ts...>;
 
     /**
+     * @brief Create a tuple, deducing the target type from the types of arguments
+     *
+     * Forwards to std::make_tuple. Provides a consistent fxt::make_tuple
+     * interface that matches fxt::tuple.
+     *
+     * @tparam Ts Types of the elements
+     * @param args Values to initialize the tuple with
+     * @return A tuple containing the given values
+     *
+     * @code
+     * auto t = fxt::make_tuple(42, 3.14, "hello");
+     * // Creates fxt::tuple<int, double, const char*>
+     * @endcode
+     */
+    template<typename... Ts>
+    constexpr auto make_tuple(Ts&&... args)
+    {
+        return std::make_tuple(std::forward<Ts>(args)...);
+    }
+
+    /**
      * @brief Get element from tuple by index
      *
      * Forwards to std::get for std::tuple. Provides a consistent fxt::get

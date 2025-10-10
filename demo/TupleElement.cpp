@@ -103,9 +103,9 @@ void example_flat_tuple_basic_extraction() {
     std::cout << "   Element 2 type: " << type_name<Type2>() << "\n\n";
 
     // Verify types at compile time
-    static_assert(std::is_same_v<Type0, double>, "All elements should be double");
-    static_assert(std::is_same_v<Type1, int>, "All elements should be double");
-    static_assert(std::is_same_v<Type2, bool>, "All elements should be double");
+    static_assert(std::is_same_v<Type0, double>, "Element should be double");
+    static_assert(std::is_same_v<Type1, int>, "Element should be int");
+    static_assert(std::is_same_v<Type2, bool>, "Element should be bool");
 
     std::cout << "   ✓ All type assertions passed\n\n";
 }
