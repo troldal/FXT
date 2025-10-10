@@ -6,10 +6,15 @@
 
 #include "../impl/concepts/IsExpected.hpp"
 #include "../impl/concepts/IsOptional.hpp"
-#include "../impl/utils/TupleAppend.hpp"
+// #include "../impl/utils/TupleAppend.hpp"
+
+#include <tuple>
+#include <fxt/tuple/FlatTuple.hpp>
+#include "TupleAppend.hpp"
 
 namespace fxt
 {
+
     /**
      * @brief Concept that excludes expected-like types
      *
@@ -59,7 +64,7 @@ namespace fxt
                        const TExpectedOutput<TTuple, TErrorOutput>& tupleExpected)
                 requires std::convertible_to<TError, TErrorOutput>
             {
-                return value ? tupleExpected.transform([value](const TTuple& tuple) { return impl::tuple_append(tuple, *value); })
+                return value ? tupleExpected.transform([value](const TTuple& tuple) { return fxt::tuple_append(tuple, *value); })
                              : typename TExpectedOutput<TTuple, TErrorOutput>::unexpected_type(value.error());
             };
         }
@@ -96,7 +101,7 @@ namespace fxt
             {
                 return value
                     ? tupleExpected.transform([value = std::move(value)](const TTuple& tuple) mutable {
-                        return impl::tuple_append(tuple, std::move(*value)); })
+                        return fxt::tuple_append(tuple, std::move(*value)); })
                     : typename TExpectedOutput<TTuple, TErrorOutput>::unexpected_type(std::move(value.error()));
             };
         }
@@ -127,9 +132,9 @@ namespace fxt
                        const TOptionalOutput<TTuple>& tupleOptional)
             {
                 if (!value) {
-                    return TOptionalOutput<decltype(impl::tuple_append(std::declval<TTuple>(), *value))>{};
+                    return TOptionalOutput<decltype(fxt::tuple_append(std::declval<TTuple>(), *value))>{};
                 }
-                return tupleOptional.transform([value](const TTuple& tuple) { return impl::tuple_append(tuple, *value); });
+                return tupleOptional.transform([value](const TTuple& tuple) { return fxt::tuple_append(tuple, *value); });
             };
         }
 
@@ -157,10 +162,10 @@ namespace fxt
             return [value = std::move(optionalValue)]<template<typename> class TOptionalOutput, typename TTuple>(
                        const TOptionalOutput<TTuple>& tupleOptional) mutable {
                 if (!value) {
-                    return TOptionalOutput<decltype(impl::tuple_append(std::declval<TTuple>(), std::move(*value)))>{};
+                    return TOptionalOutput<decltype(fxt::tuple_append(std::declval<TTuple>(), std::move(*value)))>{};
                 }
                 return tupleOptional.transform([value = std::move(value)](const TTuple& tuple) mutable {
-                    return impl::tuple_append(tuple, std::move(*value));
+                    return fxt::tuple_append(tuple, std::move(*value));
                 });
             };
         }
@@ -197,7 +202,7 @@ namespace fxt
             {
                 return container.transform(
                     [value = std::move(value)](const auto& tuple) mutable {
-                        return impl::tuple_append(tuple, std::move(value));
+                        return fxt::tuple_append(tuple, std::move(value));
                     });
             };
         }

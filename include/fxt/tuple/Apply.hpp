@@ -147,7 +147,7 @@ namespace fxt
             -> TContainer<std::tuple<TElems..., std::invoke_result_t<TFunction, TElems...>>>
         {
             return std::forward<decltype(tupleContainer)>(tupleContainer).transform([this](const std::tuple<TElems...>& tuple) {
-                return impl::tuple_append(tuple, std::apply(function, tuple));
+                return fxt::tuple_append(tuple, std::apply(function, tuple));
             });
         }
 
@@ -162,7 +162,7 @@ namespace fxt
             -> TExpected<std::tuple<TElems..., std::invoke_result_t<TFunction, TElems...>>, TError>
         {
             return std::forward<decltype(tupleExpected)>(tupleExpected).transform([this](const std::tuple<TElems...>& tuple) {
-                return impl::tuple_append(tuple, std::apply(function, tuple));
+                return fxt::tuple_append(tuple, std::apply(function, tuple));
             });
         }
     };

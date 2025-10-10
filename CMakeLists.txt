@@ -125,6 +125,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(fxt_flat_tuple_demo demo/FlatTuple.cpp)
     target_link_libraries(fxt_flat_tuple_demo PRIVATE fxt::fxt)
+
+    add_executable(fxt_tuple_size_demo demo/TupleSize.cpp)
+    target_link_libraries(fxt_tuple_size_demo PRIVATE fxt::fxt)
 endif()
 
 #==============================================================================
