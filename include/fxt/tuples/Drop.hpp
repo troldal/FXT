@@ -39,7 +39,7 @@ namespace fxt
      * @endcode
      */
     template<std::size_t X, typename Tuple>
-        requires impl::is_tuple_like_v<std::remove_cvref_t<Tuple>>
+        requires tuple_like<std::remove_cvref_t<Tuple>>
     constexpr auto drop(Tuple&& tpl)
     {
         constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
