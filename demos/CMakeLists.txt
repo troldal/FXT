@@ -80,3 +80,5 @@ target_link_libraries(fxt_tuple_append_demo PRIVATE fxt::fxt)
 add_executable(fxt_tuple_element_demo TupleElement.cpp)
 target_link_libraries(fxt_tuple_element_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_transform_tuple_demo TransformTuple.cpp)
+target_link_libraries(fxt_transform_tuple_demo PRIVATE fxt::fxt)

@@ -225,10 +225,6 @@ namespace fxt
 
     namespace impl
     {
-        // Unified concept for monadic containers (expected-like or optional-like)
-        template<typename T>
-        concept monadic_container = expected_like<T> || optional_like<T>;
-
         // Helper to extract value type from expected-like or optional-like objects
         template<typename T>
         struct expected_value_type
@@ -269,10 +265,10 @@ namespace fxt
 
     // Concept version for easier use
     template<typename TFunction, typename... TArgs>
-    concept returns_expected_like = impl::expected_like<std::invoke_result_t<TFunction, TArgs...>>;
+    concept returns_expected_like = expected_like<std::invoke_result_t<TFunction, TArgs...>>;
 
     template<typename TFunction, typename... TArgs>
-    concept returns_optional_like = impl::optional_like<std::invoke_result_t<TFunction, TArgs...>>;
+    concept returns_optional_like = optional_like<std::invoke_result_t<TFunction, TArgs...>>;
 
     template<typename TFunction, typename... TArgs>
     concept returns_monadic = returns_expected_like<TFunction, TArgs...> || returns_optional_like<TFunction, TArgs...>;
@@ -289,7 +285,7 @@ namespace fxt
         // Case 1a: Optional-like container + fxt::tuple + Function returning monadic type
         // ========================================================================
         template<template<typename...> class TContainer, typename... TElems>
-        requires impl::optional_like<TContainer<fxt::tuple<TElems...>>>
+        requires optional_like<TContainer<fxt::tuple<TElems...>>>
               && returns_monadic<TFunction, TElems...>
         auto operator()(TContainer<fxt::tuple<TElems...>>&& tupleContainer) const
             -> TContainer<fxt::tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>>
@@ -303,7 +299,7 @@ namespace fxt
         // Case 1a-flat: Optional-like container + fxt::flat_tuple + Function returning monadic type
         // ========================================================================
         template<template<typename...> class TContainer, typename... TElems>
-        requires impl::optional_like<TContainer<fxt::flat_tuple<TElems...>>>
+        requires optional_like<TContainer<fxt::flat_tuple<TElems...>>>
               && returns_monadic<TFunction, TElems...>
         auto operator()(TContainer<fxt::flat_tuple<TElems...>>&& tupleContainer) const
             -> TContainer<fxt::flat_tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>>
@@ -317,7 +313,7 @@ namespace fxt
         // Case 1b: Expected-like container + fxt::tuple + Function returning monadic type
         // ========================================================================
         template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires impl::expected_like<TExpected<fxt::tuple<TElems...>, TError>>
+        requires expected_like<TExpected<fxt::tuple<TElems...>, TError>>
               && returns_monadic<TFunction, TElems...>
         auto operator()(TExpected<fxt::tuple<TElems...>, TError>&& tupleExpected) const
             -> TExpected<fxt::tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>, TError>
@@ -331,7 +327,7 @@ namespace fxt
         // Case 1b-flat: Expected-like container + fxt::flat_tuple + Function returning monadic type
         // ========================================================================
         template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires impl::expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
+        requires expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
               && returns_monadic<TFunction, TElems...>
         auto operator()(TExpected<fxt::flat_tuple<TElems...>, TError>&& tupleExpected) const
             -> TExpected<fxt::flat_tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>, TError>
@@ -345,7 +341,7 @@ namespace fxt
         // Case 2a: Optional-like container + fxt::tuple + Function returning void
         // ========================================================================
         template<template<typename...> class TContainer, typename... TElems>
-        requires impl::optional_like<TContainer<fxt::tuple<TElems...>>>
+        requires optional_like<TContainer<fxt::tuple<TElems...>>>
               && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
         auto operator()(TContainer<fxt::tuple<TElems...>>&& tupleContainer) const
             -> TContainer<fxt::tuple<TElems...>>
@@ -360,7 +356,7 @@ namespace fxt
         // Case 2a-flat: Optional-like container + fxt::flat_tuple + Function returning void
         // ========================================================================
         template<template<typename...> class TContainer, typename... TElems>
-        requires impl::optional_like<TContainer<fxt::flat_tuple<TElems...>>>
+        requires optional_like<TContainer<fxt::flat_tuple<TElems...>>>
               && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
         auto operator()(TContainer<fxt::flat_tuple<TElems...>>&& tupleContainer) const
             -> TContainer<fxt::flat_tuple<TElems...>>
@@ -375,7 +371,7 @@ namespace fxt
         // Case 2b: Expected-like container + fxt::tuple + Function returning void
         // ========================================================================
         template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires impl::expected_like<TExpected<fxt::tuple<TElems...>, TError>>
+        requires expected_like<TExpected<fxt::tuple<TElems...>, TError>>
               && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
         auto operator()(TExpected<fxt::tuple<TElems...>, TError>&& tupleExpected) const
             -> TExpected<fxt::tuple<TElems...>, TError>
@@ -390,7 +386,7 @@ namespace fxt
         // Case 2b-flat: Expected-like container + fxt::flat_tuple + Function returning void
         // ========================================================================
         template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires impl::expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
+        requires expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
               && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
         auto operator()(TExpected<fxt::flat_tuple<TElems...>, TError>&& tupleExpected) const
             -> TExpected<fxt::flat_tuple<TElems...>, TError>
@@ -405,7 +401,7 @@ namespace fxt
         // Case 3a: Optional-like container + fxt::tuple + Function returning regular value
         // ========================================================================
         template<template<typename...> class TContainer, typename... TElems>
-        requires impl::optional_like<TContainer<fxt::tuple<TElems...>>>
+        requires optional_like<TContainer<fxt::tuple<TElems...>>>
               && (!returns_monadic<TFunction, TElems...>)
               && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
         auto operator()(TContainer<fxt::tuple<TElems...>>&& tupleContainer) const
@@ -420,7 +416,7 @@ namespace fxt
         // Case 3a-flat: Optional-like container + fxt::flat_tuple + Function returning regular value
         // ========================================================================
         template<template<typename...> class TContainer, typename... TElems>
-        requires impl::optional_like<TContainer<fxt::flat_tuple<TElems...>>>
+        requires optional_like<TContainer<fxt::flat_tuple<TElems...>>>
               && (!returns_monadic<TFunction, TElems...>)
               && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
         auto operator()(TContainer<fxt::flat_tuple<TElems...>>&& tupleContainer) const
@@ -435,7 +431,7 @@ namespace fxt
         // Case 3b: Expected-like container + fxt::tuple + Function returning regular value
         // ========================================================================
         template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires impl::expected_like<TExpected<fxt::tuple<TElems...>, TError>>
+        requires expected_like<TExpected<fxt::tuple<TElems...>, TError>>
               && (!returns_monadic<TFunction, TElems...>)
               && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
         auto operator()(TExpected<fxt::tuple<TElems...>, TError>&& tupleExpected) const
@@ -450,7 +446,7 @@ namespace fxt
         // Case 3b-flat: Expected-like container + fxt::flat_tuple + Function returning regular value
         // ========================================================================
         template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires impl::expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
+        requires expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
               && (!returns_monadic<TFunction, TElems...>)
               && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
         auto operator()(TExpected<fxt::flat_tuple<TElems...>, TError>&& tupleExpected) const

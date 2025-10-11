@@ -14,18 +14,6 @@
 
 namespace fxt
 {
-
-    /**
-     * @brief Concept that excludes expected-like types
-     *
-     * Used to distinguish regular values and containers from expected-like types
-     * in overload resolution for the append operation.
-     *
-     * @tparam T The type to check
-     */
-    template<typename T>
-    concept NotExpectedLike = !impl::expected_like<std::remove_cvref_t<T>>;
-
     /**
      * @brief Function object wrapper for appending values to tuples within monadic containers
      *
@@ -57,7 +45,7 @@ namespace fxt
          * @endcode
          */
         template<template<typename, typename> class TExpected, typename TValue, typename TError>
-            requires impl::expected_like<TExpected<TValue, TError>>
+            requires expected_like<TExpected<TValue, TError>>
         auto operator()(const TExpected<TValue, TError>& expectedValue) const
         {
             return [value = expectedValue]<template<typename, typename> class TExpectedOutput, typename TTuple, typename TErrorOutput>(
@@ -90,7 +78,7 @@ namespace fxt
          * @endcode
          */
         template<template<typename, typename> class TExpected, typename TValue, typename TError>
-            requires impl::expected_like<TExpected<TValue, TError>>
+            requires expected_like<TExpected<TValue, TError>>
         auto operator()(TExpected<TValue, TError>&& expectedValue) const
         {
             return
@@ -125,7 +113,7 @@ namespace fxt
          * @endcode
          */
         template<template<typename> class TOptional, typename TValue>
-            requires impl::optional_like<TOptional<TValue>>
+            requires optional_like<TOptional<TValue>>
         auto operator()(const TOptional<TValue>& optionalValue) const
         {
             return [value = optionalValue]<template<typename> class TOptionalOutput, typename TTuple>(
@@ -156,7 +144,7 @@ namespace fxt
          * @endcode
          */
         template<template<typename> class TOptional, typename TValue>
-            requires impl::optional_like<TOptional<TValue>>
+            requires optional_like<TOptional<TValue>>
         auto operator()(TOptional<TValue>&& optionalValue) const
         {
             return [value = std::move(optionalValue)]<template<typename> class TOptionalOutput, typename TTuple>(
@@ -195,7 +183,7 @@ namespace fxt
          * @endcode
          */
         template<typename Self, typename TValue>
-            requires NotExpectedLike<TValue> && (!impl::optional_like<std::remove_cvref_t<TValue>>)
+            requires (!expected_like<std::remove_cvref_t<TValue>>) && (!optional_like<std::remove_cvref_t<TValue>>)
         auto operator()(this Self&&, TValue&& value)
         {
             return [value = std::forward<TValue>(value)]<typename TContainer>(const TContainer& container) mutable

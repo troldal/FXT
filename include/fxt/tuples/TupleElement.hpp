@@ -11,10 +11,6 @@
 
 namespace fxt
 {
-    // Forward declarations
-    template<class... Ts>
-    class flat_tuple;
-
     // ========================================================================
     // Primary template - undefined for non-tuple types
     // ========================================================================

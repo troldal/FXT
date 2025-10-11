@@ -24,7 +24,7 @@ namespace fxt
 
             // Rvalue reference overload for expected
             template<template<typename, typename> class TExpected, typename T, typename E>
-                requires impl::expected_like<TExpected<T, E>>
+                requires expected_like<TExpected<T, E>>
             constexpr auto operator()(TExpected<T, E>&& exp) && -> decltype(auto)
             {
                 if (exp.has_value()) {
@@ -36,7 +36,7 @@ namespace fxt
 
             // Const lvalue reference overload for expected
             template<template<typename, typename> class TExpected, typename T, typename E>
-                requires impl::expected_like<TExpected<T, E>>
+                requires expected_like<TExpected<T, E>>
             constexpr auto operator()(const TExpected<T, E>& exp) const& -> decltype(auto)
             {
                 if (exp.has_value()) {
@@ -48,7 +48,7 @@ namespace fxt
 
             // Non-const lvalue reference overload for expected
             template<template<typename, typename> class TExpected, typename T, typename E>
-                requires impl::expected_like<TExpected<T, E>>
+                requires expected_like<TExpected<T, E>>
             constexpr auto operator()(TExpected<T, E>& exp) & -> decltype(auto)
             {
                 if (exp.has_value()) {
@@ -70,7 +70,7 @@ namespace fxt
 
             // Rvalue reference overload for optional
             template<template<typename> class TOptional, typename T>
-                requires impl::optional_like<TOptional<T>>
+                requires optional_like<TOptional<T>>
             constexpr auto operator()(TOptional<T>&& opt) && -> decltype(auto)
             {
                 if (opt.has_value()) {
@@ -82,7 +82,7 @@ namespace fxt
 
             // Const lvalue reference overload for optional
             template<template<typename> class TOptional, typename T>
-                requires impl::optional_like<TOptional<T>>
+                requires optional_like<TOptional<T>>
             constexpr auto operator()(const TOptional<T>& opt) const& -> decltype(auto)
             {
                 if (opt.has_value()) {
@@ -94,7 +94,7 @@ namespace fxt
 
             // Non-const lvalue reference overload for optional
             template<template<typename> class TOptional, typename T>
-                requires impl::optional_like<TOptional<T>>
+                requires optional_like<TOptional<T>>
             constexpr auto operator()(TOptional<T>& opt) & -> decltype(auto)
             {
                 if (opt.has_value()) {

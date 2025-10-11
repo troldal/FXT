@@ -8,9 +8,8 @@
 #include <concepts>
 #include <type_traits>
 
-namespace fxt::impl
+namespace fxt
 {
-
     /**
      * @brief Concept to check if a type behaves like an expected type
      *
@@ -40,20 +39,4 @@ namespace fxt::impl
         // { t.and_then(std::declval<std::function<T(typename T::value_type)>>()) };
     } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
 
-    /**
-     * @brief Helper concept for checking if a type is specifically fxt::expected
-     *
-     * This is a more restrictive check that verifies the type is exactly
-     * a specialization of fxt::expected, useful when you need to distinguish
-     * between fxt::expected and other expected-like types.
-     */
-    template<typename T>
-    struct is_fxt_expected : std::false_type {};
-
-    template<typename TValue, typename TError>
-    struct is_fxt_expected<fxt::expected<TValue, TError>> : std::true_type {};
-
-    template<typename T>
-    concept is_fxt_expected_v = is_fxt_expected<std::decay_t<T>>::value;
-
-}    // namespace fxt::impl
+}    // namespace fxt

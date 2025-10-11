@@ -11,6 +11,7 @@ add_executable(fxt_tests
         ValueTests.cpp
         TransformTests.cpp
         TransformErrorTests.cpp
+        TransformTupleTests.cpp
         AndThenTests.cpp
         OrElseTests.cpp
         SelectTests.cpp

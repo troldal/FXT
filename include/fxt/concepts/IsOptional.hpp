@@ -8,9 +8,8 @@
 #include <concepts>
 #include <type_traits>
 
-namespace fxt::impl
+namespace fxt
 {
-
     /**
      * @brief Concept to check if a type behaves like an optional type
      *
@@ -34,20 +33,4 @@ namespace fxt::impl
 
     } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
 
-    /**
-     * @brief Helper concept for checking if a type is specifically fxt::optional
-     *
-     * This is a more restrictive check that verifies the type is exactly
-     * a specialization of fxt::optional, useful when you need to distinguish
-     * between fxt::optional and other optional-like types.
-     */
-    template<typename T>
-    struct is_fxt_optional : std::false_type {};
-
-    template<typename T>
-    struct is_fxt_optional<fxt::optional<T>> : std::true_type {};
-
-    template<typename T>
-    inline constexpr bool is_fxt_optional_v = is_fxt_optional<T>::value;
-
-}    // namespace fxt::impl
+}    // namespace fxt
