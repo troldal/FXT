@@ -56,86 +56,6 @@ target_include_directories(fxt INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
 target_link_libraries(fxt INTERFACE tl::expected tl::optional)
 add_library(fxt::fxt ALIAS fxt)
 
-if(PROJECT_IS_TOP_LEVEL)
-    add_executable(fxt_test demos/main.cpp)
-    target_link_libraries(fxt_test PRIVATE fxt::fxt)
-
-    add_executable(fxt_and_then_demo demos/AndThen.cpp)
-    target_link_libraries(fxt_and_then_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_transform_demo demos/Transform.cpp)
-    target_link_libraries(fxt_transform_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_or_else_demo demos/OrElse.cpp)
-    target_link_libraries(fxt_or_else_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_value_demo demos/Value.cpp)
-    target_link_libraries(fxt_value_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_value_or_demo demos/ValueOr.cpp)
-    target_link_libraries(fxt_value_or_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_curry_demo demos/Curry.cpp)
-    target_link_libraries(fxt_curry_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_drop_demo demos/Drop.cpp)
-    target_link_libraries(fxt_drop_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_take_demo demos/Take.cpp)
-    target_link_libraries(fxt_take_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_match_demo demos/Match.cpp)
-    target_link_libraries(fxt_match_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_transform_error_demo demos/TransformError.cpp)
-    target_link_libraries(fxt_transform_error_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_to_optional_demo demos/ToOptional.cpp)
-    target_link_libraries(fxt_to_optional_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_to_expected_demo demos/ToExpected.cpp)
-    target_link_libraries(fxt_to_expected_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_tap_demo demos/Tap.cpp)
-    target_link_libraries(fxt_tap_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_tap_error_and_none_demo demos/TapErrorAndNone.cpp)
-    target_link_libraries(fxt_tap_error_and_none_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_failure_demo demos/Failure.cpp)
-    target_link_libraries(fxt_failure_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_append_demo demos/Append.cpp)
-    target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_apply_demo demos/Apply.cpp)
-    target_link_libraries(fxt_apply_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_get_demo demos/Get.cpp)
-    target_link_libraries(fxt_get_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_select_demo demos/Select.cpp)
-    target_link_libraries(fxt_select_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_type_demo demos/Type.cpp)
-    target_link_libraries(fxt_type_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_logical_or_demo demos/LogicalOr.cpp)
-    target_link_libraries(fxt_logical_or_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_flat_tuple_demo demos/FlatTuple.cpp)
-    target_link_libraries(fxt_flat_tuple_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_tuple_size_demo demos/TupleSize.cpp)
-    target_link_libraries(fxt_tuple_size_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_tuple_append_demo demos/TupleAppend.cpp)
-    target_link_libraries(fxt_tuple_append_demo PRIVATE fxt::fxt)
-
-    add_executable(fxt_tuple_element_demo demos/TupleElement.cpp)
-    target_link_libraries(fxt_tuple_element_demo PRIVATE fxt::fxt)
-endif()
-
 #==============================================================================
 # Options
 #==============================================================================
@@ -159,6 +79,7 @@ else()
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(demos)
     add_subdirectory(tests)
     add_subdirectory(benchmarks)
 endif()
