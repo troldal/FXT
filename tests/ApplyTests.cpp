@@ -558,3 +558,528 @@ TEST_CASE("apply - multiple values computed", "[apply]")
         REQUIRE(product == 42);
     }
 }
+
+// ============================================================================
+// Tests for fxt::mapply with fxt::flat_tuple
+// ============================================================================
+
+TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
+{
+    SECTION("basic apply with flat_tuple")
+    {
+        auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+            | fxt::mappend(2)
+            | fxt::mappend(3)
+            | fxt::mapply([](int a, int b) { return a * b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 2);
+        REQUIRE(fxt::get<1>(*result) == 3);
+        REQUIRE(fxt::get<2>(*result) == 6);
+    }
+
+    SECTION("chain multiple operations on flat_tuple")
+    {
+        auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+            | fxt::mappend(10.0)
+            | fxt::mappend(5.0)
+            | fxt::mapply([](double a, double b) { return a / b; })
+            | fxt::mapply([](double a, double b, double quotient) { return quotient + 1.0; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 10.0);
+        REQUIRE(fxt::get<1>(*result) == 5.0);
+        REQUIRE(fxt::get<2>(*result) == 2.0);
+        REQUIRE(fxt::get<3>(*result) == 3.0);
+    }
+
+    SECTION("flat_tuple with mixed types")
+    {
+        auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+            | fxt::mappend(42)
+            | fxt::mappend(std::string{"test"})
+            | fxt::mapply([](int x, const std::string& s) {
+                return s + ":" + std::to_string(x);
+            });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 42);
+        REQUIRE(fxt::get<1>(*result) == "test");
+        REQUIRE(fxt::get<2>(*result) == "test:42");
+    }
+
+    SECTION("error propagation with flat_tuple")
+    {
+        auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::unexpected("error")}
+            | fxt::mappend(1)
+            | fxt::mappend(2)
+            | fxt::mapply([](int a, int b) { return a + b; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "error");
+    }
+
+    SECTION("void-returning function with flat_tuple")
+    {
+        int side_effect = 0;
+
+        auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+            | fxt::mappend(5)
+            | fxt::mappend(10)
+            | fxt::mapply([&side_effect](int a, int b) {
+                side_effect = a + b;
+            });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 5);
+        REQUIRE(fxt::get<1>(*result) == 10);
+        REQUIRE(side_effect == 15);
+    }
+
+    SECTION("monadic function returning expected with flat_tuple")
+    {
+        auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+            | fxt::mappend(10.0)
+            | fxt::mappend(2.0)
+            | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
+                if (b == 0.0) return fxt::unexpected("Division by zero");
+                return a / b;
+            });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 10.0);
+        REQUIRE(fxt::get<1>(*result) == 2.0);
+        REQUIRE(fxt::get<2>(*result) == 5.0);
+    }
+}
+
+TEST_CASE("mapply - fxt::flat_tuple with fxt::optional", "[apply][flat_tuple]")
+{
+    SECTION("basic apply with flat_tuple")
+    {
+        auto result = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
+            | fxt::mappend(7)
+            | fxt::mappend(8)
+            | fxt::mapply([](int a, int b) { return a + b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 7);
+        REQUIRE(fxt::get<1>(*result) == 8);
+        REQUIRE(fxt::get<2>(*result) == 15);
+    }
+
+    SECTION("chain multiple operations on flat_tuple")
+    {
+        auto result = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
+            | fxt::mappend(100)
+            | fxt::mappend(10)
+            | fxt::mapply([](int a, int b) { return a / b; })
+            | fxt::mapply([](int a, int b, int quotient) { return quotient * 2; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 100);
+        REQUIRE(fxt::get<1>(*result) == 10);
+        REQUIRE(fxt::get<2>(*result) == 10);
+        REQUIRE(fxt::get<3>(*result) == 20);
+    }
+
+    SECTION("empty propagation with flat_tuple")
+    {
+        auto result = fxt::optional<fxt::flat_tuple<>>{}
+            | fxt::mappend(1)
+            | fxt::mappend(2)
+            | fxt::mapply([](int a, int b) { return a + b; });
+
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("monadic function returning optional with flat_tuple")
+    {
+        auto result = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
+            | fxt::mappend(16.0)
+            | fxt::mapply([](double x) -> fxt::optional<double> {
+                if (x < 0.0) return fxt::nullopt;
+                return std::sqrt(x);
+            });
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(*result) == 16.0);
+        REQUIRE(fxt::get<1>(*result) == 4.0);
+    }
+}
+
+// ============================================================================
+// Tests for fxt::apply with fxt::tuple (direct call, no pipe)
+// ============================================================================
+
+TEST_CASE("apply - fxt::tuple direct call (no pipe)", "[apply][tuple][direct]")
+{
+    SECTION("basic apply with two elements")
+    {
+        auto tuple = fxt::make_tuple(5, 10);
+        auto result = fxt::apply([](int a, int b) { return a + b; }, tuple);
+
+        REQUIRE(result == 15);
+    }
+
+    SECTION("apply with three elements")
+    {
+        auto tuple = fxt::make_tuple(2, 3, 4);
+        auto result = fxt::apply([](int a, int b, int c) { return a * b * c; }, tuple);
+
+        REQUIRE(result == 24);
+    }
+
+    SECTION("apply with mixed types")
+    {
+        auto tuple = fxt::make_tuple(42, std::string{"hello"});
+        auto result = fxt::apply([](int x, const std::string& s) {
+            return s + " " + std::to_string(x);
+        }, tuple);
+
+        REQUIRE(result == "hello 42");
+    }
+
+    SECTION("apply with different return type")
+    {
+        auto tuple = fxt::make_tuple(3.14, 2.0);
+        auto result = fxt::apply([](double a, double b) { return a * b; }, tuple);
+
+        REQUIRE(result == Catch::Approx(6.28));
+    }
+
+    SECTION("apply with rvalue tuple")
+    {
+        auto result = fxt::apply([](int a, int b) { return a - b; },
+                                 fxt::make_tuple(10, 3));
+
+        REQUIRE(result == 7);
+    }
+
+    SECTION("apply void-returning function")
+    {
+        int side_effect = 0;
+        auto tuple = fxt::make_tuple(5, 7);
+
+        fxt::apply([&side_effect](int a, int b) {
+            side_effect = a * b;
+        }, tuple);
+
+        REQUIRE(side_effect == 35);
+    }
+
+    SECTION("apply with const tuple")
+    {
+        const auto tuple = fxt::make_tuple(100, 50);
+        auto result = fxt::apply([](int a, int b) { return a / b; }, tuple);
+
+        REQUIRE(result == 2);
+    }
+}
+
+// ============================================================================
+// Tests for fxt::apply with fxt::tuple (with pipe operator)
+// ============================================================================
+
+TEST_CASE("apply - fxt::tuple with pipe operator", "[apply][tuple][pipe]")
+{
+    SECTION("basic apply with pipe")
+    {
+        auto tuple = fxt::make_tuple(8, 4);
+        auto result = tuple | fxt::apply([](int a, int b) { return a + b; });
+
+        REQUIRE(result == 12);
+    }
+
+    SECTION("apply with three elements")
+    {
+        auto tuple = fxt::make_tuple(1, 2, 3);
+        auto result = tuple | fxt::apply([](int a, int b, int c) { return a + b + c; });
+
+        REQUIRE(result == 6);
+    }
+
+    SECTION("apply with mixed types")
+    {
+        auto tuple = fxt::make_tuple(std::string{"Length:"}, 42);
+        auto result = tuple | fxt::apply([](const std::string& prefix, int value) {
+            return prefix + " " + std::to_string(value);
+        });
+
+        REQUIRE(result == "Length: 42");
+    }
+
+    SECTION("chained operations with pipe")
+    {
+        auto tuple = fxt::make_tuple(10, 5);
+        auto result = tuple | fxt::apply([](int a, int b) { return a - b; });
+
+        REQUIRE(result == 5);
+    }
+
+    SECTION("apply with temporary tuple")
+    {
+        auto result = fxt::make_tuple(6, 7) | fxt::apply([](int a, int b) { return a * b; });
+
+        REQUIRE(result == 42);
+    }
+
+    SECTION("void-returning function with pipe")
+    {
+        int side_effect = 0;
+        auto tuple = fxt::make_tuple(100, std::string{"meters"});
+
+        tuple | fxt::apply([&side_effect](int distance, const std::string& unit) {
+            side_effect = distance;
+        });
+
+        REQUIRE(side_effect == 100);
+    }
+
+    SECTION("apply with const tuple")
+    {
+        const auto tuple = fxt::make_tuple(20, 4);
+        auto result = tuple | fxt::apply([](int a, int b) { return a / b; });
+
+        REQUIRE(result == 5);
+    }
+}
+
+// ============================================================================
+// Tests for fxt::apply with fxt::flat_tuple (direct call, no pipe)
+// ============================================================================
+
+TEST_CASE("apply - fxt::flat_tuple direct call (no pipe)", "[apply][flat_tuple][direct]")
+{
+    SECTION("basic apply with two elements")
+    {
+        auto ft = fxt::make_flat_tuple(3.0, 4.0);
+        auto result = fxt::apply([](double a, double b) {
+            return std::sqrt(a * a + b * b);
+        }, ft);
+
+        REQUIRE(result == Catch::Approx(5.0));
+    }
+
+    SECTION("apply with multiple elements")
+    {
+        auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5);
+        auto result = fxt::apply([](int a, int b, int c, int d, int e) {
+            return a + b + c + d + e;
+        }, ft);
+
+        REQUIRE(result == 15);
+    }
+
+    SECTION("apply with mixed types")
+    {
+        auto ft = fxt::make_flat_tuple(42, 3.14, std::string{"pi"});
+        std::string captured;
+
+        fxt::apply([&captured](int i, double d, const std::string& s) {
+            captured = s + ":" + std::to_string(i) + ":" + std::to_string(d);
+        }, ft);
+
+        REQUIRE(captured.find("pi:42:3.14") != std::string::npos);
+    }
+
+    SECTION("apply with different return type")
+    {
+        auto ft = fxt::make_flat_tuple(10, 20, 30);
+        auto result = fxt::apply([](int a, int b, int c) {
+            return (a + b + c) / 3.0;
+        }, ft);
+
+        REQUIRE(result == Catch::Approx(20.0));
+    }
+
+    SECTION("apply with rvalue flat_tuple")
+    {
+        auto result = fxt::apply([](int a, int b) { return a * b; },
+                                 fxt::make_flat_tuple(6, 7));
+
+        REQUIRE(result == 42);
+    }
+
+    SECTION("void-returning function")
+    {
+        int side_effect = 0;
+        auto ft = fxt::make_flat_tuple(8, 9);
+
+        fxt::apply([&side_effect](int a, int b) {
+            side_effect = a + b;
+        }, ft);
+
+        REQUIRE(side_effect == 17);
+    }
+
+    SECTION("apply with const flat_tuple")
+    {
+        const auto ft = fxt::make_flat_tuple(100, 25);
+        auto result = fxt::apply([](int a, int b) { return a - b; }, ft);
+
+        REQUIRE(result == 75);
+    }
+}
+
+// ============================================================================
+// Tests for fxt::apply with fxt::flat_tuple (with pipe operator)
+// ============================================================================
+
+TEST_CASE("apply - fxt::flat_tuple with pipe operator", "[apply][flat_tuple][pipe]")
+{
+    SECTION("basic apply with pipe")
+    {
+        auto ft = fxt::make_flat_tuple(8.0, 2.0);
+        auto result = ft | fxt::apply([](double a, double b) { return a / b; });
+
+        REQUIRE(result == Catch::Approx(4.0));
+    }
+
+    SECTION("apply with multiple elements")
+    {
+        auto ft = fxt::make_flat_tuple(10.0, 20.0, 30.0);
+        auto result = ft | fxt::apply([](double a, double b, double c) {
+            return (a + b + c) / 3.0;
+        });
+
+        REQUIRE(result == Catch::Approx(20.0));
+    }
+
+    SECTION("apply with computation")
+    {
+        auto ft = fxt::make_flat_tuple(5, 6, 7, 8);
+        auto result = ft | fxt::apply([](int a, int b, int c, int d) {
+            return a * b * c * d;
+        });
+
+        REQUIRE(result == 1680);
+    }
+
+    SECTION("apply with temporary flat_tuple")
+    {
+        auto result = fxt::make_flat_tuple(3, 4)
+            | fxt::apply([](int a, int b) { return a + b; });
+
+        REQUIRE(result == 7);
+    }
+
+    SECTION("void-returning function with pipe")
+    {
+        int side_effect = 0;
+        auto ft = fxt::make_flat_tuple(15, 3);
+
+        ft | fxt::apply([&side_effect](int a, int b) {
+            side_effect = a / b;
+        });
+
+        REQUIRE(side_effect == 5);
+    }
+
+    SECTION("apply with const flat_tuple")
+    {
+        const auto ft = fxt::make_flat_tuple(50, 10);
+        auto result = ft | fxt::apply([](int a, int b) { return a - b; });
+
+        REQUIRE(result == 40);
+    }
+
+    SECTION("apply with string concatenation")
+    {
+        auto ft = fxt::make_flat_tuple(std::string{"Hello"}, std::string{" "}, std::string{"World"});
+        auto result = ft | fxt::apply([](const std::string& a, const std::string& b, const std::string& c) {
+            return a + b + c;
+        });
+
+        REQUIRE(result == "Hello World");
+    }
+}
+
+// ============================================================================
+// Tests comparing fxt::tuple vs fxt::flat_tuple
+// ============================================================================
+
+TEST_CASE("apply - comparison between tuple and flat_tuple", "[apply][comparison]")
+{
+    SECTION("same computation with both types - direct call")
+    {
+        auto regular_tuple = fxt::make_tuple(12, 4);
+        auto flat_tuple = fxt::make_flat_tuple(12, 4);
+
+        auto result_regular = fxt::apply([](int a, int b) { return a + b; }, regular_tuple);
+        auto result_flat = fxt::apply([](int a, int b) { return a + b; }, flat_tuple);
+
+        REQUIRE(result_regular == 16);
+        REQUIRE(result_flat == 16);
+        REQUIRE(result_regular == result_flat);
+    }
+
+    SECTION("same computation with both types - pipe operator")
+    {
+        auto regular_tuple = fxt::make_tuple(10, 5);
+        auto flat_tuple = fxt::make_flat_tuple(10, 5);
+
+        auto result_regular = regular_tuple | fxt::apply([](int a, int b) { return a * b; });
+        auto result_flat = flat_tuple | fxt::apply([](int a, int b) { return a * b; });
+
+        REQUIRE(result_regular == 50);
+        REQUIRE(result_flat == 50);
+        REQUIRE(result_regular == result_flat);
+    }
+
+    SECTION("complex computation with both types")
+    {
+        auto regular_tuple = fxt::make_tuple(3.0, 4.0);
+        auto flat_tuple = fxt::make_flat_tuple(3.0, 4.0);
+
+        auto compute = [](double a, double b) { return std::sqrt(a * a + b * b); };
+
+        auto result_regular = fxt::apply(compute, regular_tuple);
+        auto result_flat = fxt::apply(compute, flat_tuple);
+
+        REQUIRE(result_regular == Catch::Approx(5.0));
+        REQUIRE(result_flat == Catch::Approx(5.0));
+        REQUIRE(result_regular == Catch::Approx(result_flat));
+    }
+}
+
+// ============================================================================
+// Advanced integration tests
+// ============================================================================
+
+TEST_CASE("apply - advanced integration tests", "[apply][advanced]")
+{
+    SECTION("combining mapply and apply - expected with flat_tuple")
+    {
+        auto monadic_result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+            | fxt::mappend(3)
+            | fxt::mappend(4)
+            | fxt::mapply([](int a, int b) { return a * b; });
+
+        REQUIRE(monadic_result.has_value());
+
+        auto extracted = *monadic_result;
+        auto final_result = extracted | fxt::apply([](int a, int b, int product) {
+            return a + b + product;
+        });
+
+        REQUIRE(final_result == 19);
+    }
+
+    SECTION("combining mapply and apply - optional with tuple")
+    {
+        auto monadic_result = fxt::optional<std::tuple<>>{std::tuple{}}
+            | fxt::mappend(10)
+            | fxt::mappend(5)
+            | fxt::mapply([](int a, int b) { return a - b; });
+
+        REQUIRE(monadic_result.has_value());
+
+        auto extracted = *monadic_result;
+        auto final_result = fxt::apply([](int a, int b, int diff) {
+            return a + b + diff;
+        }, extracted);
+
+        REQUIRE(final_result == 20);
+    }
+}

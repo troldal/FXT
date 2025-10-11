@@ -310,6 +310,315 @@ int main()
         std::cout << "Result: \"" << message << "\"" << std::endl;
     }
 
+    // =========================================================================
+    // Part 11: fxt::mapply with fxt::flat_tuple (in expected)
+    // =========================================================================
+    std::cout << "\n\nPart 11: fxt::mapply with fxt::flat_tuple (in expected)" << std::endl;
+    std::cout << "--------------------------------------------------------" << std::endl;
+
+    std::cout << "Creating expected with flat_tuple..." << std::endl;
+    auto exp_flat = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+        | fxt::mappend(2)
+        | fxt::mappend(3)
+        | fxt::mapply([](int a, int b) {
+            std::cout << "  Computing: " << a << " * " << b << " = " << (a * b) << std::endl;
+            return a * b;
+        });
+
+    if (exp_flat) {
+        auto product = fxt::get<2>(*exp_flat);
+        std::cout << "Result in flat_tuple: " << product << std::endl;
+    }
+
+    // Chain multiple operations on flat_tuple
+    std::cout << "\nChaining operations on flat_tuple:" << std::endl;
+    auto exp_flat_chain = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+        | fxt::mappend(10.0)
+        | fxt::mappend(5.0)
+        | fxt::mapply([](double a, double b) {
+            std::cout << "  Step 1: " << a << " / " << b << " = " << (a / b) << std::endl;
+            return a / b;
+        })
+        | fxt::mapply([](double a, double b, double result) {
+            std::cout << "  Step 2: " << result << " + 1.0 = " << (result + 1.0) << std::endl;
+            return result + 1.0;
+        });
+
+    if (exp_flat_chain) {
+        std::cout << "Final values: "
+                  << fxt::get<0>(*exp_flat_chain) << ", "
+                  << fxt::get<1>(*exp_flat_chain) << ", "
+                  << fxt::get<2>(*exp_flat_chain) << ", "
+                  << fxt::get<3>(*exp_flat_chain) << std::endl;
+    }
+
+    // =========================================================================
+    // Part 12: fxt::mapply with fxt::flat_tuple (in optional)
+    // =========================================================================
+    std::cout << "\n\nPart 12: fxt::mapply with fxt::flat_tuple (in optional)" << std::endl;
+    std::cout << "--------------------------------------------------------" << std::endl;
+
+    std::cout << "Creating optional with flat_tuple..." << std::endl;
+    auto opt_flat = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
+        | fxt::mappend(7)
+        | fxt::mappend(8)
+        | fxt::mapply([](int a, int b) {
+            std::cout << "  Computing: " << a << " + " << b << " = " << (a + b) << std::endl;
+            return a + b;
+        });
+
+    if (opt_flat) {
+        auto sum = fxt::get<2>(*opt_flat);
+        std::cout << "Result in flat_tuple: " << sum << std::endl;
+    }
+
+    // With void-returning function
+    std::cout << "\nVoid-returning function with flat_tuple:" << std::endl;
+    auto opt_flat_void = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
+        | fxt::mappend(42)
+        | fxt::mappend(std::string{"test"})
+        | fxt::mapply([](int x, const std::string& s) {
+            std::cout << "  Side effect: " << x << " and \"" << s << "\"" << std::endl;
+        });
+
+    if (opt_flat_void) {
+        std::cout << "Flat_tuple preserved: "
+                  << fxt::get<0>(*opt_flat_void) << ", \""
+                  << fxt::get<1>(*opt_flat_void) << "\"" << std::endl;
+    }
+
+    // =========================================================================
+    // Part 13: fxt::apply with fxt::tuple (direct call, no pipe)
+    // =========================================================================
+    std::cout << "\n\nPart 13: fxt::apply with fxt::tuple (direct call, no pipe)" << std::endl;
+    std::cout << "-----------------------------------------------------------" << std::endl;
+
+    auto tuple1 = fxt::make_tuple(5, 10, 15);
+    std::cout << "Tuple: (5, 10, 15)" << std::endl;
+
+    auto sum1 = fxt::apply([](int a, int b, int c) {
+        std::cout << "  Computing sum: " << a << " + " << b << " + " << c << std::endl;
+        return a + b + c;
+    }, tuple1);
+    std::cout << "Result: " << sum1 << std::endl;
+
+    // With different types
+    std::cout << "\nWith mixed types:" << std::endl;
+    auto tuple2 = fxt::make_tuple(std::string{"Length:"}, 42);
+    std::cout << "Tuple: (\"Length:\", 42)" << std::endl;
+
+    auto message1 = fxt::apply([](const std::string& prefix, int value) {
+        std::cout << "  Building message..." << std::endl;
+        return prefix + " " + std::to_string(value);
+    }, tuple2);
+    std::cout << "Result: \"" << message1 << "\"" << std::endl;
+
+    // With rvalue tuple
+    std::cout << "\nWith rvalue tuple:" << std::endl;
+    auto product1 = fxt::apply([](int a, int b) {
+        std::cout << "  Computing: " << a << " * " << b << std::endl;
+        return a * b;
+    }, fxt::make_tuple(6, 7));
+    std::cout << "Result: " << product1 << std::endl;
+
+    // =========================================================================
+    // Part 14: fxt::apply with fxt::tuple (with pipe operator)
+    // =========================================================================
+    std::cout << "\n\nPart 14: fxt::apply with fxt::tuple (with pipe operator)" << std::endl;
+    std::cout << "--------------------------------------------------------" << std::endl;
+
+    auto tuple3 = fxt::make_tuple(2, 3, 4);
+    std::cout << "Tuple: (2, 3, 4)" << std::endl;
+
+    auto product2 = tuple3 | fxt::apply([](int a, int b, int c) {
+        std::cout << "  Computing product: " << a << " * " << b << " * " << c << std::endl;
+        return a * b * c;
+    });
+    std::cout << "Result: " << product2 << std::endl;
+
+    // Chaining with other operations
+    std::cout << "\nChaining multiple operations:" << std::endl;
+    auto tuple4 = fxt::make_tuple(10, 5);
+    std::cout << "Starting with tuple: (10, 5)" << std::endl;
+
+    auto chain_result = tuple4
+        | fxt::apply([](int a, int b) {
+            std::cout << "  Step 1: " << a << " - " << b << " = " << (a - b) << std::endl;
+            return a - b;
+        });
+    std::cout << "Result: " << chain_result << std::endl;
+
+    // With void-returning lambda
+    std::cout << "\nWith void-returning lambda:" << std::endl;
+    auto tuple5 = fxt::make_tuple(100, std::string{"meters"});
+    std::cout << "Tuple: (100, \"meters\")" << std::endl;
+
+    tuple5 | fxt::apply([](int distance, const std::string& unit) {
+        std::cout << "  Logging: Distance is " << distance << " " << unit << std::endl;
+    });
+
+    // =========================================================================
+    // Part 15: fxt::apply with fxt::flat_tuple (direct call, no pipe)
+    // =========================================================================
+    std::cout << "\n\nPart 15: fxt::apply with fxt::flat_tuple (direct call, no pipe)" << std::endl;
+    std::cout << "----------------------------------------------------------------" << std::endl;
+
+    auto ft1 = fxt::make_flat_tuple(3.0, 4.0);
+    std::cout << "Flat_tuple: (3.0, 4.0)" << std::endl;
+
+    auto hypotenuse = fxt::apply([](double a, double b) {
+        auto result = std::sqrt(a * a + b * b);
+        std::cout << "  Computing: sqrt(" << a << "² + " << b << "²) = " << result << std::endl;
+        return result;
+    }, ft1);
+    std::cout << "Result: " << hypotenuse << std::endl;
+
+    // With more elements
+    std::cout << "\nWith multiple elements:" << std::endl;
+    auto ft2 = fxt::make_flat_tuple(1, 2, 3, 4, 5);
+    std::cout << "Flat_tuple: (1, 2, 3, 4, 5)" << std::endl;
+
+    auto sum2 = fxt::apply([](int a, int b, int c, int d, int e) {
+        auto result = a + b + c + d + e;
+        std::cout << "  Sum: " << a << " + " << b << " + " << c << " + " << d << " + " << e << " = " << result << std::endl;
+        return result;
+    }, ft2);
+    std::cout << "Result: " << sum2 << std::endl;
+
+    // With mixed types
+    std::cout << "\nWith mixed types:" << std::endl;
+    auto ft3 = fxt::make_flat_tuple(42, 3.14, std::string{"pi"});
+    std::cout << "Flat_tuple: (42, 3.14, \"pi\")" << std::endl;
+
+    fxt::apply([](int i, double d, const std::string& s) {
+        std::cout << "  Values: " << i << ", " << d << ", \"" << s << "\"" << std::endl;
+    }, ft3);
+
+    // =========================================================================
+    // Part 16: fxt::apply with fxt::flat_tuple (with pipe operator)
+    // =========================================================================
+    std::cout << "\n\nPart 16: fxt::apply with fxt::flat_tuple (with pipe operator)" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+
+    auto ft4 = fxt::make_flat_tuple(8.0, 2.0);
+    std::cout << "Flat_tuple: (8.0, 2.0)" << std::endl;
+
+    auto division_result = ft4 | fxt::apply([](double a, double b) {
+        std::cout << "  Computing: " << a << " / " << b << " = " << (a / b) << std::endl;
+        return a / b;
+    });
+    std::cout << "Result: " << division_result << std::endl;
+
+    // With computation
+    std::cout << "\nWith complex computation:" << std::endl;
+    auto ft5 = fxt::make_flat_tuple(10.0, 20.0, 30.0);
+    std::cout << "Flat_tuple: (10.0, 20.0, 30.0)" << std::endl;
+
+    auto average = ft5 | fxt::apply([](double a, double b, double c) {
+        auto result = (a + b + c) / 3.0;
+        std::cout << "  Average: (" << a << " + " << b << " + " << c << ") / 3 = " << result << std::endl;
+        return result;
+    });
+    std::cout << "Result: " << average << std::endl;
+
+    // Using temporary flat_tuple
+    std::cout << "\nUsing temporary flat_tuple:" << std::endl;
+    auto temp_result = fxt::make_flat_tuple(5, 6, 7, 8)
+        | fxt::apply([](int a, int b, int c, int d) {
+            std::cout << "  Product: " << a << " * " << b << " * " << c << " * " << d << " = " << (a * b * c * d) << std::endl;
+            return a * b * c * d;
+        });
+    std::cout << "Result: " << temp_result << std::endl;
+
+    // =========================================================================
+    // Part 17: Comparing fxt::tuple vs fxt::flat_tuple with fxt::apply
+    // =========================================================================
+    std::cout << "\n\nPart 17: Comparing fxt::tuple vs fxt::flat_tuple with fxt::apply" << std::endl;
+    std::cout << "-----------------------------------------------------------------" << std::endl;
+
+    std::cout << "Same computation with both tuple types:" << std::endl;
+
+    auto regular_tuple = fxt::make_tuple(12, 4);
+    auto flat_tuple = fxt::make_flat_tuple(12, 4);
+
+    std::cout << "\nUsing fxt::tuple:" << std::endl;
+    auto result_regular = regular_tuple | fxt::apply([](int a, int b) {
+        std::cout << "  Computing: " << a << " + " << b << " = " << (a + b) << std::endl;
+        return a + b;
+    });
+    std::cout << "Result: " << result_regular << std::endl;
+
+    std::cout << "\nUsing fxt::flat_tuple:" << std::endl;
+    auto result_flat = flat_tuple | fxt::apply([](int a, int b) {
+        std::cout << "  Computing: " << a << " + " << b << " = " << (a + b) << std::endl;
+        return a + b;
+    });
+    std::cout << "Result: " << result_flat << std::endl;
+
+    std::cout << "\nBoth produce the same result!" << std::endl;
+
+    // =========================================================================
+    // Part 18: Advanced - combining mapply and apply
+    // =========================================================================
+    std::cout << "\n\nPart 18: Advanced - combining mapply and apply" << std::endl;
+    std::cout << "----------------------------------------------" << std::endl;
+
+    std::cout << "Using mapply on monadic container, then apply on extracted value:" << std::endl;
+
+    auto monadic_result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
+        | fxt::mappend(3)
+        | fxt::mappend(4)
+        | fxt::mapply([](int a, int b) {
+            std::cout << "  In monadic context: Computing " << a << " * " << b << std::endl;
+            return a * b;
+        });
+
+    if (monadic_result) {
+        std::cout << "Extracting flat_tuple from expected..." << std::endl;
+        auto extracted = *monadic_result;
+
+        auto final_result = extracted | fxt::apply([](int a, int b, int product) {
+            std::cout << "  Direct apply: Sum of all = " << (a + b + product) << std::endl;
+            return a + b + product;
+        });
+
+        std::cout << "Final result: " << final_result << std::endl;
+    }
+
+    // =========================================================================
+    // Part 19: Real-world example - coordinate calculations
+    // =========================================================================
+    std::cout << "\n\nPart 19: Real-world example - coordinate calculations" << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
+
+    std::cout << "Computing distance between two 2D points:" << std::endl;
+
+    auto point1 = fxt::make_flat_tuple(0.0, 0.0);
+    auto point2 = fxt::make_flat_tuple(3.0, 4.0);
+
+    std::cout << "Point 1: (0.0, 0.0)" << std::endl;
+    std::cout << "Point 2: (3.0, 4.0)" << std::endl;
+
+    // Compute distance using point2 directly
+    auto distance = point2 | fxt::apply([](double x, double y) {
+        auto dist = std::sqrt(x * x + y * y);
+        std::cout << "  Distance from origin: sqrt(" << x << "² + " << y << "²) = " << dist << std::endl;
+        return dist;
+    });
+    std::cout << "Distance: " << distance << std::endl;
+
+    // More complex: area of triangle
+    std::cout << "\nComputing area of triangle (base, height):" << std::endl;
+    auto triangle = fxt::make_tuple(10.0, 5.0);
+    std::cout << "Base: 10.0, Height: 5.0" << std::endl;
+
+    auto area = fxt::apply([](double base, double height) {
+        auto a = 0.5 * base * height;
+        std::cout << "  Area: 0.5 * " << base << " * " << height << " = " << a << std::endl;
+        return a;
+    }, triangle);
+    std::cout << "Area: " << area << std::endl;
+
     std::cout << "\n=== Demo Complete ===" << std::endl;
 
     return 0;

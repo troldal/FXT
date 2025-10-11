@@ -11,7 +11,7 @@
 template<typename... Args>
 void print_tuple(const std::tuple<Args...>& t) {
     std::cout << "(";
-    std::apply([](const auto&... args) {
+    fxt::apply([](const auto&... args) {
         std::size_t n = 0;
         ((std::cout << args << (++n != sizeof...(args) ? ", " : "")), ...);
     }, t);
@@ -438,4 +438,3 @@ int main() {
 
     return 0;
 }
-
