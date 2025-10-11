@@ -72,6 +72,8 @@ namespace fxt
     {
         return std::get<I>(std::move(t));
     }
+}    // namespace fxt
+
 
     /**
      * @brief Pipe operator for fxt::tuple with callable (lvalue reference)
@@ -91,8 +93,8 @@ namespace fxt
      * @endcode
      */
     template<typename... Ts, typename Callable>
-    requires requires(tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
-    constexpr auto operator|(tuple<Ts...>& tuple, Callable&& callable)
+    requires requires(fxt::tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
+    constexpr auto operator|(fxt::tuple<Ts...>& tuple, Callable&& callable)
         -> decltype(std::invoke(std::forward<Callable>(callable), tuple))
     {
         return std::invoke(std::forward<Callable>(callable), tuple);
@@ -102,8 +104,8 @@ namespace fxt
      * @brief Pipe operator for fxt::tuple with callable (const lvalue reference)
      */
     template<typename... Ts, typename Callable>
-    requires requires(const tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
-    constexpr auto operator|(const tuple<Ts...>& tuple, Callable&& callable)
+    requires requires(const fxt::tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
+    constexpr auto operator|(const fxt::tuple<Ts...>& tuple, Callable&& callable)
         -> decltype(std::invoke(std::forward<Callable>(callable), tuple))
     {
         return std::invoke(std::forward<Callable>(callable), tuple);
@@ -113,8 +115,8 @@ namespace fxt
      * @brief Pipe operator for fxt::tuple with callable (rvalue reference)
      */
     template<typename... Ts, typename Callable>
-    requires requires(tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
-    constexpr auto operator|(tuple<Ts...>&& tuple, Callable&& callable)
+    requires requires(fxt::tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
+    constexpr auto operator|(fxt::tuple<Ts...>&& tuple, Callable&& callable)
         -> decltype(std::invoke(std::forward<Callable>(callable), std::move(tuple)))
     {
         return std::invoke(std::forward<Callable>(callable), std::move(tuple));
@@ -124,11 +126,9 @@ namespace fxt
      * @brief Pipe operator for fxt::tuple with callable (const rvalue reference)
      */
     template<typename... Ts, typename Callable>
-    requires requires(const tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
-    constexpr auto operator|(const tuple<Ts...>&& tuple, Callable&& callable)
+    requires requires(const fxt::tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
+    constexpr auto operator|(const fxt::tuple<Ts...>&& tuple, Callable&& callable)
         -> decltype(std::invoke(std::forward<Callable>(callable), std::move(tuple)))
     {
         return std::invoke(std::forward<Callable>(callable), std::move(tuple));
     }
-
-}    // namespace fxt
