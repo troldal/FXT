@@ -37,11 +37,11 @@ namespace fxt
         return overload{
             // Handle expected-like containers
             []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::get<I>(t); });
+                return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
             },
             // Handle optional-like containers
             []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::get<I>(t); });
+                return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
             }
         };
     }

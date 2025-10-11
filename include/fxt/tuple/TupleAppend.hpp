@@ -44,8 +44,8 @@ namespace fxt::impl
         } else if constexpr (is_flat_tuple_v<Tuple>) {
             // For fxt::flat_tuple - extract element types from the tuple
             using TupleType = std::remove_cvref_t<Tuple>;
-            using ResultType = decltype([&]<typename... Ts>(flat_tuple<Ts...>*) {
-                return flat_tuple<std::decay_t<Ts>..., std::decay_t<U>>{};
+            using ResultType = decltype([&]<typename... Ts>(flat_tuple<Ts...>*) -> flat_tuple<std::decay_t<Ts>..., std::decay_t<U>> {
+                return std::declval<flat_tuple<std::decay_t<Ts>..., std::decay_t<U>>>();
             }(static_cast<TupleType*>(nullptr)));
             return ResultType(fxt::get<I>(std::forward<Tuple>(t))..., std::forward<U>(u));
         }
@@ -63,8 +63,8 @@ namespace fxt::impl
         } else if constexpr (is_flat_tuple_v<Tuple>) {
             // For fxt::flat_tuple - extract element types from the tuple
             using TupleType = std::remove_cvref_t<Tuple>;
-            using ResultType = decltype([&]<typename... Ts>(flat_tuple<Ts...>*) {
-                return flat_tuple<std::decay_t<Ts>..., std::decay_t<Us>...>{};
+            using ResultType = decltype([&]<typename... Ts>(flat_tuple<Ts...>*) -> flat_tuple<std::decay_t<Ts>..., std::decay_t<Us>...> {
+                return std::declval<flat_tuple<std::decay_t<Ts>..., std::decay_t<Us>...>>();
             }(static_cast<TupleType*>(nullptr)));
             return ResultType(fxt::get<I>(std::forward<Tuple>(t))..., std::forward<Us>(us)...);
         }

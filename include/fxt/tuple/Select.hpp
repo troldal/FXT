@@ -30,21 +30,29 @@ namespace fxt
      * @throws static_assert If no indices are provided
      *
      * @example
-     *   // With expected
-     *   auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = exp | fxt::mselect<0, 2>();  // result contains std::tuple<int, std::string>{1, "three"}
+     *   // With expected containing fxt::tuple
+     *   auto exp = fxt::expected<fxt::tuple<int, double, std::string>, Error>{fxt::make_tuple(1, 2.0, "three")};
+     *   auto result = exp | fxt::mselect<0, 2>();  // result contains fxt::tuple<int, std::string>{1, "three"}
      *
-     *   // With optional
-     *   auto opt = fxt::optional<std::tuple<int, double, std::string>>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = opt | fxt::mselect<0, 2>();  // result contains std::tuple<int, std::string>{1, "three"}
+     *   // With expected containing fxt::flat_tuple
+     *   auto exp2 = fxt::expected<fxt::flat_tuple<int, double, std::string>, Error>{fxt::make_flat_tuple(1, 2.0, "three")};
+     *   auto result2 = exp2 | fxt::mselect<0, 2>();  // result contains fxt::flat_tuple<int, std::string>{1, "three"}
      *
-     *   // With fxt::tuple
+     *   // With optional containing fxt::tuple
+     *   auto opt = fxt::optional<fxt::tuple<int, double, std::string>>{fxt::make_tuple(1, 2.0, "three")};
+     *   auto result3 = opt | fxt::mselect<0, 2>();  // result contains fxt::tuple<int, std::string>{1, "three"}
+     *
+     *   // With optional containing fxt::flat_tuple
+     *   auto opt2 = fxt::optional<fxt::flat_tuple<int, double, std::string>>{fxt::make_flat_tuple(1, 2.0, "three")};
+     *   auto result4 = opt2 | fxt::mselect<0, 2>();  // result contains fxt::flat_tuple<int, std::string>{1, "three"}
+     *
+     *   // Direct with fxt::tuple
      *   auto t = fxt::make_tuple(1, 2.0, "three");
-     *   auto result = t | fxt::mselect<0, 2>();  // result is fxt::tuple<int, std::string>{1, "three"}
+     *   auto result5 = t | fxt::mselect<0, 2>();  // result is fxt::tuple<int, std::string>{1, "three"}
      *
-     *   // With fxt::flat_tuple
+     *   // Direct with fxt::flat_tuple
      *   auto ft = fxt::make_flat_tuple(1, 2.0, "three");
-     *   auto result = ft | fxt::mselect<0, 2>();  // result is fxt::flat_tuple<int, std::string>{1, "three"}
+     *   auto result6 = ft | fxt::mselect<0, 2>();  // result is fxt::flat_tuple<int, std::string>{1, "three"}
      */
     template<size_t... Is>
     auto mselect()
@@ -52,13 +60,29 @@ namespace fxt
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
 
         return overload{
-            // Handle expected-like containers
-            []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::make_tuple(std::get<Is>(t)...); });
+            // Handle expected-like containers with fxt::tuple
+            []<typename... TArgs, typename TError>(const fxt::expected<fxt::tuple<TArgs...>, TError>& container) {
+                return container.transform([](const fxt::tuple<TArgs...>& t) {
+                    return fxt::make_tuple(fxt::get<Is>(t)...);
+                });
             },
-            // Handle optional-like containers
-            []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::make_tuple(std::get<Is>(t)...); });
+            // Handle expected-like containers with fxt::flat_tuple
+            []<typename... TArgs, typename TError>(const fxt::expected<fxt::flat_tuple<TArgs...>, TError>& container) {
+                return container.transform([](const fxt::flat_tuple<TArgs...>& t) {
+                    return fxt::make_flat_tuple(fxt::get<Is>(t)...);
+                });
+            },
+            // Handle optional-like containers with fxt::tuple
+            []<typename... TArgs>(const fxt::optional<fxt::tuple<TArgs...>>& container) {
+                return container.transform([](const fxt::tuple<TArgs...>& t) {
+                    return fxt::make_tuple(fxt::get<Is>(t)...);
+                });
+            },
+            // Handle optional-like containers with fxt::flat_tuple
+            []<typename... TArgs>(const fxt::optional<fxt::flat_tuple<TArgs...>>& container) {
+                return container.transform([](const fxt::flat_tuple<TArgs...>& t) {
+                    return fxt::make_flat_tuple(fxt::get<Is>(t)...);
+                });
             },
             // Handle fxt::tuple (lvalue reference)
             []<typename... TArgs>(fxt::tuple<TArgs...>& tuple) {
@@ -91,9 +115,12 @@ namespace fxt
      * @brief Extract multiple elements from a tuple inside a monadic container by type
      *
      * Creates a function that extracts multiple elements of the specified types from a tuple
-     * contained within an fxt::expected or fxt::optional object, or directly from fxt::tuple
-     * or fxt::flat_tuple. The extracted elements are combined into a new tuple of the same type,
-     * preserving the container type (expected/optional) or tuple type (fxt::tuple/fxt::flat_tuple).
+     * contained within an fxt::expected or fxt::optional object, or directly from fxt::tuple.
+     * The extracted elements are combined into a new tuple of the same type,
+     * preserving the container type (expected/optional) or tuple type (fxt::tuple).
+     *
+     * Note: This function only works with fxt::tuple, not fxt::flat_tuple, because
+     * fxt::flat_tuple does not support get by type.
      *
      * @tparam Ts The types of the elements to extract from the tuple
      * @return A function that transforms a monadic container<tuple> or tuple to extract elements of specified types
@@ -103,14 +130,14 @@ namespace fxt
      *
      * @example
      *   // With expected
-     *   auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = exp | fxt::mselect<int, std::string>();  // result contains std::tuple<int, std::string>{1, "three"}
+     *   auto exp = fxt::expected<fxt::tuple<int, double, std::string>, Error>{fxt::make_tuple(1, 2.0, "three")};
+     *   auto result = exp | fxt::mselect<int, std::string>();  // result contains fxt::tuple<int, std::string>{1, "three"}
      *
      *   // With optional
-     *   auto opt = fxt::optional<std::tuple<int, double, std::string>>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = opt | fxt::mselect<int, std::string>();  // result contains std::tuple<int, std::string>{1, "three"}
+     *   auto opt = fxt::optional<fxt::tuple<int, double, std::string>>{fxt::make_tuple(1, 2.0, "three")};
+     *   auto result = opt | fxt::mselect<int, std::string>();  // result contains fxt::tuple<int, std::string>{1, "three"}
      *
-     *   // With fxt::tuple (note: only works with std::tuple as it uses std::get by type)
+     *   // With fxt::tuple (note: uses std::get by type)
      *   auto t = fxt::make_tuple(1, 2.0, "three");
      *   auto result = t | fxt::mselect<int, const char*>();  // result is fxt::tuple<int, const char*>
      */
@@ -120,13 +147,17 @@ namespace fxt
         static_assert(sizeof...(Ts) >= 1, "At least one type must be provided");
 
         return overload{
-            // Handle expected-like containers
-            []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::make_tuple(std::get<Ts>(t)...); });
+            // Handle expected-like containers with fxt::tuple
+            []<typename... TArgs, typename TError>(const fxt::expected<fxt::tuple<TArgs...>, TError>& container) {
+                return container.transform([](const fxt::tuple<TArgs...>& t) {
+                    return fxt::make_tuple(std::get<Ts>(t)...);
+                });
             },
-            // Handle optional-like containers
-            []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::make_tuple(std::get<Ts>(t)...); });
+            // Handle optional-like containers with fxt::tuple
+            []<typename... TArgs>(const fxt::optional<fxt::tuple<TArgs...>>& container) {
+                return container.transform([](const fxt::tuple<TArgs...>& t) {
+                    return fxt::make_tuple(std::get<Ts>(t)...);
+                });
             },
             // Handle fxt::tuple (lvalue reference) - uses std::get by type
             []<typename... TArgs>(fxt::tuple<TArgs...>& tuple) {
