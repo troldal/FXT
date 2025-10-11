@@ -5,9 +5,7 @@
 // to extract type information from fxt::tuple and fxt::flat_tuple at compile time.
 //
 
-#include <fxt/tuple/TupleElement.hpp>
-#include <fxt/tuple/Tuple.hpp>
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt.hpp>
 #include <iostream>
 #include <string>
 #include <type_traits>

@@ -3,10 +3,10 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt/tuples/FlatTuple.hpp>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 TEST_CASE("flat_tuple - construction", "[flat_tuple]")
 {

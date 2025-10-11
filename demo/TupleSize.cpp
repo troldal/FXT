@@ -6,9 +6,7 @@
 // fxt::tuple (std::tuple) and fxt::flat_tuple.
 //
 
-#include <fxt/tuple/TupleSize.hpp>
-#include <fxt/tuple/Tuple.hpp>
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt.hpp>
 #include <iostream>
 #include <string>
 #include <vector>

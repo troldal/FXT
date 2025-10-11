@@ -5,7 +5,6 @@
 #pragma once
 
 #include "Tuple.hpp"
-#include "TupleSize.hpp"
 #include "FlatTuple.hpp"
 
 namespace fxt

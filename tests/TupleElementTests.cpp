@@ -3,9 +3,9 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/tuple/TupleElement.hpp>
-#include <fxt/tuple/Tuple.hpp>
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt/tuples/FlatTuple.hpp>
+#include <fxt/tuples/Tuple.hpp>
+#include <fxt/tuples/TupleElement.hpp>
 #include <string>
 #include <type_traits>
 

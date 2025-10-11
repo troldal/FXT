@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "../monad/Expected.hpp"
-#include "../monad/Optional.hpp"
+#include "../monads/Expected.hpp"
+#include "../monads/Optional.hpp"
 #include "../utils/Overload.hpp"
-#include "Tuple.hpp"
 #include "FlatTuple.hpp"
+#include "Tuple.hpp"
 #include "TupleAppend.hpp"
 #include <cstddef>
 #include <tuple>

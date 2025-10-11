@@ -8,6 +8,8 @@
 #include <string>
 #include <tuple>
 
+using namespace std::literals;
+
 TEST_CASE("append - fxt::expected with plain values", "[append]")
 {
     SECTION("append int to tuple")
@@ -534,7 +536,7 @@ TEST_CASE("append - complex types (expected)", "[append]")
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
         REQUIRE(std::get<1>(*result).first == 10);
-        REQUIRE(std::get<1>(*result).second == "test");
+        REQUIRE(std::get<1>(*result).second == "test"s);
     }
 }
 
@@ -561,7 +563,7 @@ TEST_CASE("append - complex types (optional)", "[append]")
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
         REQUIRE(std::get<1>(*result).first == 10);
-        REQUIRE(std::get<1>(*result).second == "test");
+        REQUIRE(std::get<1>(*result).second == "test"s);
     }
 }
 

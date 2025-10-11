@@ -146,12 +146,12 @@ namespace fxt
             };
         } else {
             // Multiple elements version - capture values in a tuple and unpack them
-            return [values = fxt::tuple{std::forward<U>(u), std::forward<Us>(us)...}]<class Tuple>(Tuple&& t) mutable {
+            return [values = fxt::tuple<U, Us...>{std::forward<U>(u), std::forward<Us>(us)...}]<class Tuple>(Tuple&& t) mutable {
                 constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
                 constexpr std::size_t M = sizeof...(Us) + 1;
 
                 // Unpack the captured tuple and pass to append_impl_variadic
-                return [&t, &values]<std::size_t... I>(std::index_sequence<I...>) {
+                return [&t, &values, N]<std::size_t... I>(std::index_sequence<I...>) {
                     return impl::append_impl_variadic(
                         std::forward<Tuple>(t),
                         std::make_index_sequence<N>{},

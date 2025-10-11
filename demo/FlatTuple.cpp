@@ -2,11 +2,11 @@
 // Created by AI Assistant on 10-10-2025.
 //
 
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt.hpp>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 // ============================================================================
 // Example 1: Basic Construction and Element Access

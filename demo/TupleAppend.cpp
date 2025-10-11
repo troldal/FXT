@@ -5,9 +5,7 @@
 // fxt::tuple and fxt::flat_tuple, both with direct calls and using the pipe operator.
 //
 
-#include <fxt/tuple/TupleAppend.hpp>
-#include <fxt/tuple/Tuple.hpp>
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt.hpp>
 #include <iostream>
 #include <string>
 

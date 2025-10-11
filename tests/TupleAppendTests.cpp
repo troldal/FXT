@@ -3,9 +3,9 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/tuple/TupleAppend.hpp>
-#include <fxt/tuple/Tuple.hpp>
-#include <fxt/tuple/FlatTuple.hpp>
+#include <fxt/tuples/FlatTuple.hpp>
+#include <fxt/tuples/Tuple.hpp>
+#include <fxt/tuples/TupleAppend.hpp>
 #include <string>
 
 // ============================================================================
@@ -16,7 +16,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with single value", "[tuple_app
 {
     SECTION("append int to empty tuple")
     {
-        auto t = fxt::tuple{};
+        auto t = fxt::tuple<>{};
         auto result = fxt::tuple_append(t, 42);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
@@ -25,7 +25,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with single value", "[tuple_app
 
     SECTION("append int to tuple with one element")
     {
-        auto t = fxt::tuple{1};
+        auto t = fxt::tuple<int>{1};
         auto result = fxt::tuple_append(t, 2);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 2);
@@ -35,7 +35,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with single value", "[tuple_app
 
     SECTION("append string to tuple with int")
     {
-        auto t = fxt::tuple{42};
+        auto t = fxt::tuple<int>{42};
         auto result = fxt::tuple_append(t, std::string{"hello"});
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 2);
@@ -45,7 +45,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with single value", "[tuple_app
 
     SECTION("append double to tuple with mixed types")
     {
-        auto t = fxt::tuple{42, std::string{"world"}};
+        auto t = fxt::tuple<int, std::string>{42, std::string{"world"}};
         auto result = fxt::tuple_append(t, 3.14);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
@@ -56,7 +56,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with single value", "[tuple_app
 
     SECTION("append bool to complex tuple")
     {
-        auto t = fxt::tuple{1, 2.5, std::string{"test"}};
+        auto t = fxt::tuple<int, double, std::string>{1, 2.5, std::string{"test"}};
         auto result = fxt::tuple_append(t, true);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
@@ -71,7 +71,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with multiple values", "[tuple_
 {
     SECTION("append two ints to tuple")
     {
-        auto t = fxt::tuple{1};
+        auto t = fxt::tuple<int>{1};
         auto result = fxt::tuple_append(t, 2, 3);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
@@ -82,7 +82,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with multiple values", "[tuple_
 
     SECTION("append three values of different types")
     {
-        auto t = fxt::tuple{std::string{"start"}};
+        auto t = fxt::tuple<std::string>{std::string{"start"}};
         auto result = fxt::tuple_append(t, 42, 3.14, true);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
@@ -94,7 +94,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with multiple values", "[tuple_
 
     SECTION("append five ints")
     {
-        auto t = fxt::tuple{1, 2};
+        auto t = fxt::tuple<int, int>{1, 2};
         auto result = fxt::tuple_append(t, 3, 4, 5, 6, 7);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 7);
@@ -109,7 +109,7 @@ TEST_CASE("tuple_append - fxt::tuple direct call with multiple values", "[tuple_
 
     SECTION("append to empty tuple")
     {
-        auto t = fxt::tuple{};
+        auto t = fxt::tuple<>{};
         auto result = fxt::tuple_append(t, 1, 2, 3);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
@@ -127,7 +127,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with single value", "[tuple_a
 {
     SECTION("append int using pipe")
     {
-        auto t = fxt::tuple{1, 2, 3};
+        auto t = fxt::tuple<int, int, int>{1, 2, 3};
         auto result = t | fxt::tuple_append(4);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
@@ -139,7 +139,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with single value", "[tuple_a
 
     SECTION("append string using pipe")
     {
-        auto t = fxt::tuple{42};
+        auto t = fxt::tuple<int>{42};
         auto result = t | fxt::tuple_append(std::string{"test"});
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 2);
@@ -149,7 +149,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with single value", "[tuple_a
 
     SECTION("chain multiple single appends")
     {
-        auto result = fxt::tuple{1}
+        auto result = fxt::tuple<int>{1}
             | fxt::tuple_append(2)
             | fxt::tuple_append(3)
             | fxt::tuple_append(4);
@@ -163,7 +163,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with single value", "[tuple_a
 
     SECTION("chain appends with different types")
     {
-        auto result = fxt::tuple{std::string{"hello"}}
+        auto result = fxt::tuple<std::string>{std::string{"hello"}}
             | fxt::tuple_append(42)
             | fxt::tuple_append(3.14)
             | fxt::tuple_append(true);
@@ -180,7 +180,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with multiple values", "[tupl
 {
     SECTION("append two values using pipe")
     {
-        auto t = fxt::tuple{1};
+        auto t = fxt::tuple<int>{1};
         auto result = t | fxt::tuple_append(2, 3);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
@@ -191,7 +191,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with multiple values", "[tupl
 
     SECTION("append three mixed types using pipe")
     {
-        auto t = fxt::tuple{std::string{"start"}};
+        auto t = fxt::tuple<std::string>{std::string{"start"}};
         auto result = t | fxt::tuple_append(42, 3.14, true);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
@@ -203,7 +203,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with multiple values", "[tupl
 
     SECTION("chain single and multiple appends")
     {
-        auto result = fxt::tuple{std::string{"data"}}
+        auto result = fxt::tuple<std::string>{std::string{"data"}}
             | fxt::tuple_append(1, 2, 3)
             | fxt::tuple_append(4.5)
             | fxt::tuple_append(6.7, 8.9);
@@ -220,7 +220,7 @@ TEST_CASE("tuple_append - fxt::tuple pipe operator with multiple values", "[tupl
 
     SECTION("append four values at once")
     {
-        auto t = fxt::tuple{1};
+        auto t = fxt::tuple<int>{1};
         auto result = t | fxt::tuple_append(2, 3, 4, 5);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 5);
@@ -424,7 +424,7 @@ TEST_CASE("tuple_append - edge cases", "[tuple_append][edge_cases]")
 {
     SECTION("append to empty fxt::tuple")
     {
-        auto t = fxt::tuple{};
+        auto t = fxt::tuple<>{};
         auto result = fxt::tuple_append(t, 42);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
@@ -433,7 +433,7 @@ TEST_CASE("tuple_append - edge cases", "[tuple_append][edge_cases]")
 
     SECTION("append multiple to empty fxt::tuple")
     {
-        auto t = fxt::tuple{};
+        auto t = fxt::tuple<>{};
         auto result = fxt::tuple_append(t, 1, 2, 3);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
@@ -444,7 +444,7 @@ TEST_CASE("tuple_append - edge cases", "[tuple_append][edge_cases]")
 
     SECTION("const tuple append")
     {
-        const auto t = fxt::tuple{1, 2};
+        const auto t = fxt::tuple<int, int>{1, 2};
         auto result = fxt::tuple_append(t, 3);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
@@ -455,7 +455,7 @@ TEST_CASE("tuple_append - edge cases", "[tuple_append][edge_cases]")
 
     SECTION("rvalue tuple append")
     {
-        auto result = fxt::tuple_append(fxt::tuple{1, 2}, 3);
+        auto result = fxt::tuple_append(fxt::tuple<int, int>{1, 2}, 3);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
         REQUIRE(fxt::get<0>(result) == 1);
@@ -483,7 +483,7 @@ TEST_CASE("tuple_append - type preservation", "[tuple_append][types]")
 {
     SECTION("int types are preserved")
     {
-        auto t = fxt::tuple{1, 2, 3};
+        auto t = fxt::tuple<int, int, int>{1, 2, 3};
         auto result = fxt::tuple_append(t, 4, 5);
 
         static_assert(std::is_same_v<decltype(fxt::get<0>(result)), int&>);
@@ -492,7 +492,7 @@ TEST_CASE("tuple_append - type preservation", "[tuple_append][types]")
 
     SECTION("mixed types are preserved")
     {
-        auto t = fxt::tuple{42, std::string{"test"}};
+        auto t = fxt::tuple<int, std::string>{42, std::string{"test"}};
         auto result = fxt::tuple_append(t, 3.14, true);
 
         static_assert(std::is_same_v<decltype(fxt::get<0>(result)), int&>);
@@ -510,4 +510,3 @@ TEST_CASE("tuple_append - type preservation", "[tuple_append][types]")
         static_assert(std::is_same_v<decltype(fxt::get<2>(result)), double&>);
     }
 }
-
