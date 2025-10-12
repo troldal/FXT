@@ -38,6 +38,111 @@
 
 */
 
+/**
+ * @file TupleTransform.hpp
+ * @brief Tuple transformation operations for fxt::tuple and fxt::flat_tuple
+ *
+ * This file provides functions for transforming elements of tuples by applying callables to each element,
+ * in both plain and monadic contexts. All functions work seamlessly with both fxt::tuple (std::tuple)
+ * and fxt::flat_tuple, preserving the tuple type through the operations.
+ *
+ * ## Main Functions
+ *
+ * ### fxt::tuple_transform
+ * Transforms each element of a tuple by applying a callable. Available in two forms:
+ * - **Direct call**: `tuple_transform(callable, tuple)` - Takes a callable and a tuple, returns transformed tuple
+ * - **Curried form**: `tuple_transform(callable)` - Returns a lambda for pipeline usage with operator|
+ *
+ * The callable is applied to each element independently, and the return values form the new tuple.
+ * The transformation can change element types (e.g., int to string).
+ *
+ * ### fxt::mtuple_transform
+ * Transforms each element of a tuple inside a monad (fxt::expected or fxt::optional) by applying a callable.
+ * Available in two forms:
+ * - **Direct call**: `mtuple_transform(callable, monad<tuple>)` - Takes a callable and monadic tuple
+ * - **Curried form**: `mtuple_transform(callable)` - Returns a lambda for pipeline usage with operator|
+ *
+ * Automatically handles error/nullopt propagation - if the monad contains an error or nullopt,
+ * the transformation is not applied and the error/nullopt is propagated to the result.
+ *
+ * ## Key Features
+ * - Type-preserving: Works with both fxt::tuple and fxt::flat_tuple, maintaining the tuple type
+ * - Type-transforming: Can change element types during transformation
+ * - Pipeline-friendly: Curried versions enable fluent chaining with the pipe operator
+ * - Monadic: mtuple_transform handles error/nullopt propagation automatically
+ * - Perfect forwarding: Preserves value categories through transformations
+ *
+ * ## Examples
+ *
+ * ### Basic transformation
+ * @code
+ * auto t = fxt::tuple{1, 2, 3};
+ * auto result = fxt::tuple_transform([](auto x) { return x * 2; }, t);
+ * // result is fxt::tuple<int, int, int>{2, 4, 6}
+ * @endcode
+ *
+ * ### Type-changing transformation
+ * @code
+ * auto t = fxt::tuple{1, 2, 3};
+ * auto result = fxt::tuple_transform([](auto x) { return std::to_string(x); }, t);
+ * // result is fxt::tuple<std::string, std::string, std::string>{"1", "2", "3"}
+ * @endcode
+ *
+ * ### Pipeline usage
+ * @code
+ * auto result = fxt::tuple{1, 2, 3, 4}
+ *     | fxt::tuple_transform([](auto x) { return x * 2; })
+ *     | fxt::take<2>();
+ * // result is fxt::tuple<int, int>{2, 4}
+ * @endcode
+ *
+ * ### Monadic transformation
+ * @code
+ * auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::tuple{1, 2, 3}};
+ * auto result = exp | fxt::mtuple_transform([](auto x) { return x * 2; });
+ * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 4, 6}
+ * @endcode
+ *
+ * ### Error propagation
+ * @code
+ * auto exp_err = fxt::expected<fxt::tuple<int, int>, Error>{fxt::unexpected{Error{}}};
+ * auto result = exp_err | fxt::mtuple_transform([](auto x) { return x * 2; });
+ * // result contains the error, transformation is not applied
+ * @endcode
+ *
+ * ### Works with flat_tuple
+ * @code
+ * auto ft = fxt::flat_tuple<double, double, double>{1.0, 2.0, 3.0};
+ * auto result = ft | fxt::tuple_transform([](auto x) { return x + 1.0; });
+ * // result is fxt::flat_tuple<double, double, double>{2.0, 3.0, 4.0}
+ * @endcode
+ *
+ * ### Chaining transformations
+ * @code
+ * auto t = fxt::tuple{1, 2, 3};
+ * auto result = t
+ *     | fxt::tuple_transform([](auto x) { return x * 2; })
+ *     | fxt::tuple_transform([](auto x) { return x + 1; });
+ * // result is fxt::tuple<int, int, int>{3, 5, 7}
+ * @endcode
+ *
+ * ## Function Summary
+ *
+ * | Function | Description |
+ * |----------|-------------|
+ * | `fxt::tuple_transform(F, Tuple)` | Direct call: transform tuple elements with callable |
+ * | `fxt::tuple_transform(F)` | Curried: returns lambda for pipeline usage |
+ * | `fxt::mtuple_transform(F, Monad)` | Direct call: transform monadic tuple elements |
+ * | `fxt::mtuple_transform(F)` | Curried: returns lambda for monadic pipeline usage |
+ *
+ * @see fxt::tuple
+ * @see fxt::flat_tuple
+ * @see fxt::expected
+ * @see fxt::optional
+ * @see fxt::tuple_reverse
+ * @see fxt::tuple_append
+ */
+
 
 #pragma once
 
@@ -86,7 +191,7 @@ namespace fxt
      */
     template<typename F, typename Tuple>
         requires tuple_like<std::remove_cvref_t<Tuple>>
-    constexpr auto transform_tuple(F&& f, Tuple&& tpl)
+    constexpr auto tuple_transform(F&& f, Tuple&& tpl)
     {
         constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
 
@@ -131,10 +236,10 @@ namespace fxt
      * @endcode
      */
     template<typename F>
-    constexpr auto transform_tuple(F&& f)
+    constexpr auto tuple_transform(F&& f)
     {
         return [f = std::forward<F>(f)]<typename Tuple>(Tuple&& tpl) {
-            return fxt::transform_tuple(f, std::forward<Tuple>(tpl));
+            return fxt::tuple_transform(f, std::forward<Tuple>(tpl));
         };
     }
 
@@ -174,10 +279,10 @@ namespace fxt
      * @endcode
      */
     template<typename F, typename Container>
-    constexpr auto mtransform_tuple(F&& f, Container&& container)
+    constexpr auto mtuple_transform(F&& f, Container&& container)
     {
         return std::forward<Container>(container).transform([f = std::forward<F>(f)](auto&& tpl) {
-            return fxt::transform_tuple(f, std::forward<decltype(tpl)>(tpl));
+            return fxt::tuple_transform(f, std::forward<decltype(tpl)>(tpl));
         });
     }
 
@@ -223,10 +328,10 @@ namespace fxt
      * @endcode
      */
     template<typename F>
-    constexpr auto mtransform_tuple(F&& f)
+    constexpr auto mtuple_transform(F&& f)
     {
         return [f = std::forward<F>(f)]<typename Container>(Container&& container) {
-            return fxt::mtransform_tuple(f, std::forward<Container>(container));
+            return fxt::mtuple_transform(f, std::forward<Container>(container));
         };
     }
 

@@ -41,9 +41,9 @@
 #pragma once
 
 #include "fxt/concepts/IsExpected.hpp"
+#include "fxt/concepts/IsMonad.hpp"
 #include "fxt/concepts/IsOptional.hpp"
 #include "fxt/concepts/IsTuple.hpp"
-#include "fxt/concepts/IsMonad.hpp"
 #include "fxt/monads/AndThen.hpp"
 #include "fxt/monads/Expected.hpp"
 #include "fxt/monads/LogicalOr.hpp"
@@ -64,7 +64,6 @@
 #include "fxt/tuples/Get.hpp"
 #include "fxt/tuples/Select.hpp"
 #include "fxt/tuples/Take.hpp"
-#include "fxt/tuples/Transform.hpp"
 #include "fxt/tuples/Tuple.hpp"
 #include "fxt/tuples/TupleAppend.hpp"
 #include "fxt/tuples/TupleCat.hpp"
@@ -72,6 +71,7 @@
 #include "fxt/tuples/TuplePrepend.hpp"
 #include "fxt/tuples/TupleReverse.hpp"
 #include "fxt/tuples/TupleSize.hpp"
+#include "fxt/tuples/TupleTransform.hpp"
 #include "fxt/utils/Curry.hpp"
 #include "fxt/utils/Failure.hpp"
 #include "fxt/utils/Lift.hpp"

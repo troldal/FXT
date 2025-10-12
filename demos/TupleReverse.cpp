@@ -181,7 +181,7 @@ void example_complex_chaining() {
 
     auto result2 = tuple2
         | fxt::tuple_reverse()
-        | fxt::transform_tuple([](auto x) { return x * 10; });
+        | fxt::tuple_transform([](auto x) { return x * 10; });
 
     std::cout << "   After | tuple_reverse() | transform(*10): (30, 20, 10)\n";
     std::cout << "   Values: (" << fxt::get<0>(result2) << ", "
@@ -282,7 +282,7 @@ void example_mtuple_reverse_expected_pipe() {
     std::cout << "   Initial: expected<(1, 2, 3)>\n";
 
     auto result2 = exp2
-        | fxt::mtransform_tuple([](auto x) { return x * 2; })
+        | fxt::mtuple_transform([](auto x) { return x * 2; })
         | fxt::mtuple_reverse();
 
     std::cout << "   After | mtransform_tuple(*2) | mtuple_reverse():\n";
@@ -302,7 +302,7 @@ void example_mtuple_reverse_expected_pipe() {
     auto result3 = exp3
         | fxt::mtuple_reverse()
         | fxt::mtuple_append(0)
-        | fxt::mtransform_tuple([](auto x) { return x + 10; });
+        | fxt::mtuple_transform([](auto x) { return x + 10; });
 
     std::cout << "   After | mtuple_reverse() | mtuple_append(0) | mtransform_tuple(+10):\n";
     if (result3) {
@@ -377,7 +377,7 @@ void example_mtuple_reverse_optional_pipe() {
 
     auto result2 = opt2
         | fxt::mtuple_reverse()
-        | fxt::mtransform_tuple([](auto x) { return x / 10; });
+        | fxt::mtuple_transform([](auto x) { return x / 10; });
 
     std::cout << "   After | mtuple_reverse() | mtransform_tuple(/10):\n";
     if (result2) {
