@@ -21,6 +21,7 @@ add_executable(fxt_tests
         TakeTests.cpp
         MatchTests.cpp
         MonadicTupleAppendTests.cpp
+        MonadicTuplePrependTests.cpp
         ToOptionalTests.cpp
         ToExpectedTests.cpp
         TapTests.cpp
@@ -28,6 +29,7 @@ add_executable(fxt_tests
         TupleAppendTests.cpp
         TupleCatTests.cpp
         TupleElementTests.cpp
+        TuplePrependTests.cpp
         TupleSizeTests.cpp
         TypeTests.cpp
 )
