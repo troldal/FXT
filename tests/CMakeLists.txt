@@ -20,6 +20,7 @@ add_executable(fxt_tests
         DropTests.cpp
         TakeTests.cpp
         MatchTests.cpp
+        MonadicTupleAppendTests.cpp
         ToOptionalTests.cpp
         ToExpectedTests.cpp
         TapTests.cpp

@@ -43,6 +43,7 @@
 
 #include <tuple>
 #include <concepts>
+#include <functional>
 
 namespace fxt
 {

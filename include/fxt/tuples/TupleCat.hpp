@@ -1,42 +1,6 @@
-/*
-    8 8888888888 `8.`8888.      ,8' 8888888 8888888888
-    8 8888        `8.`8888.    ,8'        8 8888
-    8 8888         `8.`8888.  ,8'         8 8888
-    8 8888          `8.`8888.,8'          8 8888
-    8 888888888888   `8.`88888'           8 8888
-    8 8888           .88.`8888.           8 8888
-    8 8888          .8'`8.`8888.          8 8888
-    8 8888         .8'  `8.`8888.         8 8888
-    8 8888        .8'    `8.`8888.        8 8888
-    8 8888       .8'      `8.`8888.       8 8888
-
-         FXT - Functional Extensions for C++23
-
-    ==================================================
-
-    MIT License
-
-    Copyright (c) 2025 Kenneth Troldal Balslev
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-
-*/
+//
+// Created by kenne on 12-10-2025.
+//
 
 #pragma once
 
@@ -222,8 +186,8 @@ namespace fxt
     requires fxt::tuple_like<std::remove_cvref_t<Tuple2>>
     constexpr auto tuple_cat(Tuple2&& t2)
     {
-        return [t2 = std::forward<Tuple2>(t2)](auto&& t1) mutable {
-            return fxt::tuple_cat(std::forward<decltype(t1)>(t1), std::move(t2));
+        return [t2 = std::forward<Tuple2>(t2)]<typename T0>(T0&& t1) mutable {
+            return fxt::tuple_cat(std::forward<T0>(t1), std::move(t2));
         };
     }
 
@@ -276,8 +240,8 @@ namespace fxt
     requires fxt::monad_like<std::remove_cvref_t<Container1>> && fxt::tuple_like<std::remove_cvref_t<Tuple2>>
     constexpr auto mtuple_cat(Container1&& container, Tuple2&& t2)
     {
-        return std::forward<Container1>(container).transform([t2 = std::forward<Tuple2>(t2)](auto&& t1) mutable {
-            return fxt::tuple_cat(std::forward<decltype(t1)>(t1), std::move(t2));
+        return std::forward<Container1>(container).transform([t2 = std::forward<Tuple2>(t2)]<typename T0>(T0&& t1) mutable {
+            return fxt::tuple_cat(std::forward<T0>(t1), std::move(t2));
         });
     }
 
@@ -297,9 +261,9 @@ namespace fxt
     requires fxt::monad_like<std::remove_cvref_t<Container1>> && fxt::monad_like<std::remove_cvref_t<Container2>>
     constexpr auto mtuple_cat(Container1&& container1, Container2&& container2)
     {
-        return std::forward<Container1>(container1).and_then([container2 = std::forward<Container2>(container2)](auto&& t1) mutable {
-            return std::forward<Container2>(container2).transform([t1 = std::forward<decltype(t1)>(t1)](auto&& t2) mutable {
-                return fxt::tuple_cat(std::move(t1), std::forward<decltype(t2)>(t2));
+        return std::forward<Container1>(container1).and_then([container2 = std::forward<Container2>(container2)]<typename TTuple1>(TTuple1&& t1) mutable {
+            return std::forward<Container2>(container2).transform([t1 = std::forward<TTuple1>(t1)]<typename TTuple2>(TTuple2&& t2) mutable {
+                return fxt::tuple_cat(std::move(t1), std::forward<TTuple2>(t2));
             });
         });
     }
@@ -347,8 +311,8 @@ namespace fxt
     template<typename Tuple2>
     constexpr auto mtuple_cat(Tuple2&& t2)
     {
-        return [t2 = std::forward<Tuple2>(t2)](auto&& container) mutable {
-            return fxt::mtuple_cat(std::forward<decltype(container)>(container), std::move(t2));
+        return [t2 = std::forward<Tuple2>(t2)]<typename TMonad>(TMonad&& container) mutable {
+            return fxt::mtuple_cat(std::forward<TMonad>(container), std::move(t2));
         };
     }
 
