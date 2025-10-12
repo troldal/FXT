@@ -40,8 +40,8 @@ if(UNIX)
     endfunction()
 
     # Create compile-time benchmark targets for appending
-    add_compile_time_benchmark(compile_time_append_tuple CompileTimeTuple.cpp)
-    add_compile_time_benchmark(compile_time_append_flat_tuple CompileTimeFlatTuple.cpp)
+    add_compile_time_benchmark(compile_time_append_tuple CompileTimeAppendTuple.cpp)
+    add_compile_time_benchmark(compile_time_append_flat_tuple CompileTimeAppendFlatTuple.cpp)
 
     # Create compile-time benchmark targets for creation
     add_compile_time_benchmark(compile_time_creation_tuple CompileTimeCreationTuple.cpp)
@@ -64,8 +64,8 @@ if(UNIX)
     add_compile_time_benchmark(compile_time_apply_flat_tuple CompileTimeApplyFlatTuple.cpp)
 
     # Create compile-time benchmark targets for combined operations
-#    add_compile_time_benchmark(compile_time_combined_tuple CompileTimeCombinedTuple.cpp)
-#    add_compile_time_benchmark(compile_time_combined_flat_tuple CompileTimeCombinedFlatTuple.cpp)
+    add_compile_time_benchmark(compile_time_combined_tuple CompileTimeCombinedTuple.cpp)
+    add_compile_time_benchmark(compile_time_combined_flat_tuple CompileTimeCombinedFlatTuple.cpp)
 
     # Helper function to run a pair of benchmarks and compare
     function(add_benchmark_comparison CATEGORY TUPLE_TARGET FLAT_TUPLE_TARGET)
@@ -92,7 +92,7 @@ if(UNIX)
     add_benchmark_comparison(transform compile_time_transform_tuple compile_time_transform_flat_tuple)
     add_benchmark_comparison(select compile_time_select_tuple compile_time_select_flat_tuple)
     add_benchmark_comparison(apply compile_time_apply_tuple compile_time_apply_flat_tuple)
-#    add_benchmark_comparison(combined compile_time_combined_tuple compile_time_combined_flat_tuple)
+    add_benchmark_comparison(combined compile_time_combined_tuple compile_time_combined_flat_tuple)
 
     # Create a target that runs all comparisons
     add_custom_target(compile_time_comparison_all
@@ -138,11 +138,11 @@ if(UNIX)
         COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target compare_apply
         COMMAND ${CMAKE_COMMAND} -E echo ""
 
-#        COMMAND ${CMAKE_COMMAND} -E echo "========================================"
-#        COMMAND ${CMAKE_COMMAND} -E echo "7. COMBINED OPERATIONS"
-#        COMMAND ${CMAKE_COMMAND} -E echo "========================================"
-#        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target compare_combined
-#        COMMAND ${CMAKE_COMMAND} -E echo ""
+        COMMAND ${CMAKE_COMMAND} -E echo "========================================"
+        COMMAND ${CMAKE_COMMAND} -E echo "7. COMBINED OPERATIONS"
+        COMMAND ${CMAKE_COMMAND} -E echo "========================================"
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target compare_combined
+        COMMAND ${CMAKE_COMMAND} -E echo ""
 
         COMMAND ${CMAKE_COMMAND} -E echo "======================================================"
         COMMAND ${CMAKE_COMMAND} -E echo "ALL COMPARISONS COMPLETE!"
