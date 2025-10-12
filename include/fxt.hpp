@@ -70,6 +70,7 @@
 #include "fxt/tuples/TupleCat.hpp"
 #include "fxt/tuples/TupleElement.hpp"
 #include "fxt/tuples/TuplePrepend.hpp"
+#include "fxt/tuples/TupleReverse.hpp"
 #include "fxt/tuples/TupleSize.hpp"
 #include "fxt/utils/Curry.hpp"
 #include "fxt/utils/Failure.hpp"
