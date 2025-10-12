@@ -25,6 +25,7 @@ add_executable(fxt_tests
         TapTests.cpp
         TapErrorAndNoneTests.cpp
         TupleAppendTests.cpp
+        TupleCatTests.cpp
         TupleElementTests.cpp
         TupleSizeTests.cpp
         TypeTests.cpp

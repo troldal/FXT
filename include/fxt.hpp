@@ -31,6 +31,7 @@
 #include "fxt/tuples/Transform.hpp"
 #include "fxt/tuples/Tuple.hpp"
 #include "fxt/tuples/TupleAppend.hpp"
+#include "fxt/tuples/TupleCat.hpp"
 #include "fxt/tuples/TupleElement.hpp"
 #include "fxt/tuples/TupleSize.hpp"
 #include "fxt/utils/Curry.hpp"
