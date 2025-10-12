@@ -38,7 +38,6 @@
 
 */
 
-
 #pragma once
 
 #include "../monads/Expected.hpp"
@@ -48,6 +47,61 @@
 
 namespace fxt
 {
+
+    /**
+     * @brief Get element from tuple by index
+     *
+     * Forwards to std::get for std::tuple. Provides a consistent fxt::get
+     * interface that works with both fxt::tuple and fxt::flat_tuple.
+     *
+     * @tparam I Index of the element to get
+     * @param t Tuple to get element from
+     * @return Reference to the element at index I
+     */
+    template<std::size_t I, typename... Ts>
+    constexpr auto& get(tuple<Ts...>& t) noexcept
+    {
+        return std::get<I>(t);
+    }
+
+    template<std::size_t I, typename... Ts>
+    constexpr const auto& get(const tuple<Ts...>& t) noexcept
+    {
+        return std::get<I>(t);
+    }
+
+    template<std::size_t I, typename... Ts>
+    constexpr auto&& get(tuple<Ts...>&& t) noexcept
+    {
+        return std::get<I>(std::move(t));
+    }
+
+    template<std::size_t I, typename... Ts>
+    constexpr const auto&& get(const tuple<Ts...>&& t) noexcept
+    {
+        return std::get<I>(std::move(t));
+    }
+
+    // Free functions for element access in fxt namespace (similar to std::get for std::tuple)
+    template<size_t I, class... Ts>
+    auto& get(flat_tuple<Ts...>& tuple) {
+        return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
+    }
+
+    template<size_t I, class... Ts>
+    const auto& get(const flat_tuple<Ts...>& tuple) {
+        return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
+    }
+
+    template<size_t I, class... Ts>
+    auto&& get(flat_tuple<Ts...>&& tuple) {
+        return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
+    }
+
+    template<size_t I, class... Ts>
+    const auto&& get(const flat_tuple<Ts...>&& tuple) {
+        return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
+    }
 
     /**
      * @brief Get element at the specified index from a tuple inside a monadic container
@@ -71,15 +125,14 @@ namespace fxt
     template<size_t I>
     auto mget()
     {
-        return overload{
-            // Handle expected-like containers
-            []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
-            },
-            // Handle optional-like containers
-            []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
-            }
+        return overload { // Handle expected-like containers
+                          []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
+                              return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
+                          },
+                          // Handle optional-like containers
+                          []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
+                              return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
+                          }
         };
     }
 
@@ -107,17 +160,15 @@ namespace fxt
     template<typename T>
     auto mget()
     {
-        return overload{
-            // Handle expected-like containers
-            []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::get<T>(t); });
-            },
-            // Handle optional-like containers
-            []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                return tuple.transform([](const TTuple& t) { return std::get<T>(t); });
-            }
+        return overload { // Handle expected-like containers
+                          []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
+                              return tuple.transform([](const TTuple& t) { return std::get<T>(t); });
+                          },
+                          // Handle optional-like containers
+                          []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
+                              return tuple.transform([](const TTuple& t) { return std::get<T>(t); });
+                          }
         };
     }
 
 }    // namespace fxt
-
