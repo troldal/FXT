@@ -38,6 +38,73 @@
 
 */
 
+/**
+ * @file TupleSize.hpp
+ * @brief Compile-time tuple size query for fxt::tuple and fxt::flat_tuple
+ *
+ * This file provides a unified interface for querying the size of tuple types at compile time.
+ * It defines the `fxt::tuple_size` trait and its helper variable template `fxt::tuple_size_v`,
+ * which work seamlessly with both `fxt::tuple` (std::tuple) and `fxt::flat_tuple`.
+ *
+ * ## Overview
+ *
+ * The `tuple_size` trait is similar to `std::tuple_size` but is extended to work with
+ * `fxt::flat_tuple` in addition to `fxt::tuple`. It provides specializations for all
+ * cv-qualified variations (const, volatile, const volatile) of both tuple types.
+ *
+ * ## Main Components
+ *
+ * ### fxt::tuple_size
+ * A type trait that provides the number of elements in a tuple type as a compile-time constant.
+ * Available specializations:
+ * - `tuple_size<tuple<Ts...>>` - For fxt::tuple (forwards to std::tuple_size)
+ * - `tuple_size<flat_tuple<Ts...>>` - For fxt::flat_tuple
+ * - cv-qualified versions for both types
+ *
+ * ### fxt::tuple_size_v
+ * A convenient variable template that extracts the size value directly.
+ * Equivalent to `tuple_size<T>::value`.
+ *
+ * ## Usage
+ *
+ * The tuple_size trait is primarily used internally by other tuple operations, but can
+ * also be used directly in user code for compile-time size queries and SFINAE:
+ *
+ * @code
+ * // Query tuple size at compile time
+ * constexpr std::size_t size1 = fxt::tuple_size_v<fxt::tuple<int, double>>;  // 2
+ * constexpr std::size_t size2 = fxt::tuple_size_v<fxt::flat_tuple<int, std::string, double>>;  // 3
+ *
+ * // Use in constexpr functions
+ * template<typename T>
+ * constexpr std::size_t get_tuple_size() {
+ *     return fxt::tuple_size_v<T>;
+ * }
+ *
+ * // Use in SFINAE constraints
+ * template<typename T>
+ * requires (fxt::tuple_size_v<T> > 0)
+ * void process_non_empty_tuple(T&& t) {
+ *     // Process tuple...
+ * }
+ *
+ * // Works with cv-qualified types
+ * constexpr std::size_t size3 = fxt::tuple_size_v<const fxt::tuple<int, int>>;  // 2
+ * @endcode
+ *
+ * ## Design Notes
+ *
+ * - For `fxt::tuple`, the implementation forwards to `std::tuple_size` to maintain
+ *   compatibility with the standard library
+ * - For `fxt::flat_tuple`, the size is computed directly from the number of template
+ *   parameters using `sizeof...(Ts)`
+ * - All cv-qualified variations are supported to ensure the trait works correctly in
+ *   generic contexts where tuple types may be const or volatile
+ *
+ * @see fxt::tuple
+ * @see fxt::flat_tuple
+ * @see std::tuple_size
+ */
 
 #pragma once
 
@@ -51,6 +118,17 @@ namespace fxt
      *
      * Primary template - provides tuple_size functionality for fxt tuple types.
      * Specializations exist for fxt::tuple (std::tuple) and fxt::flat_tuple.
+     *
+     * This trait follows the same interface as std::tuple_size, providing a member
+     * constant `value` that represents the number of elements in the tuple type.
+     *
+     * @tparam T The tuple type to query
+     *
+     * Example:
+     * @code
+     * using MyTuple = fxt::tuple<int, double, std::string>;
+     * constexpr std::size_t size = fxt::tuple_size<MyTuple>::value;  // 3
+     * @endcode
      */
     template<typename T>
     struct tuple_size;
@@ -58,7 +136,10 @@ namespace fxt
     /**
      * @brief Specialization for fxt::tuple (which is std::tuple)
      *
-     * Forwards to std::tuple_size for std::tuple.
+     * Forwards to std::tuple_size for std::tuple to maintain compatibility
+     * with the standard library and leverage existing implementations.
+     *
+     * @tparam Ts The types contained in the tuple
      */
     template<typename... Ts>
     struct tuple_size<tuple<Ts...>> : std::tuple_size<std::tuple<Ts...>>
@@ -67,6 +148,10 @@ namespace fxt
 
     /**
      * @brief Specialization for const fxt::tuple
+     *
+     * Provides tuple_size for const-qualified fxt::tuple types.
+     *
+     * @tparam Ts The types contained in the tuple
      */
     template<typename... Ts>
     struct tuple_size<const tuple<Ts...>> : std::tuple_size<const std::tuple<Ts...>>
@@ -75,6 +160,10 @@ namespace fxt
 
     /**
      * @brief Specialization for volatile fxt::tuple
+     *
+     * Provides tuple_size for volatile-qualified fxt::tuple types.
+     *
+     * @tparam Ts The types contained in the tuple
      */
     template<typename... Ts>
     struct tuple_size<volatile tuple<Ts...>> : std::tuple_size<volatile std::tuple<Ts...>>
@@ -83,6 +172,10 @@ namespace fxt
 
     /**
      * @brief Specialization for const volatile fxt::tuple
+     *
+     * Provides tuple_size for const volatile-qualified fxt::tuple types.
+     *
+     * @tparam Ts The types contained in the tuple
      */
     template<typename... Ts>
     struct tuple_size<const volatile tuple<Ts...>> : std::tuple_size<const volatile std::tuple<Ts...>>
@@ -92,7 +185,11 @@ namespace fxt
     /**
      * @brief Specialization for fxt::flat_tuple
      *
-     * Provides the tuple size as the number of template parameters.
+     * Provides the tuple size as the number of template parameters using sizeof...(Ts).
+     * Unlike std::tuple, flat_tuple stores elements directly as members, but the size
+     * computation is the same.
+     *
+     * @tparam Ts The types contained in the flat_tuple
      */
     template<typename... Ts>
     struct tuple_size<flat_tuple<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)>
@@ -101,6 +198,10 @@ namespace fxt
 
     /**
      * @brief Specialization for const fxt::flat_tuple
+     *
+     * Provides tuple_size for const-qualified fxt::flat_tuple types.
+     *
+     * @tparam Ts The types contained in the flat_tuple
      */
     template<typename... Ts>
     struct tuple_size<const flat_tuple<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)>
@@ -109,6 +210,10 @@ namespace fxt
 
     /**
      * @brief Specialization for volatile fxt::flat_tuple
+     *
+     * Provides tuple_size for volatile-qualified fxt::flat_tuple types.
+     *
+     * @tparam Ts The types contained in the flat_tuple
      */
     template<typename... Ts>
     struct tuple_size<volatile flat_tuple<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)>
@@ -117,6 +222,10 @@ namespace fxt
 
     /**
      * @brief Specialization for const volatile fxt::flat_tuple
+     *
+     * Provides tuple_size for const volatile-qualified fxt::flat_tuple types.
+     *
+     * @tparam Ts The types contained in the flat_tuple
      */
     template<typename... Ts>
     struct tuple_size<const volatile flat_tuple<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)>
@@ -126,15 +235,32 @@ namespace fxt
     /**
      * @brief Helper variable template for getting tuple size
      *
-     * Provides a convenient way to get the size of a tuple type.
-     * Works with both fxt::tuple and fxt::flat_tuple.
+     * Provides a convenient way to get the size of a tuple type at compile time.
+     * Works with both fxt::tuple and fxt::flat_tuple, as well as all cv-qualified
+     * variations.
      *
-     * @tparam T The tuple type
+     * This is the preferred way to query tuple size in modern C++ code, as it provides
+     * a cleaner syntax than accessing the `value` member of `tuple_size<T>`.
+     *
+     * @tparam T The tuple type to query
      *
      * Usage:
      * @code
      * constexpr std::size_t size1 = fxt::tuple_size_v<fxt::tuple<int, double>>;  // 2
      * constexpr std::size_t size2 = fxt::tuple_size_v<fxt::flat_tuple<int, std::string, double>>;  // 3
+     * constexpr std::size_t size3 = fxt::tuple_size_v<const fxt::tuple<bool>>;  // 1
+     *
+     * // Use in template metaprogramming
+     * template<typename T>
+     * constexpr bool is_pair = (fxt::tuple_size_v<T> == 2);
+     *
+     * // Use in constexpr if
+     * template<typename T>
+     * void process(T&& t) {
+     *     if constexpr (fxt::tuple_size_v<std::remove_cvref_t<T>> > 2) {
+     *         // Process tuples with more than 2 elements
+     *     }
+     * }
      * @endcode
      */
     template<typename T>
