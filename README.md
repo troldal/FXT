@@ -59,7 +59,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     fxt
-    GIT_REPOSITORY https://github.com/yourusername/FXT.git
+    GIT_REPOSITORY https://github.com/troldal/FXT.git
     GIT_TAG main
 )
 
