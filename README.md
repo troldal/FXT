@@ -20,14 +20,14 @@ A modern, header-only C++ library that brings functional programming paradigms t
 ## ✨ Features
 
 ### Monadic Types
-- **`fxt::expected<T, E>`** - Result type for operations that may fail with typed errors
-- **`fxt::optional<T>`** - Type-safe nullable values with monadic operations
+- **`fxt::expected<T, E>`** - Result type for operations that may fail with typed errors (internally represented by either std::expected or TartanLlama's tl::expected)
+- **`fxt::optional<T>`** - Type-safe nullable values with monadic operations (internally represented by either std::optional or TartanLlama's tl::optional)
 - Full suite of monadic operations: `transform`, `and_then`, `or_else`, `match`, etc.
 - Pipeline syntax with the `|` operator for chaining operations
 
 ### Tuple Utilities
-- **`fxt::tuple<Ts...>`** - Enhanced wrapper around `std::tuple`
-- **`fxt::flat_tuple<Ts...>`** - Cache-friendly flat tuple implementation
+- **`fxt::tuple<Ts...>`** - Current an alias for `std::tuple`, but other implementations are possible
+- **`fxt::flat_tuple<Ts...>`** - A flat tuple implementation, for improved compilation times
 - Rich set of operations: `transform_tuple`, `select`, `take`, `drop`, `append`, `tuple_cat`
 - Monadic tuple operations: `mtransform_tuple`, `mtuple_cat`
 
