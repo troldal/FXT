@@ -42,105 +42,65 @@
  * @file TupleTransform.hpp
  * @brief Tuple transformation operations for fxt::tuple and fxt::flat_tuple
  *
- * This file provides functions for transforming elements of tuples by applying callables to each element,
- * in both plain and monadic contexts. All functions work seamlessly with both fxt::tuple (std::tuple)
- * and fxt::flat_tuple, preserving the tuple type through the operations.
+ * This file provides functions for transforming tuple elements by applying callables to each element,
+ * in both plain and monadic contexts. All operations support both fxt::tuple and fxt::flat_tuple,
+ * preserving the tuple type through the operations.
  *
  * ## Main Functions
  *
- * ### fxt::tuple_transform
- * Transforms each element of a tuple by applying a callable. Available in two forms:
- * - **Direct call**: `tuple_transform(callable, tuple)` - Takes a callable and a tuple, returns transformed tuple
- * - **Curried form**: `tuple_transform(callable)` - Returns a lambda for pipeline usage with operator|
+ * **tuple_transform(callable, tuple)** - Transforms each element of a tuple by applying a callable
+ * - Direct call: `tuple_transform(callable, tuple)` returns transformed tuple
+ * - Curried: `tuple | tuple_transform(callable)` enables pipeline usage
+ * - Can change element types (e.g., int to string)
  *
- * The callable is applied to each element independently, and the return values form the new tuple.
- * The transformation can change element types (e.g., int to string).
- *
- * ### fxt::mtuple_transform
- * Transforms each element of a tuple inside a monad (fxt::expected or fxt::optional) by applying a callable.
- * Available in two forms:
- * - **Direct call**: `mtuple_transform(callable, monad<tuple>)` - Takes a callable and monadic tuple
- * - **Curried form**: `mtuple_transform(callable)` - Returns a lambda for pipeline usage with operator|
- *
- * Automatically handles error/nullopt propagation - if the monad contains an error or nullopt,
- * the transformation is not applied and the error/nullopt is propagated to the result.
+ * **mtuple_transform(callable, monad<tuple>)** - Transforms tuple elements inside fxt::expected or fxt::optional
+ * - Direct call: `mtuple_transform(callable, monad)` returns monad with transformed tuple
+ * - Curried: `monad | mtuple_transform(callable)` enables pipeline usage
+ * - Automatically propagates errors/nullopt without applying transformation
  *
  * ## Key Features
- * - Type-preserving: Works with both fxt::tuple and fxt::flat_tuple, maintaining the tuple type
+ * - Type-preserving: Maintains tuple type (fxt::tuple or fxt::flat_tuple)
  * - Type-transforming: Can change element types during transformation
- * - Pipeline-friendly: Curried versions enable fluent chaining with the pipe operator
- * - Monadic: mtuple_transform handles error/nullopt propagation automatically
+ * - Pipeline-friendly: Curried versions enable fluent chaining with operator|
+ * - Monadic: Handles error/nullopt propagation automatically
  * - Perfect forwarding: Preserves value categories through transformations
  *
  * ## Examples
  *
- * ### Basic transformation
  * @code
+ * // Basic transformation
  * auto t = fxt::tuple{1, 2, 3};
  * auto result = fxt::tuple_transform([](auto x) { return x * 2; }, t);
  * // result is fxt::tuple<int, int, int>{2, 4, 6}
- * @endcode
  *
- * ### Type-changing transformation
- * @code
- * auto t = fxt::tuple{1, 2, 3};
- * auto result = fxt::tuple_transform([](auto x) { return std::to_string(x); }, t);
- * // result is fxt::tuple<std::string, std::string, std::string>{"1", "2", "3"}
- * @endcode
- *
- * ### Pipeline usage
- * @code
- * auto result = fxt::tuple{1, 2, 3, 4}
- *     | fxt::tuple_transform([](auto x) { return x * 2; })
+ * // Pipeline usage with type change
+ * auto result2 = fxt::tuple{1, 2, 3}
+ *     | fxt::tuple_transform([](auto x) { return std::to_string(x); })
  *     | fxt::take<2>();
- * // result is fxt::tuple<int, int>{2, 4}
- * @endcode
+ * // result2 is fxt::tuple<std::string, std::string>{"1", "2"}
  *
- * ### Monadic transformation
- * @code
+ * // Monadic transformation with error propagation
  * auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::tuple{1, 2, 3}};
- * auto result = exp | fxt::mtuple_transform([](auto x) { return x * 2; });
- * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 4, 6}
- * @endcode
+ * auto result3 = exp | fxt::mtuple_transform([](auto x) { return x * 2; });
+ * // result3 is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 4, 6}
  *
- * ### Error propagation
- * @code
+ * // Error is propagated without applying transformation
  * auto exp_err = fxt::expected<fxt::tuple<int, int>, Error>{fxt::unexpected{Error{}}};
- * auto result = exp_err | fxt::mtuple_transform([](auto x) { return x * 2; });
- * // result contains the error, transformation is not applied
- * @endcode
+ * auto result4 = exp_err | fxt::mtuple_transform([](auto x) { return x * 2; });
+ * // result4 contains the error, transformation not applied
  *
- * ### Works with flat_tuple
- * @code
- * auto ft = fxt::flat_tuple<double, double, double>{1.0, 2.0, 3.0};
- * auto result = ft | fxt::tuple_transform([](auto x) { return x + 1.0; });
- * // result is fxt::flat_tuple<double, double, double>{2.0, 3.0, 4.0}
- * @endcode
- *
- * ### Chaining transformations
- * @code
- * auto t = fxt::tuple{1, 2, 3};
- * auto result = t
+ * // Chaining operations
+ * auto result5 = fxt::tuple{1, 2, 3, 4}
  *     | fxt::tuple_transform([](auto x) { return x * 2; })
+ *     | fxt::drop<1>()
  *     | fxt::tuple_transform([](auto x) { return x + 1; });
- * // result is fxt::tuple<int, int, int>{3, 5, 7}
+ * // result5 is fxt::tuple<int, int, int>{5, 7, 9}
  * @endcode
- *
- * ## Function Summary
- *
- * | Function | Description |
- * |----------|-------------|
- * | `fxt::tuple_transform(F, Tuple)` | Direct call: transform tuple elements with callable |
- * | `fxt::tuple_transform(F)` | Curried: returns lambda for pipeline usage |
- * | `fxt::mtuple_transform(F, Monad)` | Direct call: transform monadic tuple elements |
- * | `fxt::mtuple_transform(F)` | Curried: returns lambda for monadic pipeline usage |
  *
  * @see fxt::tuple
  * @see fxt::flat_tuple
  * @see fxt::expected
  * @see fxt::optional
- * @see fxt::tuple_reverse
- * @see fxt::tuple_append
  */
 
 

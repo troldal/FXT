@@ -38,6 +38,36 @@
 
 */
 
+/**
+ * @file Drop.hpp
+ * @brief Tuple element removal operations for discarding subsets from tuples
+ *
+ * This file provides operations for removing a specified number of elements from the beginning
+ * or end of tuple-like types. All operations support both fxt::tuple and fxt::flat_tuple, preserving
+ * the input tuple type. Each operation has both direct-call and curried (pipeline-compatible) versions.
+ *
+ * ## Core Operations
+ *
+ * **drop<X>(tuple)** - Removes the first X elements from a tuple
+ * - Direct call: `fxt::drop<2>(tpl)` returns new tuple without first 2 elements
+ * - Curried: `tpl | fxt::drop<2>()` enables pipeline usage
+ *
+ * **drop_last<X>(tuple)** - Removes the last X elements from a tuple
+ * - Direct call: `fxt::drop_last<2>(tpl)` returns new tuple without last 2 elements
+ * - Curried: `tpl | fxt::drop_last<2>()` enables pipeline usage
+ *
+ * ## Monadic Operations
+ *
+ * **mdrop<X>(container)** - Applies drop to a tuple inside fxt::expected or fxt::optional
+ * - Automatically propagates errors/nullopt through the operation
+ * - Curried version: `container | fxt::mdrop<2>()`
+ *
+ * **mdrop_last<X>(container)** - Applies drop_last to a tuple inside a monadic container
+ * - Automatically propagates errors/nullopt through the operation
+ * - Curried version: `container | fxt::mdrop_last<2>()`
+ *
+ * All operations use perfect forwarding and are constexpr-compatible for compile-time evaluation.
+ */
 
 #pragma once
 

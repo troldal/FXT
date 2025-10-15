@@ -38,6 +38,36 @@
 
 */
 
+/**
+ * @file Take.hpp
+ * @brief Tuple element extraction operations for selecting subsets from tuples
+ *
+ * This file provides operations for extracting a specified number of elements from the beginning
+ * or end of tuple-like types. All operations support both fxt::tuple and fxt::flat_tuple, preserving
+ * the input tuple type. Each operation has both direct-call and curried (pipeline-compatible) versions.
+ *
+ * ## Core Operations
+ *
+ * **take<X>(tuple)** - Extracts the first X elements from a tuple
+ * - Direct call: `fxt::take<2>(tpl)` returns new tuple with first 2 elements
+ * - Curried: `tpl | fxt::take<2>()` enables pipeline usage
+ *
+ * **take_last<X>(tuple)** - Extracts the last X elements from a tuple
+ * - Direct call: `fxt::take_last<2>(tpl)` returns new tuple with last 2 elements
+ * - Curried: `tpl | fxt::take_last<2>()` enables pipeline usage
+ *
+ * ## Monadic Operations
+ *
+ * **mtake<X>(container)** - Applies take to a tuple inside fxt::expected or fxt::optional
+ * - Automatically propagates errors/nullopt through the operation
+ * - Curried version: `container | fxt::mtake<2>()`
+ *
+ * **mtake_last<X>(container)** - Applies take_last to a tuple inside a monadic container
+ * - Automatically propagates errors/nullopt through the operation
+ * - Curried version: `container | fxt::mtake_last<2>()`
+ *
+ * All operations use perfect forwarding and are constexpr-compatible for compile-time evaluation.
+ */
 
 #pragma once
 

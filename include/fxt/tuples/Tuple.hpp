@@ -46,112 +46,61 @@
  * It serves as a thin wrapper around std::tuple with additional FXT-specific functionality,
  * enabling functional-style operations and pipeline composition.
  *
- * ## Main Types
+ * ## Main Components
  *
- * ### fxt::tuple
- * An alias for std::tuple that provides a consistent FXT namespace interface.
- * This allows users to write `fxt::tuple` instead of `std::tuple`, maintaining
- * consistency across the FXT library while leveraging all standard tuple functionality.
+ * **fxt::tuple<Ts...>** - Alias for std::tuple providing consistent FXT namespace interface
+ * - Allows writing `fxt::tuple` instead of `std::tuple`
+ * - Compatible with all standard library tuple operations
  *
- * ## Main Functions
- *
- * ### fxt::make_tuple
- * Factory function to create a tuple with type deduction from arguments.
- * This is a forwarding wrapper around `std::make_tuple` that provides a consistent
- * FXT interface. All arguments are perfectly forwarded to maintain value categories.
+ * **fxt::make_tuple(args...)** - Factory function to create tuples with type deduction
+ * - Forwards to std::make_tuple with perfect forwarding
+ * - Provides consistent FXT interface
  *
  * ## Pipe Operators
  *
- * This file defines pipe operators (`operator|`) for `fxt::tuple` that enable
- * functional-style composition. The pipe operators allow tuples to be passed to callables,
- * supporting all value categories for maximum flexibility.
- *
- * ### Pipe Operator Overloads
- * - **Lvalue reference**: `tuple& | callable` - Pipes a mutable lvalue tuple to a callable
- * - **Const lvalue reference**: `const tuple& | callable` - Pipes a const lvalue tuple to a callable
- * - **Rvalue reference**: `tuple&& | callable` - Pipes an rvalue tuple to a callable (move semantics)
- * - **Const rvalue reference**: `const tuple&& | callable` - Pipes a const rvalue tuple to a callable
- *
- * The pipe operators use `std::invoke` to call the callable with the tuple, supporting
- * function pointers, function objects, lambdas, and member function pointers.
+ * Defines pipe operators (`operator|`) enabling functional-style composition. Supports all
+ * value categories for maximum flexibility:
+ * - `tuple& | callable` - Lvalue reference
+ * - `const tuple& | callable` - Const lvalue reference
+ * - `tuple&& | callable` - Rvalue reference (move semantics)
+ * - `const tuple&& | callable` - Const rvalue reference
  *
  * ## Key Features
- * - Consistent namespace interface across the FXT library
+ * - Consistent namespace interface across FXT library
  * - Perfect forwarding support for all operations
  * - Pipeline-friendly design with pipe operator support
  * - Universal value category support (lvalue, rvalue, const)
- * - Compatible with standard library tuple operations
- * - Foundation for higher-level tuple operations (transform, reverse, append, etc.)
+ * - Foundation for higher-level tuple operations
  *
  * ## Examples
  *
- * ### Creating tuples
  * @code
- * // Direct construction
+ * // Creating tuples
  * fxt::tuple<int, double, std::string> t1{42, 3.14, "hello"};
- *
- * // Using make_tuple with type deduction
  * auto t2 = fxt::make_tuple(42, 3.14, "hello");
- * // Type: fxt::tuple<int, double, const char*>
- * @endcode
  *
- * ### Using the pipe operator
- * @code
+ * // Using pipe operator
  * auto t = fxt::make_tuple(1, 2, 3);
- *
- * // Pipe to a transformation function
  * auto result = t | fxt::tuple_reverse();
  * // result is fxt::tuple<int, int, int>{3, 2, 1}
  *
- * // Chain multiple operations
+ * // Chaining operations
  * auto result2 = t
  *     | fxt::tuple_transform([](auto x) { return x * 2; })
  *     | fxt::take<2>();
  * // result2 is fxt::tuple<int, int>{2, 4}
  *
- * // Pipe with rvalue
- * auto result3 = fxt::make_tuple(5, 10, 15)
- *     | fxt::tuple_reverse();
- * // result3 is fxt::tuple<int, int, int>{15, 10, 5}
- * @endcode
- *
- * ### Chaining operations
- * @code
- * auto t = fxt::make_tuple(1, 2, 3, 4, 5);
- * auto result = t
+ * // Pipeline with rvalue
+ * auto result3 = fxt::make_tuple(1, 2, 3, 4, 5)
  *     | fxt::drop<2>()
  *     | fxt::tuple_reverse()
  *     | fxt::take<2>();
- * // result is fxt::tuple<int, int>{5, 4}
+ * // result3 is fxt::tuple<int, int>{5, 4}
  * @endcode
- *
- * ## Type Summary
- *
- * | Type | Description |
- * |------|-------------|
- * | `fxt::tuple<Ts...>` | Alias for std::tuple, provides consistent FXT interface |
- *
- * ## Function Summary
- *
- * | Function | Description |
- * |----------|-------------|
- * | `fxt::make_tuple(args...)` | Create a tuple with type deduction from arguments |
- *
- * ## Operator Summary
- *
- * | Operator | Description |
- * |----------|-------------|
- * | `tuple& \| callable` | Pipe lvalue tuple to callable |
- * | `const tuple& \| callable` | Pipe const lvalue tuple to callable |
- * | `tuple&& \| callable` | Pipe rvalue tuple to callable |
- * | `const tuple&& \| callable` | Pipe const rvalue tuple to callable |
  *
  * @see fxt::flat_tuple
  * @see fxt::tuple_transform
  * @see fxt::tuple_reverse
- * @see fxt::tuple_append
- * @see fxt::tuple_size
- * @see fxt::get
  */
 
 #pragma once

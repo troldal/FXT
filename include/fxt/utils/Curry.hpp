@@ -38,6 +38,59 @@
 
 */
 
+/**
+ * @file Curry.hpp
+ * @brief Automatic function currying utilities for C++23
+ *
+ * This file provides utilities for automatic currying of functions, enabling
+ * partial application and functional composition patterns. Currying transforms
+ * a multi-argument function into a chain of single-argument functions, allowing
+ * arguments to be supplied incrementally.
+ *
+ * ## Overview
+ *
+ * The primary facility is the `curry` function, which automatically transforms
+ * any callable into a curried version. When called with fewer arguments than
+ * required, it returns a new function awaiting the remaining arguments. When
+ * all arguments are provided, the original function executes.
+ *
+ * ## Key Features
+ *
+ * - **Automatic Currying**: Transforms any function into a curried version
+ * - **Partial Application**: Supply arguments one at a time or in groups
+ * - **Perfect Forwarding**: Preserves value categories and const-correctness
+ * - **Compile-Time Detection**: Uses C++20 concepts to determine when to execute
+ * - **Zero Runtime Overhead**: All decisions made at compile time
+ *
+ * ## Functions
+ *
+ * - **curry**: Transforms a function into its curried equivalent, enabling
+ *   partial application. Implementation credit: Björn Fahller (@rollbear on GitHub)
+ *
+ * ## Usage Example
+ *
+ * @code{.cpp}
+ * #include <fxt/utils/Curry.hpp>
+ *
+ * // Define a multi-argument function
+ * auto add3 = [](int a, int b, int c) { return a + b + c; };
+ *
+ * // Curry the function
+ * auto curriedAdd = fxt::curry(add3);
+ *
+ * // Partial application
+ * auto add10AndMore = curriedAdd(10);
+ * auto add10And20AndMore = add10AndMore(20);
+ * int result = add10And20AndMore(30); // 60
+ *
+ * // Or chain directly
+ * int result2 = fxt::curry(add3)(5)(10)(15); // 30
+ * @endcode
+ *
+ * @note This implementation uses C++23 features including deducing `this`,
+ *       which allows the lambda to reference itself recursively.
+ */
+
 #pragma once
 
 #include <functional>
