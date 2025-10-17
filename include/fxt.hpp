@@ -80,4 +80,4 @@
 #include "fxt/utils/Lift.hpp"
 #include "fxt/utils/Overload.hpp"
 #include "fxt/utils/Unit.hpp"
-#include "fxt/utils/type_value.hpp"
+#include "fxt/utils/TypeValue.hpp"
