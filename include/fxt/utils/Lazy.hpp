@@ -270,19 +270,20 @@ namespace fxt
          */
         [[nodiscard]] const value_type& value() const { return static_cast<const value_type&>(*this); }
 
-        // /**
-        //  * @brief Force evaluation and return a copy of the value
-        //  *
-        //  * Evaluates the callable if needed and returns a copy (not a reference)
-        //  * of the result. Useful when you need to move the value out.
-        //  *
-        //  * @return Copy of the computed value
-        //  * @throws Any exception thrown by the callable
-        //  * @throws std::runtime_error if the lazy object has been moved from
-        //  *
-        //  * @note The `!` operator is a mnemonic for "force evaluation"
-        //  */
-        // [[nodiscard]] value_type operator!() const { return static_cast<const value_type&>(*this); }
+        /**
+         * @brief Force evaluation and return a copy of the value
+         *
+         * Evaluates the callable if needed and returns a copy (not a reference)
+         * of the result. Useful when you need to move the value out or explicitly
+         * force evaluation.
+         *
+         * @return Copy of the computed value
+         * @throws Any exception thrown by the callable
+         * @throws std::runtime_error if the lazy object has been moved from
+         *
+         * @note The function call operator provides explicit evaluation semantics
+         */
+        [[nodiscard]] value_type operator()() const { return static_cast<const value_type&>(*this); }
 
     private:
         /**

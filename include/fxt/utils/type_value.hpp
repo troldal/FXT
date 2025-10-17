@@ -119,7 +119,7 @@ namespace fxt
      * @note Both versions are fully constexpr-enabled for compile-time computation.
      */
     template<typename TType, typename... TArgs>
-    struct Type
+    struct type_value
     {
         /**
          * @brief Type alias for the wrapped type
@@ -127,7 +127,7 @@ namespace fxt
          * Provides access to the type identity of this Type wrapper.
          * Useful for extracting the type in template metaprogramming contexts.
          */
-        using type = TType;
+        using type_t = TType;
 
         /**
          * @brief Default constructor for tag dispatch usage
@@ -136,7 +136,7 @@ namespace fxt
          * This constructor is noexcept and constexpr, making it suitable for
          * compile-time contexts and guaranteeing no exceptions.
          */
-        constexpr Type() noexcept = default;
+        constexpr type_value() noexcept = default;
 
         /**
          * @brief Implicit conversion constructor from const lvalue reference
@@ -153,7 +153,7 @@ namespace fxt
          * foo(42);  // Implicitly converts 42 to Type<int>
          * @endcode
          */
-        constexpr Type(const TType&) noexcept {}
+        constexpr type_value(const TType&) noexcept {}
 
         /**
          * @brief Implicit conversion constructor from rvalue reference
@@ -163,13 +163,13 @@ namespace fxt
          *
          * @param TType rvalue reference (value is discarded)
          */
-        constexpr Type(TType&&) noexcept {}
+        constexpr type_value(TType&&) noexcept {}
 
         // Allow copy and move operations
-        constexpr Type(const Type&) noexcept = default;
-        constexpr Type(Type&&) noexcept = default;
-        constexpr Type& operator=(const Type&) noexcept = default;
-        constexpr Type& operator=(Type&&) noexcept = default;
+        constexpr type_value(const type_value&) noexcept = default;
+        constexpr type_value(type_value&&) noexcept = default;
+        constexpr type_value& operator=(const type_value&) noexcept = default;
+        constexpr type_value& operator=(type_value&&) noexcept = default;
     };
 
     /**
@@ -208,14 +208,14 @@ namespace fxt
      * @endcode
      */
     template<typename TType, typename TValue>
-    struct Type<TType, TValue>
+    struct type_value<TType, TValue>
     {
         /**
          * @brief Type alias for the type tag
          *
          * The compile-time type identity associated with this wrapper.
          */
-        using type = TType;
+        using type_t = TType;
 
         /**
          * @brief Type alias for the stored value type
@@ -223,6 +223,7 @@ namespace fxt
          * The actual runtime type of the stored value.
          */
         using value_type = TValue;
+        using value_t = TValue;
 
         /**
          * @brief Constructor from const lvalue reference
@@ -232,7 +233,7 @@ namespace fxt
          *
          * @param value The value to store (copied)
          */
-        constexpr explicit Type(const TValue& value) : m_value(value) {}
+        constexpr explicit type_value(const TValue& value) : m_value(value) {}
 
         /**
          * @brief Constructor from rvalue reference
@@ -242,18 +243,18 @@ namespace fxt
          *
          * @param value The value to store (moved)
          */
-        constexpr explicit Type(TValue&& value) : m_value(std::move(value)) {}
+        constexpr explicit type_value(TValue&& value) : m_value(std::move(value)) {}
 
         // Copy and move constructors
-        constexpr Type(const Type&) = default;
-        constexpr Type(Type&&) noexcept(std::is_nothrow_move_constructible_v<TValue>) = default;
+        constexpr type_value(const type_value&) = default;
+        constexpr type_value(type_value&&) noexcept(std::is_nothrow_move_constructible_v<TValue>) = default;
 
         // Copy and move assignment
-        constexpr Type& operator=(const Type&) = default;
-        constexpr Type& operator=(Type&&) noexcept(std::is_nothrow_move_assignable_v<TValue>) = default;
+        constexpr type_value& operator=(const type_value&) = default;
+        constexpr type_value& operator=(type_value&&) noexcept(std::is_nothrow_move_assignable_v<TValue>) = default;
 
         // Destructor
-        ~Type() = default;
+        ~type_value() = default;
 
         /**
          * @brief Access the stored value (const lvalue overload)
@@ -361,7 +362,7 @@ namespace fxt
          * @param other Another Type wrapper to compare with
          * @return true if the stored values are equal, false otherwise
          */
-        [[nodiscard]] constexpr bool operator==(const Type& other) const
+        [[nodiscard]] constexpr bool operator==(const type_value& other) const
             noexcept(noexcept(m_value == other.m_value))
             requires requires(const TValue& a, const TValue& b) { { a == b } -> std::convertible_to<bool>; }
         {
@@ -377,7 +378,7 @@ namespace fxt
          * @param other Another Type wrapper to compare with
          * @return The result of three-way comparison of the stored values
          */
-        [[nodiscard]] constexpr auto operator<=>(const Type& other) const
+        [[nodiscard]] constexpr auto operator<=>(const type_value& other) const
             noexcept(noexcept(m_value <=> other.m_value))
             requires requires(const TValue& a, const TValue& b) { a <=> b; }
         {
@@ -402,7 +403,7 @@ namespace fxt
      * @endcode
      */
     template<typename T>
-    using type_t = typename T::type;
+    using type_t = typename T::type_t;
 
     /**
      * @brief Helper alias for extracting the value_type from a Type wrapper
@@ -443,7 +444,7 @@ namespace fxt
      */
     template<typename TType, typename TValue>
     [[nodiscard]] constexpr auto make_type(TValue&& value) {
-        return Type<TType, std::decay_t<TValue>>(std::forward<TValue>(value));
+        return type_value<TType, std::decay_t<TValue>>(std::forward<TValue>(value));
     }
 
     /**
@@ -466,7 +467,7 @@ namespace fxt
      */
     template<typename TType>
     [[nodiscard]] constexpr auto make_type() noexcept {
-        return Type<TType>{};
+        return type_value<TType>{};
     }
 
     /**
@@ -496,7 +497,7 @@ namespace fxt
      * @brief Specialization of is_type for Type instantiations
      */
     template<typename TType, typename... TArgs>
-    struct is_type<Type<TType, TArgs...>> : std::true_type {};
+    struct is_type<type_value<TType, TArgs...>> : std::true_type {};
 
     /**
      * @brief Variable template helper for is_type

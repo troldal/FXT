@@ -14,22 +14,22 @@
 // ============================================================================
 
 // Different implementations based on type tags
-void serialize(fxt::Type<int>, int value) {
+void serialize(fxt::type_value<int>, int value) {
     std::cout << "   Serializing int: " << value << " -> binary format\n";
 }
 
-void serialize(fxt::Type<std::string>, const std::string& value) {
+void serialize(fxt::type_value<std::string>, const std::string& value) {
     std::cout << "   Serializing string: \"" << value << "\" -> UTF-8 format\n";
 }
 
-void serialize(fxt::Type<double>, double value) {
+void serialize(fxt::type_value<double>, double value) {
     std::cout << "   Serializing double: " << value << " -> IEEE 754 format\n";
 }
 
 // Generic serialize function that uses tag dispatch
 template<typename T>
 void serialize_value(const T& value) {
-    serialize(fxt::Type<T>{}, value);
+    serialize(fxt::type_value<T>{}, value);
 }
 
 // ============================================================================
@@ -38,19 +38,19 @@ void serialize_value(const T& value) {
 
 // Factory function that creates objects based on type tags
 template<typename T>
-std::unique_ptr<T> create_object(fxt::Type<T>) {
+std::unique_ptr<T> create_object(fxt::type_value<T>) {
     std::cout << "   Creating generic object\n";
     return std::make_unique<T>();
 }
 
 // Specialization for string (implicit conversion from type tag)
-std::unique_ptr<std::string> create_object(fxt::Type<std::string>) {
+std::unique_ptr<std::string> create_object(fxt::type_value<std::string>) {
     std::cout << "   Creating string with default content\n";
     return std::make_unique<std::string>("Default String");
 }
 
 // Specialization for vector<int>
-std::unique_ptr<std::vector<int>> create_object(fxt::Type<std::vector<int>>) {
+std::unique_ptr<std::vector<int>> create_object(fxt::type_value<std::vector<int>>) {
     std::cout << "   Creating vector with initial values\n";
     auto vec = std::make_unique<std::vector<int>>();
     vec->push_back(1);
@@ -65,7 +65,7 @@ std::unique_ptr<std::vector<int>> create_object(fxt::Type<std::vector<int>>) {
 
 // Process data with different strategies based on type tag
 template<typename Strategy, typename Data>
-void process_with_strategy(fxt::Type<Strategy, Data> config) {
+void process_with_strategy(fxt::type_value<Strategy, Data> config) {
     std::cout << "   Strategy type: " << typeid(Strategy).name() << "\n";
     std::cout << "   Config value: " << config.value() << "\n";
     std::cout << "   Processing with " << typeid(Strategy).name() << " strategy\n";
@@ -115,14 +115,14 @@ void demonstrate_helper_functions() {
 // Different algorithms based on container type
 template<typename Container>
     requires std::is_same_v<Container, std::vector<int>>
-void sort_container(Container& container, fxt::Type<std::vector<int>>) {
+void sort_container(Container& container, fxt::type_value<std::vector<int>>) {
     std::cout << "   Using optimized vector<int> sort\n";
     std::sort(container.begin(), container.end());
 }
 
 template<typename Container>
     requires (!std::is_same_v<Container, std::vector<int>>)
-void sort_container(Container& container, fxt::Type<Container>) {
+void sort_container(Container& container, fxt::type_value<Container>) {
     std::cout << "   Using generic sort\n";
     std::sort(container.begin(), container.end());
 }
@@ -133,9 +133,9 @@ void sort_container(Container& container, fxt::Type<Container>) {
 
 void demonstrate_comparison() {
     std::cout << "   Creating two Type wrappers with values\n";
-    fxt::Type<std::string, int> config1(42);
-    fxt::Type<std::string, int> config2(42);
-    fxt::Type<std::string, int> config3(100);
+    fxt::type_value<std::string, int> config1(42);
+    fxt::type_value<std::string, int> config2(42);
+    fxt::type_value<std::string, int> config3(100);
 
     std::cout << "   config1 == config2: " << (config1 == config2) << "\n";
     std::cout << "   config1 == config3: " << (config1 == config3) << "\n";
@@ -148,7 +148,7 @@ void demonstrate_comparison() {
 
 void demonstrate_move_semantics() {
     std::cout << "   Creating Type with movable value\n";
-    fxt::Type<int, std::string> wrapper(std::string("Hello, World!"));
+    fxt::type_value<int, std::string> wrapper(std::string("Hello, World!"));
 
     // Get reference
     std::cout << "   Getting reference: " << wrapper.get() << "\n";
@@ -176,24 +176,24 @@ int main() {
 
     // Example 2: Factory Pattern
     std::cout << "2. Factory Pattern with Type Tags:\n";
-    auto int_obj = create_object(fxt::Type<int>{});
-    auto str_obj = create_object(fxt::Type<std::string>{});
-    auto vec_obj = create_object(fxt::Type<std::vector<int>>{});
+    auto int_obj = create_object(fxt::type_value<int>{});
+    auto str_obj = create_object(fxt::type_value<std::string>{});
+    auto vec_obj = create_object(fxt::type_value<std::vector<int>>{});
     std::cout << "   String content: \"" << *str_obj << "\"\n";
     std::cout << "   Vector size: " << vec_obj->size() << "\n";
     std::cout << "\n";
 
     // Example 3: Type with Value Storage
     std::cout << "3. Type Identity with Value Storage:\n";
-    auto fast_config = fxt::Type<FastStrategy, int>(100);
-    auto accurate_config = fxt::Type<AccurateStrategy, double>(0.001);
+    auto fast_config = fxt::type_value<FastStrategy, int>(100);
+    auto accurate_config = fxt::type_value<AccurateStrategy, double>(0.001);
     process_with_strategy(fast_config);
     process_with_strategy(accurate_config);
     std::cout << "\n";
 
     // Example 4: Compile-time Type Manipulation
     std::cout << "4. Compile-time Type Manipulation:\n";
-    print_type_info(fxt::Type<int>{});
+    print_type_info(fxt::type_value<int>{});
     std::cout << "\n";
     print_type_info(42);
     std::cout << "\n";
@@ -215,7 +215,7 @@ int main() {
     std::cout << "   Before sort: ";
     for (int v : vec) std::cout << v << " ";
     std::cout << "\n";
-    sort_container(vec, fxt::Type<std::vector<int>>{});
+    sort_container(vec, fxt::type_value<std::vector<int>>{});
     std::cout << "   After sort: ";
     for (int v : vec) std::cout << v << " ";
     std::cout << "\n\n";
@@ -232,7 +232,7 @@ int main() {
 
     // Example 9: Type Extraction
     std::cout << "9. Type Extraction with type_t:\n";
-    using MyType = fxt::Type<std::string, int>;
+    using MyType = fxt::type_value<std::string, int>;
     using ExtractedType = fxt::type_t<MyType>;  // std::string
     using ExtractedValue = fxt::value_type_t<MyType>;  // int
     std::cout << "   Original wrapper type tag: std::string\n";

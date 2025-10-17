@@ -66,5 +66,5 @@ namespace fxt
      * }
      * @endcode
      */
-    using Unit = std::monostate;
+    using unit = std::monostate;
 }

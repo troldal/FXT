@@ -94,3 +94,6 @@ target_link_libraries(fxt_tuple_reverse_demo PRIVATE fxt::fxt)
 
 add_executable(fxt_lazy_demo Lazy.cpp)
 target_link_libraries(fxt_lazy_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_attempt_demo Attempt.cpp)
+target_link_libraries(fxt_attempt_demo PRIVATE fxt::fxt)

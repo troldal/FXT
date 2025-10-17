@@ -123,6 +123,10 @@ void demo_access_methods() {
     std::cout << "\nUsing explicit value() method:\n";
     double pi2 = compute.value();
     std::cout << "Result: " << pi2 << "\n";
+
+    std::cout << "\nUsing function call operator:\n";
+    double pi3 = compute();
+    std::cout << "Result: " << pi3 << "\n";
 }
 
 // Demo 6: Thread safety

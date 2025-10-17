@@ -57,7 +57,7 @@
 namespace fxt
 {
     /**
-     * @class Failure
+     * @class failure
      * @brief Represents a failure state with an optional error message and exception
      *
      * The Failure class encapsulates error information, providing both a string message
@@ -66,7 +66,7 @@ namespace fxt
      *
      * @note This class is fully comparable and hashable in C++23
      */
-    class Failure
+    class failure
     {
         /**
          * @brief Extracts the error message from an exception pointer
@@ -93,7 +93,7 @@ namespace fxt
          * @brief Constructs a Failure from a message string
          * @param message The error message
          */
-        Failure(std::string message) // NOLINT
+        failure(std::string message) // NOLINT
             : m_message(std::move(message)),
               m_exception(nullptr) {}
 
@@ -101,27 +101,27 @@ namespace fxt
          * @brief Constructs a Failure from an exception pointer
          * @param exception The exception pointer to store
          */
-        Failure(std::exception_ptr exception)    // NOLINT
+        failure(std::exception_ptr exception)    // NOLINT
             : m_message(exception_message(exception)),
               m_exception(exception)
         {}
 
-        Failure(const Failure&) = default;
-        Failure(Failure&&) noexcept = default;
+        failure(const failure&) = default;
+        failure(failure&&) noexcept = default;
 
-        Failure& operator=(const Failure&) = default;
-        Failure& operator=(Failure&&) noexcept = default;
+        failure& operator=(const failure&) = default;
+        failure& operator=(failure&&) noexcept = default;
 
-        ~Failure() = default;
+        ~failure() = default;
 
-        Failure& operator=(std::exception_ptr exception)    // NOLINT
+        failure& operator=(std::exception_ptr exception)    // NOLINT
         {
             m_message = exception_message(exception);
             m_exception = exception;
             return *this;
         }
 
-        Failure& operator=(std::string message)
+        failure& operator=(std::string message)
         {
             m_message = std::move(message);
             m_exception = {};
@@ -133,7 +133,7 @@ namespace fxt
          * @param message The error message
          * @return A new Failure object
          */
-        [[nodiscard]] static Failure from_message(std::string message)
+        [[nodiscard]] static failure from_message(std::string message)
         {
             return {std::move(message)};
         }
@@ -143,7 +143,7 @@ namespace fxt
          * @param exception The exception pointer
          * @return A new Failure object
          */
-        [[nodiscard]] static Failure from_exception(std::exception_ptr exception)
+        [[nodiscard]] static failure from_exception(std::exception_ptr exception)
         {
             return {exception};
         }
@@ -153,7 +153,7 @@ namespace fxt
          * @return A new Failure object containing the current exception
          * @note Should be called from within a catch block
          */
-        [[nodiscard]] static Failure from_current_exception()
+        [[nodiscard]] static failure from_current_exception()
         {
             return {std::current_exception()};
         }
@@ -212,7 +212,7 @@ namespace fxt
          * @return The ordering relationship
          * @note Compares based on the error message only
          */
-        [[nodiscard]] auto operator<=>(const Failure& other) const noexcept
+        [[nodiscard]] auto operator<=>(const failure& other) const noexcept
         {
             return m_message <=> other.m_message;
         }
@@ -222,7 +222,7 @@ namespace fxt
          * @param other The Failure object to compare with
          * @return true if both Failures have the same message, false otherwise
          */
-        [[nodiscard]] bool operator==(const Failure& other) const noexcept
+        [[nodiscard]] bool operator==(const failure& other) const noexcept
         {
             return m_message == other.m_message;
         }
@@ -233,7 +233,7 @@ namespace fxt
          * @param failure The Failure object to output
          * @return The output stream
          */
-        friend std::ostream& operator<<(std::ostream& os, const Failure& failure)
+        friend std::ostream& operator<<(std::ostream& os, const failure& failure)
         {
             os << failure.message();
             return os;
@@ -242,7 +242,7 @@ namespace fxt
         /**
          * @brief Hash support for use in unordered containers
          */
-        friend struct std::hash<fxt::Failure>;
+        friend struct std::hash<fxt::failure>;
 
     private:
         std::string        m_message {};      ///< The error message
@@ -256,9 +256,9 @@ namespace fxt
  * @note Combines hashes of both message and exception pointer for better distribution
  */
 template<>
-struct std::hash<fxt::Failure>
+struct std::hash<fxt::failure>
 {
-    [[nodiscard]] std::size_t operator()(const fxt::Failure& failure) const noexcept
+    [[nodiscard]] std::size_t operator()(const fxt::failure& failure) const noexcept
     {
         std::size_t h1 = std::hash<std::string>{}(failure.message());
 
