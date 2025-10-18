@@ -121,6 +121,33 @@ namespace fxt
          */
         template<typename Fn>
         concept LazyInvocable = std::invocable<Fn> && (!std::is_void_v<std::invoke_result_t<Fn>>);
+
+        /**
+         * @brief Trait to construct monadic result type from monad template
+         *
+         * This trait takes a monad template (like fxt::optional or fxt::expected) without
+         * template arguments and produces the fully instantiated monad type with the
+         * appropriate value and error types.
+         */
+        template<template<typename...> typename Monad, typename T>
+        struct make_monad_result;
+
+        // Specialization for fxt::expected - uses fxt::failure as error type
+        template<typename T>
+        struct make_monad_result<expected, T>
+        {
+            using type = expected<T, failure>;
+        };
+
+        // Specialization for std::optional - single template parameter
+        template<typename T>
+        struct make_monad_result<std::optional, T>
+        {
+            using type = std::optional<T>;
+        };
+
+        template<template<typename...> typename Monad, typename T>
+        using make_monad_result_t = typename make_monad_result<Monad, T>::type;
     }
 
     /**
@@ -322,6 +349,8 @@ namespace fxt
     template<impl::LazyInvocable Fn>
     lazy(Fn) -> lazy<Fn>;
 
+
+
     // ===== Reference implementation by Ivan Čukić. Is not copyable or movable
 
     // template<typename Fn>
@@ -407,4 +436,5 @@ namespace fxt
     //     Fn m_fn;  // Store instance (may have captured state)
     // };
 
-}    // namespace fxt
+
+}  // namespace fxt
