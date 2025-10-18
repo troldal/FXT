@@ -76,6 +76,7 @@
 #include "fxt/utils/Attempt.hpp"
 #include "fxt/utils/Curry.hpp"
 #include "fxt/utils/Failure.hpp"
+#include "fxt/utils/Immutable.hpp"
 #include "fxt/utils/Lazy.hpp"
 #include "fxt/utils/Lift.hpp"
 #include "fxt/utils/Overload.hpp"

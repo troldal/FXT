@@ -9,6 +9,7 @@ add_executable(fxt_tests
         FailureTests.cpp
         FlatTupleTests.cpp
         GetTests.cpp
+        ImmutableTests.cpp
         LazyTests.cpp
         ValueTests.cpp
         TransformTests.cpp
