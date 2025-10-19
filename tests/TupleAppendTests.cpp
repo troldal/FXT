@@ -3,9 +3,7 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/tuples/FlatTuple.hpp>
-#include <fxt/tuples/Tuple.hpp>
-#include <fxt/tuples/TupleAppend.hpp>
+#include <fxt.hpp>
 #include <string>
 
 // ============================================================================

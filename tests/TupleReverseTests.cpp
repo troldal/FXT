@@ -3,11 +3,7 @@
 //
 
 #include "Catch2/catch_amalgamated.hpp"
-#include <fxt/tuples/FlatTuple.hpp>
-#include <fxt/tuples/Tuple.hpp>
-#include <fxt/tuples/TupleReverse.hpp>
-#include <fxt/monads/Expected.hpp>
-#include <fxt/monads/Optional.hpp>
+#include <fxt.hpp>
 #include <string>
 
 // ============================================================================

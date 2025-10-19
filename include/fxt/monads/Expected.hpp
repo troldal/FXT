@@ -42,6 +42,7 @@
 #pragma once
 
 #include <functional>
+#include "../concepts/IsExpected.hpp"
 
 #ifdef FXT_USE_TL_EXPECTED
 #    include <tl/expected.hpp>
@@ -92,13 +93,13 @@ namespace fxt
      * auto result = value | transform_fn | validate_fn;
      * @endcode
      */
-    template<typename ValueType, typename ErrorType, typename Callable>
-        requires std::invocable<Callable, const fxt::expected<ValueType, ErrorType>&>
-    constexpr auto operator|(const fxt::expected<ValueType, ErrorType>& expected, Callable&& function)
-        -> decltype(std::invoke(std::forward<Callable>(function), expected))
-    {
-        return std::invoke(std::forward<Callable>(function), expected);
-    }
+    // template<typename ValueType, typename ErrorType, typename Callable>
+    //     requires std::invocable<Callable, const fxt::expected<ValueType, ErrorType>&>
+    // constexpr auto operator|(const fxt::expected<ValueType, ErrorType>& expected, Callable&& function)
+    //     -> decltype(std::invoke(std::forward<Callable>(function), expected))
+    // {
+    //     return std::invoke(std::forward<Callable>(function), expected);
+    // }
 
     /**
      * @brief Pipe operator overload for non-const lvalue references to fxt::expected.
@@ -123,13 +124,13 @@ namespace fxt
      * auto result = value | mutating_fn | other_fn;
      * @endcode
      */
-    template<typename ValueType, typename ErrorType, typename Callable>
-        requires std::invocable<Callable, fxt::expected<ValueType, ErrorType>&>
-    constexpr auto operator|(fxt::expected<ValueType, ErrorType>& expected, Callable&& function)
-        -> decltype(std::invoke(std::forward<Callable>(function), expected))
-    {
-        return std::invoke(std::forward<Callable>(function), expected);
-    }
+    // template<typename ValueType, typename ErrorType, typename Callable>
+    //     requires std::invocable<Callable, fxt::expected<ValueType, ErrorType>&>
+    // constexpr auto operator|(fxt::expected<ValueType, ErrorType>& expected, Callable&& function)
+    //     -> decltype(std::invoke(std::forward<Callable>(function), expected))
+    // {
+    //     return std::invoke(std::forward<Callable>(function), expected);
+    // }
 
     /**
      * @brief Pipe operator overload for rvalue references to fxt::expected.
@@ -154,11 +155,19 @@ namespace fxt
      * auto result = make_expected() | transform_fn | validate_fn;
      * @endcode
      */
-    template<typename ValueType, typename ErrorType, typename Callable>
-        requires std::invocable<Callable, fxt::expected<ValueType, ErrorType>&&>
-    constexpr auto operator|(fxt::expected<ValueType, ErrorType>&& expected, Callable&& function)
-        -> decltype(std::invoke(std::forward<Callable>(function), std::move(expected)))
+    // template<typename ValueType, typename ErrorType, typename Callable>
+    //     requires std::invocable<Callable, fxt::expected<ValueType, ErrorType>&&>
+    // constexpr auto operator|(fxt::expected<ValueType, ErrorType>&& expected, Callable&& function)
+    //     -> decltype(std::invoke(std::forward<Callable>(function), std::move(expected)))
+    // {
+    //     return std::invoke(std::forward<Callable>(function), std::move(expected));
+    // }
+
+    template<typename TExpected, typename Callable>
+        requires std::invocable<Callable, TExpected&&> && expected_like<std::remove_cvref_t<TExpected>>
+    constexpr auto operator|(TExpected&& expected, Callable&& function)
+    -> decltype(std::invoke(std::forward<Callable>(function), std::forward<TExpected>(expected)))
     {
-        return std::invoke(std::forward<Callable>(function), std::move(expected));
+        return std::invoke(std::forward<Callable>(function), std::forward<TExpected>(expected));
     }
 }    // namespace fxt

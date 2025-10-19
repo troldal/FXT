@@ -44,7 +44,7 @@
 #include "../concepts/IsExpected.hpp"
 #include "../concepts/IsOptional.hpp"
 #include "TupleAppend.hpp"
-#include "../utils/Overload.hpp"
+#include "../utils/Unit.hpp"
 #include "Append.hpp"
 #include "Tuple.hpp"
 #include "FlatTuple.hpp"
@@ -349,9 +349,15 @@ namespace fxt
                 && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
         auto operator()(TArg&& tupleContainer) const
         {
-            return tupleContainer
-                ? mappend(fxt::apply(function, *std::forward<TArg>(tupleContainer)))(std::forward<TArg>(tupleContainer))
-                : fxt::nullopt;
+             return tupleContainer
+                 ? mappend(fxt::apply(function, *std::forward<TArg>(tupleContainer)))(std::forward<TArg>(tupleContainer))
+                 : fxt::nullopt;
+
+            // if (!tupleContainer) return tupleContainer;
+            // auto tuple = tupleContainer.value();
+            // auto result = fxt::apply(function, tuple);
+            // if (!result) return fxt::nullopt;
+            // return tupleContainer.transform([result](const TTuple& t) { return result;});
         }
 
         // ========================================================================
@@ -362,9 +368,15 @@ namespace fxt
             && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
         auto operator()(TArg&& tupleExpected) const
         {
-            return tupleExpected
-                ? mappend(fxt::apply(function, *std::forward<TArg>(tupleExpected)))(std::forward<TArg>(tupleExpected))
-                : typename invoke_result_with_tuple_t<TFunction, TTuple>::unexpected_type(tupleExpected.error());
+             return tupleExpected
+                 ? mappend(fxt::apply(function, *std::forward<TArg>(tupleExpected)))(std::forward<TArg>(tupleExpected))
+                 : typename invoke_result_with_tuple_t<TFunction, TTuple>::unexpected_type(tupleExpected.error());
+
+            // if (!tupleExpected) return tupleExpected;
+            // auto tuple = tupleExpected.value();
+            // auto result = fxt::apply(function, tuple);
+            // if (!result) return fxt::nullopt;
+            // return tupleExpected.transform([result](const TTuple& t) { return result;});
         }
 
         // ========================================================================
@@ -379,6 +391,7 @@ namespace fxt
             return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
                 return tuple;
+                //return fxt::unit{};
             });
         }
 
@@ -393,6 +406,7 @@ namespace fxt
             return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
                 return tuple;
+                //return fxt::unit{};
             });
         }
 
@@ -409,6 +423,7 @@ namespace fxt
             // Let the compiler deduce the return type from the expression.
             return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
                 return fxt::tuple_append(tuple, fxt::apply(function, tuple));
+                //return fxt::apply(function, tuple);
             });
         }
 
@@ -423,6 +438,7 @@ namespace fxt
         {
             return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
                 return fxt::tuple_append(tuple, fxt::apply(function, tuple));
+                //return fxt::apply(function, tuple);
             });
         }
 

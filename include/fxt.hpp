@@ -69,6 +69,7 @@
 #include "fxt/tuples/TupleCat.hpp"
 #include "fxt/tuples/TupleElement.hpp"
 #include "fxt/tuples/TupleForEach.hpp"
+#include "fxt/tuples/TuplePipe.hpp"
 #include "fxt/tuples/TuplePrepend.hpp"
 #include "fxt/tuples/TupleReverse.hpp"
 #include "fxt/tuples/TupleSize.hpp"

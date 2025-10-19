@@ -42,6 +42,7 @@
 #pragma once
 
 #include <functional>
+#include "../concepts/IsOptional.hpp"
 
 #ifdef FXT_USE_TL_OPTIONAL
 #    include <tl/optional.hpp>
@@ -88,13 +89,13 @@ namespace fxt
      * auto result = value | transform_fn | validate_fn;
      * @endcode
      */
-    template<typename ValueType, typename Callable>
-        requires std::invocable<Callable, const fxt::optional<ValueType>&>
-    constexpr auto operator|(const fxt::optional<ValueType>& optional, Callable&& function)
-        -> decltype(std::invoke(std::forward<Callable>(function), optional))
-    {
-        return std::invoke(std::forward<Callable>(function), optional);
-    }
+    // template<typename ValueType, typename Callable>
+    //     requires std::invocable<Callable, const fxt::optional<ValueType>&>
+    // constexpr auto operator|(const fxt::optional<ValueType>& optional, Callable&& function)
+    //     -> decltype(std::invoke(std::forward<Callable>(function), optional))
+    // {
+    //     return std::invoke(std::forward<Callable>(function), optional);
+    // }
 
     /**
      * @brief Pipe operator overload for non-const lvalue references to fxt::optional.
@@ -118,13 +119,13 @@ namespace fxt
      * auto result = value | mutating_fn | other_fn;
      * @endcode
      */
-    template<typename ValueType, typename Callable>
-        requires std::invocable<Callable, fxt::optional<ValueType>&>
-    constexpr auto operator|(fxt::optional<ValueType>& optional, Callable&& function)
-        -> decltype(std::invoke(std::forward<Callable>(function), optional))
-    {
-        return std::invoke(std::forward<Callable>(function), optional);
-    }
+    // template<typename ValueType, typename Callable>
+    //     requires std::invocable<Callable, fxt::optional<ValueType>&>
+    // constexpr auto operator|(fxt::optional<ValueType>& optional, Callable&& function)
+    //     -> decltype(std::invoke(std::forward<Callable>(function), optional))
+    // {
+    //     return std::invoke(std::forward<Callable>(function), optional);
+    // }
 
     /**
      * @brief Pipe operator overload for rvalue references to fxt::optional.
@@ -148,11 +149,20 @@ namespace fxt
      * auto result = make_optional() | transform_fn | validate_fn;
      * @endcode
      */
-    template<typename ValueType, typename Callable>
-        requires std::invocable<Callable, fxt::optional<ValueType>&&>
-    constexpr auto operator|(fxt::optional<ValueType>&& optional, Callable&& function)
-        -> decltype(std::invoke(std::forward<Callable>(function), std::move(optional)))
+    // template<typename ValueType, typename Callable>
+    //     requires std::invocable<Callable, fxt::optional<ValueType>&&>
+    // constexpr auto operator|(fxt::optional<ValueType>&& optional, Callable&& function)
+    //     -> decltype(std::invoke(std::forward<Callable>(function), std::move(optional)))
+    // {
+    //     return std::invoke(std::forward<Callable>(function), std::move(optional));
+    // }
+
+
+    template<typename TOptional, typename Callable>
+        requires std::invocable<Callable, TOptional&&> && optional_like<std::remove_cvref_t<TOptional>>
+    constexpr auto operator|(TOptional&& expected, Callable&& function)
+    -> decltype(std::invoke(std::forward<Callable>(function), std::forward<TOptional>(expected)))
     {
-        return std::invoke(std::forward<Callable>(function), std::move(optional));
+        return std::invoke(std::forward<Callable>(function), std::forward<TOptional>(expected));
     }
 }    // namespace fxt
