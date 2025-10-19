@@ -55,6 +55,20 @@ namespace fxt
      * It ensures the type has the necessary members and operations to be
      * used in monadic contexts.
      */
+    // template<typename T>
+    // concept optional_like = requires(T t) {
+    //     // Required type alias
+    //     typename T::value_type;
+    //
+    //     // Core optional-like operations
+    //     { t.has_value() } -> std::convertible_to<bool>;
+    //     { static_cast<bool>(t) } -> std::convertible_to<bool>;
+    //
+    //     // Value access operations (just check they exist, don't require convertibility for move-only types)
+    //     t.value();
+    //     *t;
+    //
+    // } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
     template<typename T>
     concept optional_like = requires(T t) {
         // Required type alias
@@ -68,6 +82,7 @@ namespace fxt
         t.value();
         *t;
 
-    } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
+    } && std::is_same_v<std::decay_t<T>, T> // Ensure we work with decayed types
+      && !requires(T t) { t.error(); };     // Must NOT have .error() member
 
 }    // namespace fxt

@@ -621,6 +621,16 @@ int main()
 
     std::cout << "\n=== Demo Complete ===" << std::endl;
 
+
+    // 1. Basic usage with fxt::optional and regular return type
+    std::cout << "1. Optional with regular function:\n";
+    auto opt_tuple = std::optional{std::tuple{3, 4}};
+    auto result1 = opt_tuple | fxt::mapply([](int a, int b) {
+        return a + b;
+    });
+    std::cout << "   Result: " << (result1 ? std::to_string(fxt::get<2>(*result1)) : "nullopt") << "\n\n";
+
+
     return 0;
 }
 

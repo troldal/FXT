@@ -310,6 +310,28 @@ namespace fxt
     template<typename TFunction, typename... TArgs>
     concept returns_monadic = returns_expected_like<TFunction, TArgs...> || returns_optional_like<TFunction, TArgs...>;
 
+    namespace impl
+    {
+        template<typename T>
+        struct tuple_elements;
+
+        template<template<typename...> class TTuple, typename... Ts>
+        struct tuple_elements<TTuple<Ts...>>
+        {
+            template<typename TFunction>
+            static constexpr bool returns_monadic_v = returns_monadic<TFunction, Ts...>;
+
+            template<typename TFunction>
+            using invoke_result_t = std::invoke_result_t<TFunction, Ts...>;
+        };
+    }
+
+    template<typename TFunction, typename TTuple>
+    concept returns_monadic_with_tuple = impl::tuple_elements<TTuple>::template returns_monadic_v<TFunction>;
+
+    template<typename TFunction, typename TTuple>
+    using invoke_result_with_tuple_t = typename impl::tuple_elements<TTuple>::template invoke_result_t<TFunction>;
+
     /**
      * @brief Wrapper struct that holds a function and provides overloaded operator() for applying it
      */
@@ -321,84 +343,40 @@ namespace fxt
         // ========================================================================
         // Case 1a: Optional-like container + fxt::tuple + Function returning monadic type
         // ========================================================================
-        template<template<typename...> class TContainer, typename... TElems>
-        requires optional_like<TContainer<fxt::tuple<TElems...>>>
-              && returns_monadic<TFunction, TElems...>
-        auto operator()(TContainer<fxt::tuple<TElems...>>&& tupleContainer) const
-            -> TContainer<fxt::tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
+            requires optional_like<std::remove_cvref_t<TArg>>
+                && tuple_like<TTuple>
+                && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
+        auto operator()(TArg&& tupleContainer) const
         {
             return tupleContainer
-                ? mappend(fxt::apply(function, *std::forward<decltype(tupleContainer)>(tupleContainer)))(std::forward<decltype(tupleContainer)>(tupleContainer))
-                : fxt::nullopt;
-        }
-
-        // ========================================================================
-        // Case 1a-flat: Optional-like container + fxt::flat_tuple + Function returning monadic type
-        // ========================================================================
-        template<template<typename...> class TContainer, typename... TElems>
-        requires optional_like<TContainer<fxt::flat_tuple<TElems...>>>
-              && returns_monadic<TFunction, TElems...>
-        auto operator()(TContainer<fxt::flat_tuple<TElems...>>&& tupleContainer) const
-            -> TContainer<fxt::flat_tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>>
-        {
-            return tupleContainer
-                ? mappend(fxt::apply(function, *std::forward<decltype(tupleContainer)>(tupleContainer)))(std::forward<decltype(tupleContainer)>(tupleContainer))
+                ? mappend(fxt::apply(function, *std::forward<TArg>(tupleContainer)))(std::forward<TArg>(tupleContainer))
                 : fxt::nullopt;
         }
 
         // ========================================================================
         // Case 1b: Expected-like container + fxt::tuple + Function returning monadic type
         // ========================================================================
-        template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires expected_like<TExpected<fxt::tuple<TElems...>, TError>>
-              && returns_monadic<TFunction, TElems...>
-        auto operator()(TExpected<fxt::tuple<TElems...>, TError>&& tupleExpected) const
-            -> TExpected<fxt::tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>, TError>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
+        requires expected_like<std::remove_cvref_t<TArg>>
+            && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
+        auto operator()(TArg&& tupleExpected) const
         {
             return tupleExpected
-                ? mappend(fxt::apply(function, *std::forward<decltype(tupleExpected)>(tupleExpected)))(std::forward<decltype(tupleExpected)>(tupleExpected))
-                : typename std::invoke_result_t<TFunction, TElems...>::unexpected_type(tupleExpected.error());
-        }
-
-        // ========================================================================
-        // Case 1b-flat: Expected-like container + fxt::flat_tuple + Function returning monadic type
-        // ========================================================================
-        template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
-              && returns_monadic<TFunction, TElems...>
-        auto operator()(TExpected<fxt::flat_tuple<TElems...>, TError>&& tupleExpected) const
-            -> TExpected<fxt::flat_tuple<TElems..., impl::processed_invoke_result_t<TFunction, TElems...>>, TError>
-        {
-            return tupleExpected
-                ? mappend(fxt::apply(function, *std::forward<decltype(tupleExpected)>(tupleExpected)))(std::forward<decltype(tupleExpected)>(tupleExpected))
-                : typename std::invoke_result_t<TFunction, TElems...>::unexpected_type(tupleExpected.error());
+                ? mappend(fxt::apply(function, *std::forward<TArg>(tupleExpected)))(std::forward<TArg>(tupleExpected))
+                : typename invoke_result_with_tuple_t<TFunction, TTuple>::unexpected_type(tupleExpected.error());
         }
 
         // ========================================================================
         // Case 2a: Optional-like container + fxt::tuple + Function returning void
         // ========================================================================
-        template<template<typename...> class TContainer, typename... TElems>
-        requires optional_like<TContainer<fxt::tuple<TElems...>>>
-              && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
-        auto operator()(TContainer<fxt::tuple<TElems...>>&& tupleContainer) const
-            -> TContainer<fxt::tuple<TElems...>>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
+            requires optional_like<std::remove_cvref_t<TArg>>
+                && tuple_like<TTuple>
+                && (std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
+        auto operator()(TArg&& opt) const
         {
-            return std::forward<decltype(tupleContainer)>(tupleContainer).transform([this](const fxt::tuple<TElems...>& tuple) {
-                fxt::apply(function, tuple);
-                return tuple;
-            });
-        }
-
-        // ========================================================================
-        // Case 2a-flat: Optional-like container + fxt::flat_tuple + Function returning void
-        // ========================================================================
-        template<template<typename...> class TContainer, typename... TElems>
-        requires optional_like<TContainer<fxt::flat_tuple<TElems...>>>
-              && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
-        auto operator()(TContainer<fxt::flat_tuple<TElems...>>&& tupleContainer) const
-            -> TContainer<fxt::flat_tuple<TElems...>>
-        {
-            return std::forward<decltype(tupleContainer)>(tupleContainer).transform([this](const fxt::flat_tuple<TElems...>& tuple) {
+            return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
                 return tuple;
             });
@@ -407,28 +385,12 @@ namespace fxt
         // ========================================================================
         // Case 2b: Expected-like container + fxt::tuple + Function returning void
         // ========================================================================
-        template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires expected_like<TExpected<fxt::tuple<TElems...>, TError>>
-              && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
-        auto operator()(TExpected<fxt::tuple<TElems...>, TError>&& tupleExpected) const
-            -> TExpected<fxt::tuple<TElems...>, TError>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
+            requires expected_like<TArg> &&
+                     std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>
+        auto operator()(TArg&& tupleExpected) const
         {
-            return std::forward<decltype(tupleExpected)>(tupleExpected).transform([this](const fxt::tuple<TElems...>& tuple) {
-                fxt::apply(function, tuple);
-                return tuple;
-            });
-        }
-
-        // ========================================================================
-        // Case 2b-flat: Expected-like container + fxt::flat_tuple + Function returning void
-        // ========================================================================
-        template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
-              && std::same_as<std::invoke_result_t<TFunction, TElems...>, void>
-        auto operator()(TExpected<fxt::flat_tuple<TElems...>, TError>&& tupleExpected) const
-            -> TExpected<fxt::flat_tuple<TElems...>, TError>
-        {
-            return std::forward<decltype(tupleExpected)>(tupleExpected).transform([this](const fxt::flat_tuple<TElems...>& tuple) {
+            return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
                 return tuple;
             });
@@ -437,29 +399,15 @@ namespace fxt
         // ========================================================================
         // Case 3a: Optional-like container + fxt::tuple + Function returning regular value
         // ========================================================================
-        template<template<typename...> class TContainer, typename... TElems>
-        requires optional_like<TContainer<fxt::tuple<TElems...>>>
-              && (!returns_monadic<TFunction, TElems...>)
-              && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
-        auto operator()(TContainer<fxt::tuple<TElems...>>&& tupleContainer) const
-            -> TContainer<fxt::tuple<TElems..., std::invoke_result_t<TFunction, TElems...>>>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
+        requires optional_like<std::remove_cvref_t<TArg>>
+            && tuple_like<TTuple>
+            && (!returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
+            && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>,void>)
+        auto operator()(TArg&& opt) const
         {
-            return std::forward<decltype(tupleContainer)>(tupleContainer).transform([this](const fxt::tuple<TElems...>& tuple) {
-                return fxt::tuple_append(tuple, fxt::apply(function, tuple));
-            });
-        }
-
-        // ========================================================================
-        // Case 3a-flat: Optional-like container + fxt::flat_tuple + Function returning regular value
-        // ========================================================================
-        template<template<typename...> class TContainer, typename... TElems>
-        requires optional_like<TContainer<fxt::flat_tuple<TElems...>>>
-              && (!returns_monadic<TFunction, TElems...>)
-              && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
-        auto operator()(TContainer<fxt::flat_tuple<TElems...>>&& tupleContainer) const
-            -> TContainer<fxt::flat_tuple<TElems..., std::invoke_result_t<TFunction, TElems...>>>
-        {
-            return std::forward<decltype(tupleContainer)>(tupleContainer).transform([this](const fxt::flat_tuple<TElems...>& tuple) {
+            // Let the compiler deduce the return type from the expression.
+            return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
                 return fxt::tuple_append(tuple, fxt::apply(function, tuple));
             });
         }
@@ -467,32 +415,17 @@ namespace fxt
         // ========================================================================
         // Case 3b: Expected-like container + fxt::tuple + Function returning regular value
         // ========================================================================
-        template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires expected_like<TExpected<fxt::tuple<TElems...>, TError>>
-              && (!returns_monadic<TFunction, TElems...>)
-              && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
-        auto operator()(TExpected<fxt::tuple<TElems...>, TError>&& tupleExpected) const
-            -> TExpected<fxt::tuple<TElems..., std::invoke_result_t<TFunction, TElems...>>, TError>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
+            requires expected_like<TArg>
+                && (!returns_monadic_with_tuple<TFunction, TTuple>)
+                && (!std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>)
+        auto operator()(TArg&& tupleExpected) const
         {
-            return std::forward<decltype(tupleExpected)>(tupleExpected).transform([this](const fxt::tuple<TElems...>& tuple) {
+            return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
                 return fxt::tuple_append(tuple, fxt::apply(function, tuple));
             });
         }
 
-        // ========================================================================
-        // Case 3b-flat: Expected-like container + fxt::flat_tuple + Function returning regular value
-        // ========================================================================
-        template<template<typename, typename> class TExpected, typename... TElems, typename TError>
-        requires expected_like<TExpected<fxt::flat_tuple<TElems...>, TError>>
-              && (!returns_monadic<TFunction, TElems...>)
-              && (!std::same_as<std::invoke_result_t<TFunction, TElems...>, void>)
-        auto operator()(TExpected<fxt::flat_tuple<TElems...>, TError>&& tupleExpected) const
-            -> TExpected<fxt::flat_tuple<TElems..., std::invoke_result_t<TFunction, TElems...>>, TError>
-        {
-            return std::forward<decltype(tupleExpected)>(tupleExpected).transform([this](const fxt::flat_tuple<TElems...>& tuple) {
-                return fxt::tuple_append(tuple, fxt::apply(function, tuple));
-            });
-        }
     };
 
     /**
