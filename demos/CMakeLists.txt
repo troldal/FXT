@@ -59,6 +59,12 @@ target_link_libraries(fxt_append_demo PRIVATE fxt::fxt)
 add_executable(fxt_apply_demo Apply.cpp)
 target_link_libraries(fxt_apply_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_apply_append_demo ApplyAppend.cpp)
+target_link_libraries(fxt_apply_append_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_apply_replace_demo ApplyReplace.cpp)
+target_link_libraries(fxt_apply_replace_demo PRIVATE fxt::fxt)
+
 add_executable(fxt_get_demo Get.cpp)
 target_link_libraries(fxt_get_demo PRIVATE fxt::fxt)
 

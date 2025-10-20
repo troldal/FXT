@@ -164,7 +164,7 @@ namespace fxt
     // }
 
     template<typename TExpected, typename Callable>
-        requires std::invocable<Callable, TExpected&&> && expected_like<std::remove_cvref_t<TExpected>>
+        requires std::invocable<Callable, TExpected> && expected_like<std::remove_cvref_t<TExpected>>
     constexpr auto operator|(TExpected&& expected, Callable&& function)
     -> decltype(std::invoke(std::forward<Callable>(function), std::forward<TExpected>(expected)))
     {

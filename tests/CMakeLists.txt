@@ -5,6 +5,8 @@ target_include_directories(Catch2ForFXT SYSTEM PUBLIC Catch2)
 add_executable(fxt_tests
         AppendTests.cpp
         ApplyTests.cpp
+        ApplyAppendTests.cpp
+        ApplyReplaceTests.cpp
         AttemptTests.cpp
         FailureTests.cpp
         FlatTupleTests.cpp

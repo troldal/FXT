@@ -59,6 +59,8 @@
 #include "fxt/monads/ValueOr.hpp"
 #include "fxt/tuples/Append.hpp"
 #include "fxt/tuples/Apply.hpp"
+#include "fxt/tuples/ApplyAppend.hpp"
+#include "fxt/tuples/ApplyReplace.hpp"
 #include "fxt/tuples/Drop.hpp"
 #include "fxt/tuples/FlatTuple.hpp"
 #include "fxt/tuples/Get.hpp"

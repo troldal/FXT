@@ -345,19 +345,22 @@ namespace fxt
         // ========================================================================
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires optional_like<std::remove_cvref_t<TArg>>
-                && tuple_like<TTuple>
+                && tuple_like<std::remove_cvref_t<TTuple>>
                 && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
         auto operator()(TArg&& tupleContainer) const
         {
-             return tupleContainer
-                 ? mappend(fxt::apply(function, *std::forward<TArg>(tupleContainer)))(std::forward<TArg>(tupleContainer))
-                 : fxt::nullopt;
+             // return tupleContainer
+             //     ? mappend(fxt::apply(function, *std::forward<TArg>(tupleContainer)))(std::forward<TArg>(tupleContainer))
+             //     : fxt::nullopt;
 
             // if (!tupleContainer) return tupleContainer;
             // auto tuple = tupleContainer.value();
             // auto result = fxt::apply(function, tuple);
-            // if (!result) return fxt::nullopt;
+            // if (!result) return tupleContainer.and_then([](const TTuple& t) { return fxt::nullopt;});
             // return tupleContainer.transform([result](const TTuple& t) { return result;});
+            return tupleContainer.and_then([this](const TTuple& tuple) {
+                return fxt::apply(function, tuple);
+            });
         }
 
         // ========================================================================
@@ -365,18 +368,22 @@ namespace fxt
         // ========================================================================
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
         requires expected_like<std::remove_cvref_t<TArg>>
+            && tuple_like<std::remove_cvref_t<TTuple>>
             && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
         auto operator()(TArg&& tupleExpected) const
         {
-             return tupleExpected
-                 ? mappend(fxt::apply(function, *std::forward<TArg>(tupleExpected)))(std::forward<TArg>(tupleExpected))
-                 : typename invoke_result_with_tuple_t<TFunction, TTuple>::unexpected_type(tupleExpected.error());
+             // return tupleExpected
+             //     ? mappend(fxt::apply(function, *std::forward<TArg>(tupleExpected)))(std::forward<TArg>(tupleExpected))
+             //     : typename invoke_result_with_tuple_t<TFunction, TTuple>::unexpected_type(tupleExpected.error());
 
             // if (!tupleExpected) return tupleExpected;
             // auto tuple = tupleExpected.value();
             // auto result = fxt::apply(function, tuple);
-            // if (!result) return fxt::nullopt;
+            // if (!result) return tupleExpected.and_then([](const TTuple& t) { return fxt::nullopt;});
             // return tupleExpected.transform([result](const TTuple& t) { return result;});
+            return tupleExpected.and_then([this](const TTuple& tuple) {
+                return fxt::apply(function, tuple);
+            });
         }
 
         // ========================================================================
@@ -384,14 +391,14 @@ namespace fxt
         // ========================================================================
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires optional_like<std::remove_cvref_t<TArg>>
-                && tuple_like<TTuple>
+                && tuple_like<std::remove_cvref_t<TTuple>>
                 && (std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
         auto operator()(TArg&& opt) const
         {
             return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
-                return tuple;
-                //return fxt::unit{};
+                //return tuple;
+                return fxt::unit{};
             });
         }
 
@@ -399,14 +406,15 @@ namespace fxt
         // Case 2b: Expected-like container + fxt::tuple + Function returning void
         // ========================================================================
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires expected_like<TArg> &&
-                     std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>
+            requires expected_like<TArg>
+                && tuple_like<std::remove_cvref_t<TTuple>>
+                && std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>
         auto operator()(TArg&& tupleExpected) const
         {
             return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
-                return tuple;
-                //return fxt::unit{};
+                //return tuple;
+                return fxt::unit{};
             });
         }
 
@@ -415,15 +423,15 @@ namespace fxt
         // ========================================================================
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
         requires optional_like<std::remove_cvref_t<TArg>>
-            && tuple_like<TTuple>
+            && tuple_like<std::remove_cvref_t<TTuple>>
             && (!returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
             && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>,void>)
         auto operator()(TArg&& opt) const
         {
             // Let the compiler deduce the return type from the expression.
             return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
-                return fxt::tuple_append(tuple, fxt::apply(function, tuple));
-                //return fxt::apply(function, tuple);
+                //return fxt::tuple_append(tuple, fxt::apply(function, tuple));
+                return fxt::apply(function, tuple);
             });
         }
 
@@ -431,14 +439,15 @@ namespace fxt
         // Case 3b: Expected-like container + fxt::tuple + Function returning regular value
         // ========================================================================
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires expected_like<TArg>
+            requires expected_like<std::remove_cvref_t<TArg>>
+                && tuple_like<std::remove_cvref_t<TTuple>>
                 && (!returns_monadic_with_tuple<TFunction, TTuple>)
                 && (!std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>)
         auto operator()(TArg&& tupleExpected) const
         {
             return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
-                return fxt::tuple_append(tuple, fxt::apply(function, tuple));
-                //return fxt::apply(function, tuple);
+                //return fxt::tuple_append(tuple, fxt::apply(function, tuple));
+                return fxt::apply(function, tuple);
             });
         }
 
