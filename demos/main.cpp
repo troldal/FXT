@@ -1,135 +1,89 @@
 #include <fxt.hpp>
 #include <iostream>
 #include <string>
+#include <variant>
 
 int main()
 {
-    // ========================================================================
-    // Basic apply_replace with fxt::tuple
-    // ========================================================================
-    auto t1 = fxt::tuple{3, 4};
-    auto result1 = fxt::apply_replace([](int a, int b) { return a + b; }, t1);
-    // result1 is fxt::tuple{7} - original values replaced with result
-    std::cout << "Basic apply_replace: " << fxt::get<0>(result1) << "\n";
+    // Create a variant with different types
+    fxt::variant<int, double, std::string> v1{42};
+    fxt::variant<int, double, std::string> v2{3.14};
+    fxt::variant<int, double, std::string> v3{"hello"};
 
-    // ========================================================================
-    // Pipeline usage with pipe operator
-    // ========================================================================
-    auto result2 = fxt::tuple{2, 3}
-        | fxt::apply_replace([](int a, int b) { return a * b; })
-        | fxt::apply_replace([](int product) { return product * 2; });
-    // result2 is fxt::tuple{12}
-    std::cout << "Chained apply_replace: " << fxt::get<0>(result2) << "\n";
+    // Direct call to index()
+    std::cout << "Direct index calls:\n";
+    std::cout << "v1 index: " << fxt::index(v1) << "\n";
+    std::cout << "v2 index: " << fxt::index(v2) << "\n";
+    std::cout << "v3 index: " << fxt::index(v3) << "\n\n";
 
-    // ========================================================================
-    // With flat_tuple
-    // ========================================================================
-    auto ft = fxt::flat_tuple<double, double>{2.0, 3.0};
-    auto result3 = ft | fxt::apply_replace([](double a, double b) {
-        return a / b;
-    });
-    // result3 is fxt::flat_tuple<double>{0.666...}
-    std::cout << "flat_tuple apply_replace: " << fxt::get<0>(result3) << "\n";
+    // Using pipe operator with index()
+    std::cout << "Pipe operator with index():\n";
+    auto idx1 = v1 | fxt::index();
+    auto idx2 = v2 | fxt::index();
+    auto idx3 = v3 | fxt::index();
+    std::cout << "v1 | index(): " << idx1 << "\n";
+    std::cout << "v2 | index(): " << idx2 << "\n";
+    std::cout << "v3 | index(): " << idx3 << "\n\n";
 
-    // ========================================================================
-    // Multiple return values
-    // ========================================================================
-    auto t2 = fxt::tuple{10, 5};
-    auto result4 = t2 | fxt::apply_replace([](int a, int b) {
-        return fxt::tuple{a / b, a % b};
-    });
-    // result4 is fxt::tuple{fxt::tuple{2, 0}} (nested tuple)
-    std::cout << "Multiple results: quotient=" << fxt::get<0>(fxt::get<0>(result4))
-              << ", remainder=" << fxt::get<1>(fxt::get<0>(result4)) << "\n";
+    // Using mindex() with optional<variant>
+    std::cout << "mindex() with optional<variant>:\n";
+    fxt::optional<fxt::variant<int, double, std::string>> opt1{v1};
+    fxt::optional<fxt::variant<int, double, std::string>> opt2{v2};
+    fxt::optional<fxt::variant<int, double, std::string>> opt3{v3};
+    fxt::optional<fxt::variant<int, double, std::string>> opt_empty{};
 
-    // ========================================================================
-    // Monadic apply_replace with fxt::expected
-    // ========================================================================
-    auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{
-        fxt::tuple{10, 5}
-    };
-    auto result5 = exp | fxt::mapply_replace([](int a, int b) {
-        return a / b;
-    });
-    // result5 is fxt::expected<fxt::tuple<int>, std::string>
-    if (result5) {
-        std::cout << "Expected mapply_replace: " << fxt::get<0>(result5.value()) << "\n";
-    }
+    // Direct call to mindex()
+    auto opt_idx1 = fxt::mindex(opt1);
+    auto opt_idx2 = fxt::mindex(opt2);
+    auto opt_idx3 = fxt::mindex(opt3);
+    auto opt_idx_empty = fxt::mindex(opt_empty);
 
-    // Error case propagation
-    auto exp_err = fxt::expected<fxt::tuple<int, int>, std::string>{
-        std::unexpected("division error")
-    };
-    auto result6 = exp_err | fxt::mapply_replace([](int a, int b) {
-        return a + b;
-    });
-    if (!result6) {
-        std::cout << "Error propagated: " << result6.error() << "\n";
-    }
+    std::cout << "opt1 mindex: " << (opt_idx1 ? std::to_string(*opt_idx1) : "empty") << "\n";
+    std::cout << "opt2 mindex: " << (opt_idx2 ? std::to_string(*opt_idx2) : "empty") << "\n";
+    std::cout << "opt3 mindex: " << (opt_idx3 ? std::to_string(*opt_idx3) : "empty") << "\n";
+    std::cout << "opt_empty mindex: " << (opt_idx_empty ? std::to_string(*opt_idx_empty) : "empty") << "\n\n";
 
-    // ========================================================================
-    // Monadic apply_replace with fxt::optional
-    // ========================================================================
-    auto opt = fxt::optional<fxt::tuple<int, int>>{
-        fxt::tuple{7, 8}
-    };
-    auto result7 = opt | fxt::mapply_replace([](int a, int b) {
-        return a - b;
-    });
-    // result7 is fxt::optional<fxt::tuple<int>>
-    if (result7) {
-        std::cout << "Optional mapply_replace: " << fxt::get<0>(*result7) << "\n";
-    }
+    // Using pipe operator with mindex()
+    std::cout << "Pipe operator with mindex():\n";
+    auto result1 = opt1 | fxt::mindex();
+    auto result2 = opt2 | fxt::mindex();
+    auto result3 = opt_empty | fxt::mindex();
 
-    // Nullopt case propagation
-    auto opt_null = fxt::optional<fxt::tuple<int, int>>{std::nullopt};
-    auto result8 = opt_null | fxt::mapply_replace([](int a, int b) {
-        return a * b;
-    });
-    if (!result8) {
-        std::cout << "Nullopt propagated\n";
-    }
+    std::cout << "opt1 | mindex(): " << (result1 ? std::to_string(*result1) : "empty") << "\n";
+    std::cout << "opt2 | mindex(): " << (result2 ? std::to_string(*result2) : "empty") << "\n";
+    std::cout << "opt_empty | mindex(): " << (result3 ? std::to_string(*result3) : "empty") << "\n\n";
 
-    // ========================================================================
-    // Chaining monadic operations
-    // ========================================================================
-    auto result9 = fxt::expected<fxt::tuple<int, int>, std::string>{
-        fxt::tuple{2, 3}
-    }
-        | fxt::mapply_replace([](int a, int b) {
-            return fxt::tuple{a + b, a * b};
-        })
-        | fxt::mapply_replace([](fxt::tuple<int, int> t) {
-            return fxt::get<0>(t) + fxt::get<1>(t);
-        });
-    // result9 is fxt::expected<fxt::tuple<int>, std::string>
-    if (result9) {
-        std::cout << "Chained mapply_replace: " << fxt::get<0>(result9.value()) << "\n";
-    }
+    // Using mindex() with expected<variant, E>
+    std::cout << "mindex() with expected<variant, E>:\n";
+    fxt::expected<fxt::variant<int, double, std::string>, std::string> exp1{v1};
+    fxt::expected<fxt::variant<int, double, std::string>, std::string> exp2{v2};
+    fxt::expected<fxt::variant<int, double, std::string>, std::string> exp_err{fxt::unexpected("error")};
 
-    // ========================================================================
-    // With void-returning function (empty tuple result)
-    // ========================================================================
-    int side_effect = 0;
-    auto result10 = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{5, 10}}
-        | fxt::mapply_replace([&](int a, int b) {
-            side_effect = a + b;
-        });
-    // result10 is fxt::optional<fxt::tuple<>>
-    std::cout << "Side effect value: " << side_effect << "\n";
-    if (result10) {
-        std::cout << "Result tuple size: " << fxt::tuple_size_v<std::remove_cvref_t<decltype(*result10)>> << "\n";
-    }
+    // Direct call to mindex()
+    auto exp_idx1 = fxt::mindex(exp1);
+    auto exp_idx2 = fxt::mindex(exp2);
+    auto exp_idx_err = fxt::mindex(exp_err);
 
-    // ========================================================================
-    // Type transformation example
-    // ========================================================================
-    auto t3 = fxt::tuple{10, 20};
-    auto result11 = t3 | fxt::apply_replace([](int a, int b) {
-        return std::to_string(a) + "+" + std::to_string(b);
-    });
-    // result11 is fxt::tuple<std::string>
-    std::cout << "Type transformation: " << fxt::get<0>(result11) << "\n";
+    std::cout << "exp1 mindex: " << (exp_idx1 ? std::to_string(*exp_idx1) : "error: " + exp_idx1.error()) << "\n";
+    std::cout << "exp2 mindex: " << (exp_idx2 ? std::to_string(*exp_idx2) : "error: " + exp_idx2.error()) << "\n";
+    std::cout << "exp_err mindex: " << (exp_idx_err ? std::to_string(*exp_idx_err) : "error: " + exp_idx_err.error()) << "\n\n";
+
+    // Using pipe operator with mindex() on expected
+    std::cout << "Pipe operator with mindex() on expected:\n";
+    auto exp_result1 = exp1 | fxt::mindex();
+    auto exp_result2 = exp_err | fxt::mindex();
+
+    std::cout << "exp1 | mindex(): " << (exp_result1 ? std::to_string(*exp_result1) : "error: " + exp_result1.error()) << "\n";
+    std::cout << "exp_err | mindex(): " << (exp_result2 ? std::to_string(*exp_result2) : "error: " + exp_result2.error()) << "\n\n";
+
+    // Chaining mindex() in a pipeline
+    std::cout << "Chaining mindex() in a pipeline:\n";
+    auto pipeline_result = opt1
+                         | fxt::mindex()
+                         | fxt::transform([](std::size_t idx) { return idx * 10; });
+
+    std::cout << "opt1 | mindex() | transform(*10): "
+              << (pipeline_result ? std::to_string(*pipeline_result) : "empty") << "\n";
 
     return 0;
 }

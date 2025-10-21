@@ -38,55 +38,51 @@
 
 */
 
+
 #pragma once
 
-#include "fxt/concepts/IsExpected.hpp"
-#include "fxt/concepts/IsMonad.hpp"
-#include "fxt/concepts/IsOptional.hpp"
-#include "fxt/concepts/IsTuple.hpp"
-#include "fxt/concepts/IsVariant.hpp"
-#include "fxt/monads/AndThen.hpp"
-#include "fxt/monads/Expected.hpp"
-#include "fxt/monads/LogicalOr.hpp"
-#include "fxt/monads/Match.hpp"
-#include "fxt/monads/Optional.hpp"
-#include "fxt/monads/OrElse.hpp"
-#include "fxt/monads/Tap.hpp"
-#include "fxt/monads/ToExpected.hpp"
-#include "fxt/monads/ToOptional.hpp"
-#include "fxt/monads/Transform.hpp"
-#include "fxt/monads/TransformError.hpp"
-#include "fxt/monads/Value.hpp"
-#include "fxt/monads/ValueOr.hpp"
-#include "fxt/tuples/Append.hpp"
-#include "fxt/tuples/Apply.hpp"
-#include "fxt/tuples/ApplyAppend.hpp"
-#include "fxt/tuples/ApplyReplace.hpp"
-#include "fxt/tuples/Drop.hpp"
-#include "fxt/tuples/FlatTuple.hpp"
-#include "fxt/tuples/Get.hpp"
-#include "fxt/tuples/Select.hpp"
-#include "fxt/tuples/Take.hpp"
-#include "fxt/tuples/Tuple.hpp"
-#include "fxt/tuples/TupleAppend.hpp"
-#include "fxt/tuples/TupleCat.hpp"
-#include "fxt/tuples/TupleElement.hpp"
-#include "fxt/tuples/TupleForEach.hpp"
-#include "fxt/tuples/TuplePipe.hpp"
-#include "fxt/tuples/TuplePrepend.hpp"
-#include "fxt/tuples/TupleReverse.hpp"
-#include "fxt/tuples/TupleSize.hpp"
-#include "fxt/tuples/TupleTransform.hpp"
-#include "fxt/utils/Attempt.hpp"
-#include "fxt/utils/Curry.hpp"
-#include "fxt/utils/Failure.hpp"
-#include "fxt/utils/Immutable.hpp"
-#include "fxt/utils/Lazy.hpp"
-#include "fxt/utils/Lift.hpp"
-#include "fxt/utils/Overload.hpp"
-#include "fxt/utils/Unit.hpp"
-#include "fxt/utils/TypeValue.hpp"
-#include "fxt/variants/Variant.hpp"
-#include "fxt/variants/VariantIndex.hpp"
-#include "fxt/variants/VariantPipe.hpp"
+#include "../variants/Variant.hpp"
+#include <type_traits>
+
+namespace fxt::impl
+{
+    // Helper to detect if a type is fxt::variant (std::variant)
+    template<typename T>
+    struct is_fxt_variant : std::false_type {};
+
+    template<typename... Ts>
+    struct is_fxt_variant<fxt::variant<Ts...>> : std::true_type {};
+
+    template<typename T>
+    inline constexpr bool is_fxt_variant_v = is_fxt_variant<std::remove_cvref_t<T>>::value;
+
+} // namespace fxt::impl
+
+namespace fxt
+{
+    /**
+     * @brief Concept to check if a type is a variant-like type
+     *
+     * A variant-like type is currently defined as an fxt::variant (std::variant).
+     * This concept can be used to constrain template parameters to only accept variant types.
+     * Other variant implementations may be added at a later time.
+     *
+     * @tparam T The type to check
+     *
+     * @section Usage
+     * @code
+     * template<fxt::variant_like T>
+     * void process_variant(T&& var) {
+     *     // Works with fxt::variant
+     * }
+     *
+     * auto v = fxt::variant<int, double, std::string>(42);
+     * process_variant(v);  // OK
+     * process_variant(42); // Error: 42 is not variant_like
+     * @endcode
+     */
+    template<typename T>
+    concept variant_like = impl::is_fxt_variant_v<std::remove_cvref_t<T>>;
+
+}    // namespace fxt
 

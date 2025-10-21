@@ -38,6 +38,7 @@ add_executable(fxt_tests
         TupleReverseTests.cpp
         TupleSizeTests.cpp
         TypeTests.cpp
+        VariantIndexTests.cpp
 )
 
 target_link_libraries(fxt_tests

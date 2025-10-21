@@ -50,6 +50,9 @@ target_link_libraries(fxt_tap_error_and_none_demo PRIVATE fxt::fxt)
 add_executable(fxt_failure_demo Failure.cpp)
 target_link_libraries(fxt_failure_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_variant_index_demo VariantIndexDemo.cpp)
+target_link_libraries(fxt_variant_index_demo PRIVATE fxt::fxt)
+
 add_executable(fxt_immutable_demo Immutable.cpp)
 target_link_libraries(fxt_immutable_demo PRIVATE fxt::fxt)
 
