@@ -89,4 +89,5 @@
 #include "fxt/variants/Variant.hpp"
 #include "fxt/variants/VariantIndex.hpp"
 #include "fxt/variants/VariantPipe.hpp"
+#include "fxt/variants/VariantVisit.hpp"
 

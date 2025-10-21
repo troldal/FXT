@@ -1,89 +1,101 @@
 #include <fxt.hpp>
-#include <iostream>
-#include <string>
-#include <variant>
+    #include <iostream>
+    #include <string>
 
-int main()
-{
-    // Create a variant with different types
-    fxt::variant<int, double, std::string> v1{42};
-    fxt::variant<int, double, std::string> v2{3.14};
-    fxt::variant<int, double, std::string> v3{"hello"};
+    int main()
+    {
+        std::cout << "=== FXT Variant Visit Demo ===\n\n";
 
-    // Direct call to index()
-    std::cout << "Direct index calls:\n";
-    std::cout << "v1 index: " << fxt::index(v1) << "\n";
-    std::cout << "v2 index: " << fxt::index(v2) << "\n";
-    std::cout << "v3 index: " << fxt::index(v3) << "\n\n";
+        // Create variants with different types
+        fxt::variant<int, double, std::string> v1{42};
+        fxt::variant<int, double, std::string> v2{3.14};
+        fxt::variant<int, double, std::string> v3{"hello"};
 
-    // Using pipe operator with index()
-    std::cout << "Pipe operator with index():\n";
-    auto idx1 = v1 | fxt::index();
-    auto idx2 = v2 | fxt::index();
-    auto idx3 = v3 | fxt::index();
-    std::cout << "v1 | index(): " << idx1 << "\n";
-    std::cout << "v2 | index(): " << idx2 << "\n";
-    std::cout << "v3 | index(): " << idx3 << "\n\n";
+        // Define a visitor that converts to string
+        auto to_string_visitor = [](auto&& val) -> std::string {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<T, std::string>) {
+                return val;
+            } else {
+                return std::to_string(val);
+            }
+        };
 
-    // Using mindex() with optional<variant>
-    std::cout << "mindex() with optional<variant>:\n";
-    fxt::optional<fxt::variant<int, double, std::string>> opt1{v1};
-    fxt::optional<fxt::variant<int, double, std::string>> opt2{v2};
-    fxt::optional<fxt::variant<int, double, std::string>> opt3{v3};
-    fxt::optional<fxt::variant<int, double, std::string>> opt_empty{};
+        // 1. Direct call to visit()
+        std::cout << "1. Direct visit() calls:\n";
+        std::cout << "   v1 (int): " << fxt::visit(to_string_visitor, v1) << "\n";
+        std::cout << "   v2 (double): " << fxt::visit(to_string_visitor, v2) << "\n";
+        std::cout << "   v3 (string): " << fxt::visit(to_string_visitor, v3) << "\n\n";
 
-    // Direct call to mindex()
-    auto opt_idx1 = fxt::mindex(opt1);
-    auto opt_idx2 = fxt::mindex(opt2);
-    auto opt_idx3 = fxt::mindex(opt3);
-    auto opt_idx_empty = fxt::mindex(opt_empty);
+        // 2. Using pipe operator with visit()
+        std::cout << "2. Pipe operator with visit():\n";
+        std::cout << "   v1 | visit: " << (v1 | fxt::visit(to_string_visitor)) << "\n";
+        std::cout << "   v2 | visit: " << (v2 | fxt::visit(to_string_visitor)) << "\n";
+        std::cout << "   v3 | visit: " << (v3 | fxt::visit(to_string_visitor)) << "\n\n";
 
-    std::cout << "opt1 mindex: " << (opt_idx1 ? std::to_string(*opt_idx1) : "empty") << "\n";
-    std::cout << "opt2 mindex: " << (opt_idx2 ? std::to_string(*opt_idx2) : "empty") << "\n";
-    std::cout << "opt3 mindex: " << (opt_idx3 ? std::to_string(*opt_idx3) : "empty") << "\n";
-    std::cout << "opt_empty mindex: " << (opt_idx_empty ? std::to_string(*opt_idx_empty) : "empty") << "\n\n";
+        // 3. Using mvisit() with optional<variant>
+        std::cout << "3. mvisit() with optional<variant>:\n";
+        fxt::optional<fxt::variant<int, double, std::string>> opt1{v1};
+        fxt::optional<fxt::variant<int, double, std::string>> opt2{v2};
+        fxt::optional<fxt::variant<int, double, std::string>> opt_empty{};
 
-    // Using pipe operator with mindex()
-    std::cout << "Pipe operator with mindex():\n";
-    auto result1 = opt1 | fxt::mindex();
-    auto result2 = opt2 | fxt::mindex();
-    auto result3 = opt_empty | fxt::mindex();
+        // Direct call
+        auto opt_result1 = fxt::mvisit(to_string_visitor, opt1);
+        auto opt_result2 = fxt::mvisit(to_string_visitor, opt2);
+        auto opt_result_empty = fxt::mvisit(to_string_visitor, opt_empty);
 
-    std::cout << "opt1 | mindex(): " << (result1 ? std::to_string(*result1) : "empty") << "\n";
-    std::cout << "opt2 | mindex(): " << (result2 ? std::to_string(*result2) : "empty") << "\n";
-    std::cout << "opt_empty | mindex(): " << (result3 ? std::to_string(*result3) : "empty") << "\n\n";
+        std::cout << "   Direct: opt1 = " << (opt_result1 ? *opt_result1 : "empty") << "\n";
+        std::cout << "   Direct: opt2 = " << (opt_result2 ? *opt_result2 : "empty") << "\n";
+        std::cout << "   Direct: opt_empty = " << (opt_result_empty ? *opt_result_empty : "empty") << "\n\n";
 
-    // Using mindex() with expected<variant, E>
-    std::cout << "mindex() with expected<variant, E>:\n";
-    fxt::expected<fxt::variant<int, double, std::string>, std::string> exp1{v1};
-    fxt::expected<fxt::variant<int, double, std::string>, std::string> exp2{v2};
-    fxt::expected<fxt::variant<int, double, std::string>, std::string> exp_err{fxt::unexpected("error")};
+        // 4. Using pipe operator with mvisit() on optional
+        std::cout << "4. Pipe operator with mvisit() on optional:\n";
+        auto pipe_opt1 = opt1 | fxt::mvisit(to_string_visitor);
+        auto pipe_opt_empty = opt_empty | fxt::mvisit(to_string_visitor);
 
-    // Direct call to mindex()
-    auto exp_idx1 = fxt::mindex(exp1);
-    auto exp_idx2 = fxt::mindex(exp2);
-    auto exp_idx_err = fxt::mindex(exp_err);
+        std::cout << "   opt1 | mvisit = " << (pipe_opt1 ? *pipe_opt1 : "empty") << "\n";
+        std::cout << "   opt_empty | mvisit = " << (pipe_opt_empty ? *pipe_opt_empty : "empty") << "\n\n";
 
-    std::cout << "exp1 mindex: " << (exp_idx1 ? std::to_string(*exp_idx1) : "error: " + exp_idx1.error()) << "\n";
-    std::cout << "exp2 mindex: " << (exp_idx2 ? std::to_string(*exp_idx2) : "error: " + exp_idx2.error()) << "\n";
-    std::cout << "exp_err mindex: " << (exp_idx_err ? std::to_string(*exp_idx_err) : "error: " + exp_idx_err.error()) << "\n\n";
+        // 5. Using mvisit() with expected<variant, E>
+        std::cout << "5. mvisit() with expected<variant, E>:\n";
+        fxt::expected<fxt::variant<int, double, std::string>, std::string> exp1{v1};
+        fxt::expected<fxt::variant<int, double, std::string>, std::string> exp2{v3};
+        fxt::expected<fxt::variant<int, double, std::string>, std::string> exp_err{fxt::unexpected("error occurred")};
 
-    // Using pipe operator with mindex() on expected
-    std::cout << "Pipe operator with mindex() on expected:\n";
-    auto exp_result1 = exp1 | fxt::mindex();
-    auto exp_result2 = exp_err | fxt::mindex();
+        // Direct call
+        auto exp_result1 = fxt::mvisit(to_string_visitor, exp1);
+        auto exp_result2 = fxt::mvisit(to_string_visitor, exp2);
+        auto exp_result_err = fxt::mvisit(to_string_visitor, exp_err);
 
-    std::cout << "exp1 | mindex(): " << (exp_result1 ? std::to_string(*exp_result1) : "error: " + exp_result1.error()) << "\n";
-    std::cout << "exp_err | mindex(): " << (exp_result2 ? std::to_string(*exp_result2) : "error: " + exp_result2.error()) << "\n\n";
+        std::cout << "   Direct: exp1 = " << (exp_result1 ? *exp_result1 : "error: " + exp_result1.error()) << "\n";
+        std::cout << "   Direct: exp2 = " << (exp_result2 ? *exp_result2 : "error: " + exp_result2.error()) << "\n";
+        std::cout << "   Direct: exp_err = " << (exp_result_err ? *exp_result_err : "error: " + exp_result_err.error()) << "\n\n";
 
-    // Chaining mindex() in a pipeline
-    std::cout << "Chaining mindex() in a pipeline:\n";
-    auto pipeline_result = opt1
-                         | fxt::mindex()
-                         | fxt::transform([](std::size_t idx) { return idx * 10; });
+        // 6. Using pipe operator with mvisit() on expected
+        std::cout << "6. Pipe operator with mvisit() on expected:\n";
+        auto pipe_exp1 = exp1 | fxt::mvisit(to_string_visitor);
+        auto pipe_exp_err = exp_err | fxt::mvisit(to_string_visitor);
 
-    std::cout << "opt1 | mindex() | transform(*10): "
-              << (pipeline_result ? std::to_string(*pipeline_result) : "empty") << "\n";
+        std::cout << "   exp1 | mvisit = " << (pipe_exp1 ? *pipe_exp1 : "error: " + pipe_exp1.error()) << "\n";
+        std::cout << "   exp_err | mvisit = " << (pipe_exp_err ? *pipe_exp_err : "error: " + pipe_exp_err.error()) << "\n\n";
 
-    return 0;
-}
+        // 7. Chaining mvisit() in a pipeline
+        std::cout << "7. Chaining mvisit() in a pipeline:\n";
+        auto double_visitor = [](auto&& val) -> double {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_arithmetic_v<T>) {
+                return static_cast<double>(val);
+            } else {
+                return static_cast<double>(val.length());
+            }
+        };
+
+        auto pipeline_result = opt1
+                             | fxt::mvisit(double_visitor)
+                             | fxt::transform([](double d) { return d * 2; });
+
+        std::cout << "   opt1 | mvisit(to_double) | transform(*2) = "
+                  << (pipeline_result ? std::to_string(*pipeline_result) : "empty") << "\n";
+
+        return 0;
+    }

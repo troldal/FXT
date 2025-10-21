@@ -39,6 +39,7 @@ add_executable(fxt_tests
         TupleSizeTests.cpp
         TypeTests.cpp
         VariantIndexTests.cpp
+        VariantVisitTests.cpp
 )
 
 target_link_libraries(fxt_tests
