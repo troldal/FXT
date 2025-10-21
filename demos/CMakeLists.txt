@@ -50,11 +50,17 @@ target_link_libraries(fxt_tap_error_and_none_demo PRIVATE fxt::fxt)
 add_executable(fxt_failure_demo Failure.cpp)
 target_link_libraries(fxt_failure_demo PRIVATE fxt::fxt)
 
-add_executable(fxt_variant_index_demo VariantIndexDemo.cpp)
+add_executable(fxt_variant_index_demo VariantIndex.cpp)
 target_link_libraries(fxt_variant_index_demo PRIVATE fxt::fxt)
 
-add_executable(fxt_variant_visit_demo VariantVisitDemo.cpp)
+add_executable(fxt_variant_visit_demo VariantVisit.cpp)
 target_link_libraries(fxt_variant_visit_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_variant_when_demo VariantWhen.cpp)
+target_link_libraries(fxt_variant_when_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_variant_transform_when_demo VariantTransformWhen.cpp)
+target_link_libraries(fxt_variant_transform_when_demo PRIVATE fxt::fxt)
 
 add_executable(fxt_immutable_demo Immutable.cpp)
 target_link_libraries(fxt_immutable_demo PRIVATE fxt::fxt)

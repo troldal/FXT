@@ -40,6 +40,8 @@ add_executable(fxt_tests
         TypeTests.cpp
         VariantIndexTests.cpp
         VariantVisitTests.cpp
+        VariantWhenTests.cpp
+        VariantTransformWhenTests.cpp
 )
 
 target_link_libraries(fxt_tests

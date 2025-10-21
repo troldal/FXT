@@ -1,101 +1,141 @@
 #include <fxt.hpp>
-    #include <iostream>
-    #include <string>
+#include <iostream>
+#include <string>
 
-    int main()
-    {
-        std::cout << "=== FXT Variant Visit Demo ===\n\n";
+int main()
+{
+    std::cout << "=== FXT transform_when<T> Combinator Demo ===\n\n";
 
-        // Create variants with different types
-        fxt::variant<int, double, std::string> v1{42};
-        fxt::variant<int, double, std::string> v2{3.14};
-        fxt::variant<int, double, std::string> v3{"hello"};
+    // ===== Part 1: transform_when<T> - Direct Usage =====
+    std::cout << "1. transform_when<T>() - Direct calls:\n";
 
-        // Define a visitor that converts to string
-        auto to_string_visitor = [](auto&& val) -> std::string {
-            using T = std::decay_t<decltype(val)>;
-            if constexpr (std::is_same_v<T, std::string>) {
-                return val;
-            } else {
-                return std::to_string(val);
-            }
-        };
+    fxt::variant<int, double, std::string> v1 { 42 };
+    std::cout << "   Original v1 (int): " << std::get<int>(v1) << "\n";
 
-        // 1. Direct call to visit()
-        std::cout << "1. Direct visit() calls:\n";
-        std::cout << "   v1 (int): " << fxt::visit(to_string_visitor, v1) << "\n";
-        std::cout << "   v2 (double): " << fxt::visit(to_string_visitor, v2) << "\n";
-        std::cout << "   v3 (string): " << fxt::visit(to_string_visitor, v3) << "\n\n";
+    fxt::transform_when<int>(v1, [](int x) { return x * 2; });
+    std::cout << "   After transform_when<int>: " << std::get<int>(v1) << "\n";
 
-        // 2. Using pipe operator with visit()
-        std::cout << "2. Pipe operator with visit():\n";
-        std::cout << "   v1 | visit: " << (v1 | fxt::visit(to_string_visitor)) << "\n";
-        std::cout << "   v2 | visit: " << (v2 | fxt::visit(to_string_visitor)) << "\n";
-        std::cout << "   v3 | visit: " << (v3 | fxt::visit(to_string_visitor)) << "\n\n";
+    fxt::transform_when<double>(v1, [](double d) { return d * 3.0; });
+    std::cout << "   After transform_when<double> (skipped): " << std::get<int>(v1) << "\n\n";
 
-        // 3. Using mvisit() with optional<variant>
-        std::cout << "3. mvisit() with optional<variant>:\n";
-        fxt::optional<fxt::variant<int, double, std::string>> opt1{v1};
-        fxt::optional<fxt::variant<int, double, std::string>> opt2{v2};
-        fxt::optional<fxt::variant<int, double, std::string>> opt_empty{};
+    // ===== Part 2: transform_when<T> - Pipeline Usage =====
+    std::cout << "2. transform_when<T>() - Pipeline usage:\n";
 
-        // Direct call
-        auto opt_result1 = fxt::mvisit(to_string_visitor, opt1);
-        auto opt_result2 = fxt::mvisit(to_string_visitor, opt2);
-        auto opt_result_empty = fxt::mvisit(to_string_visitor, opt_empty);
+    fxt::variant<int, double, std::string> v2 { 100 };
+    std::cout << "   Original v2 (int): " << std::get<int>(v2) << "\n";
 
-        std::cout << "   Direct: opt1 = " << (opt_result1 ? *opt_result1 : "empty") << "\n";
-        std::cout << "   Direct: opt2 = " << (opt_result2 ? *opt_result2 : "empty") << "\n";
-        std::cout << "   Direct: opt_empty = " << (opt_result_empty ? *opt_result_empty : "empty") << "\n\n";
+    v2  | fxt::transform_when<int>([](int x) { return x + 50; })
+        | fxt::transform_when<double>([](double d) { return d * 2.0; })
+        | fxt::transform_when<int>([](int x) { return x * 2; });
 
-        // 4. Using pipe operator with mvisit() on optional
-        std::cout << "4. Pipe operator with mvisit() on optional:\n";
-        auto pipe_opt1 = opt1 | fxt::mvisit(to_string_visitor);
-        auto pipe_opt_empty = opt_empty | fxt::mvisit(to_string_visitor);
+    std::cout << "   After pipeline: " << std::get<int>(v2) << "\n";
+    std::cout << "   (100 + 50 = 150, then 150 * 2 = 300)\n\n";
 
-        std::cout << "   opt1 | mvisit = " << (pipe_opt1 ? *pipe_opt1 : "empty") << "\n";
-        std::cout << "   opt_empty | mvisit = " << (pipe_opt_empty ? *pipe_opt_empty : "empty") << "\n\n";
+    // ===== Part 3: transform_when<T> with different types =====
+    std::cout << "3. transform_when<T>() - Multiple types:\n";
 
-        // 5. Using mvisit() with expected<variant, E>
-        std::cout << "5. mvisit() with expected<variant, E>:\n";
-        fxt::expected<fxt::variant<int, double, std::string>, std::string> exp1{v1};
-        fxt::expected<fxt::variant<int, double, std::string>, std::string> exp2{v3};
-        fxt::expected<fxt::variant<int, double, std::string>, std::string> exp_err{fxt::unexpected("error occurred")};
+    fxt::variant<int, double, std::string> v3 { 3.14 };
+    std::cout << "   Original v3 (double): " << std::get<double>(v3) << "\n";
 
-        // Direct call
-        auto exp_result1 = fxt::mvisit(to_string_visitor, exp1);
-        auto exp_result2 = fxt::mvisit(to_string_visitor, exp2);
-        auto exp_result_err = fxt::mvisit(to_string_visitor, exp_err);
+    v3  | fxt::transform_when<int>([](int x) { return x * 10; })
+        | fxt::transform_when<double>([](double d) { return d * 2.0; })
+        | fxt::transform_when<std::string>([](std::string s) { return s + "!"; });
 
-        std::cout << "   Direct: exp1 = " << (exp_result1 ? *exp_result1 : "error: " + exp_result1.error()) << "\n";
-        std::cout << "   Direct: exp2 = " << (exp_result2 ? *exp_result2 : "error: " + exp_result2.error()) << "\n";
-        std::cout << "   Direct: exp_err = " << (exp_result_err ? *exp_result_err : "error: " + exp_result_err.error()) << "\n\n";
+    std::cout << "   After pipeline: " << std::get<double>(v3) << "\n";
+    std::cout << "   (only double transformation applied)\n\n";
 
-        // 6. Using pipe operator with mvisit() on expected
-        std::cout << "6. Pipe operator with mvisit() on expected:\n";
-        auto pipe_exp1 = exp1 | fxt::mvisit(to_string_visitor);
-        auto pipe_exp_err = exp_err | fxt::mvisit(to_string_visitor);
+    fxt::variant<int, double, std::string> v4 { std::string { "hello" } };
+    std::cout << "   Original v4 (string): " << std::get<std::string>(v4) << "\n";
 
-        std::cout << "   exp1 | mvisit = " << (pipe_exp1 ? *pipe_exp1 : "error: " + pipe_exp1.error()) << "\n";
-        std::cout << "   exp_err | mvisit = " << (pipe_exp_err ? *pipe_exp_err : "error: " + pipe_exp_err.error()) << "\n\n";
+    v4  | fxt::transform_when<int>([](int x) { return x * 10; })
+        | fxt::transform_when<double>([](double d) { return d * 2.0; })
+        | fxt::transform_when<std::string>([](std::string s) { return s + " world"; });
 
-        // 7. Chaining mvisit() in a pipeline
-        std::cout << "7. Chaining mvisit() in a pipeline:\n";
-        auto double_visitor = [](auto&& val) -> double {
-            using T = std::decay_t<decltype(val)>;
-            if constexpr (std::is_arithmetic_v<T>) {
-                return static_cast<double>(val);
-            } else {
-                return static_cast<double>(val.length());
-            }
-        };
+    std::cout << "   After pipeline: " << std::get<std::string>(v4) << "\n\n";
 
-        auto pipeline_result = opt1
-                             | fxt::mvisit(double_visitor)
-                             | fxt::transform([](double d) { return d * 2; });
+    // ===== Part 4: mtransform_when<T> with optional - Direct Usage =====
+    std::cout << "4. mtransform_when<T>() with optional - Direct calls:\n";
 
-        std::cout << "   opt1 | mvisit(to_double) | transform(*2) = "
-                  << (pipeline_result ? std::to_string(*pipeline_result) : "empty") << "\n";
+    using MyVariant = fxt::variant<int, double, std::string>;
+    fxt::optional<MyVariant> opt1 { MyVariant { 42 } };
 
-        return 0;
-    }
+    std::cout << "   opt1 has value: " << opt1.has_value() << ", holds int: " << std::get<int>(*opt1) << "\n";
+
+    fxt::mtransform_when<int>(opt1, [](int x) { return x * 3; });
+    std::cout << "   After mtransform_when<int>: " << std::get<int>(*opt1) << "\n";
+
+    fxt::optional<MyVariant> opt_empty {};
+    fxt::mtransform_when<int>(opt_empty, [](int x) { return x * 3; });
+    std::cout << "   Empty optional unchanged: has_value = " << opt_empty.has_value() << "\n\n";
+
+    // ===== Part 5: mtransform_when<T> with optional - Pipeline Usage =====
+    std::cout << "5. mtransform_when<T>() with optional - Pipeline usage:\n";
+
+    fxt::optional<MyVariant> opt2 { MyVariant { 100 } };
+    std::cout << "   Original opt2 (int): " << std::get<int>(*opt2) << "\n";
+
+    opt2 | fxt::mtransform_when<int>([](int x) { return x + 25; })
+         | fxt::mtransform_when<double>([](double d) { return d * 2.0; })
+         | fxt::mtransform_when<int>([](int x) { return x * 4; });
+
+    std::cout << "   After pipeline: " << std::get<int>(*opt2) << "\n";
+    std::cout << "   ((100 + 25) * 4 = 500)\n\n";
+
+    // ===== Part 6: mtransform_when<T> with expected =====
+    std::cout << "6. mtransform_when<T>() with expected:\n";
+
+    fxt::expected<MyVariant, std::string> exp1 { MyVariant { 42 } };
+    std::cout << "   exp1 has value: " << exp1.has_value() << ", holds int: " << std::get<int>(*exp1) << "\n";
+
+    exp1 | fxt::mtransform_when<int>([](int x) { return x * 2; })
+         | fxt::mtransform_when<double>([](double d) { return d / 2.0; });
+
+    std::cout << "   After pipeline: " << std::get<int>(*exp1) << "\n";
+
+    fxt::expected<MyVariant, std::string> exp_err { fxt::unexpected("error occurred") };
+    std::cout << "   exp_err has value: " << exp_err.has_value() << "\n";
+
+    exp_err | fxt::mtransform_when<int>([](int x) { return x * 2; });
+    std::cout << "   After mtransform_when (skipped): has_value = " << exp_err.has_value() << "\n\n";
+
+    // ===== Part 7: Mixing transform_when and when =====
+    std::cout << "7. Combining transform_when<T>() and when<T>():\n";
+
+    fxt::variant<int, double, std::string> v5 { 50 };
+    std::cout << "   Original v5 (int): " << std::get<int>(v5) << "\n";
+
+    v5  | fxt::transform_when<int>([](int x) { return x * 2; })
+        | fxt::when<int>([](int x) { std::cout << "   [LOG] Value is now: " << x << "\n"; })
+        | fxt::transform_when<int>([](int x) { return x + 100; })
+        | fxt::when<int>([](int x) { std::cout << "   [LOG] Final value: " << x << "\n"; });
+
+    std::cout << "   Result: " << std::get<int>(v5) << "\n\n";
+
+    // ===== Part 8: Practical example - Data validation and transformation =====
+    std::cout << "8. Practical example - Validation and transformation pipeline:\n";
+
+    fxt::optional<MyVariant> user_input { MyVariant { -5 } };
+
+    std::cout << "   Processing user input: " << std::get<int>(*user_input) << "\n";
+
+    user_input | fxt::mwhen<int>([](int x) { if (x < 0) std::cout << "   [WARN] Negative value detected\n";})
+               | fxt::mtransform_when<int>([](int x) { return std::abs(x); })
+               | fxt::mwhen<int>([](int x) { std::cout << "   [INFO] Normalized to: " << x << "\n"; })
+               | fxt::mtransform_when<int>([](int x) { return x * 10; })
+               | fxt::mwhen<int>([](int x) { std::cout << "   [INFO] Scaled to: " << x << "\n"; });
+
+    std::cout << "   Final result: " << std::get<int>(*user_input) << "\n\n";
+
+    // ===== Part 9: Type conversion example =====
+    std::cout << "9. Type-specific transformations:\n";
+
+    fxt::variant<int, double, std::string> v6 { std::string { "42" } };
+    std::cout << "   Original v6 (string): " << std::get<std::string>(v6) << "\n";
+
+    v6  | fxt::transform_when<std::string>([](std::string s) { return "Number: " + s; })
+        | fxt::when<std::string>([](const std::string& s) { std::cout << "   Transformed string: " << s << "\n"; });
+
+    std::cout << "\n";
+
+    return 0;
+}

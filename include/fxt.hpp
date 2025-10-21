@@ -87,7 +87,11 @@
 #include "fxt/utils/Unit.hpp"
 #include "fxt/utils/TypeValue.hpp"
 #include "fxt/variants/Variant.hpp"
+#include "fxt/variants/VariantHoldsAlternative.hpp"
 #include "fxt/variants/VariantIndex.hpp"
 #include "fxt/variants/VariantPipe.hpp"
+#include "fxt/variants/VariantTransformWhen.hpp"
 #include "fxt/variants/VariantVisit.hpp"
+#include "fxt/variants/VariantWhen.hpp"
+
 
