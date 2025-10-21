@@ -64,7 +64,7 @@
 // }
 
 template<typename TTuple, typename Callable>
-    requires fxt::tuple_like<std::remove_cvref_t<TTuple>> && requires(TTuple&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
+    requires fxt::tuple_like<std::remove_cvref_t<TTuple>> && requires(TTuple&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::forward<TTuple>(t)); }
 constexpr auto operator|(TTuple&& tuple, Callable&& function)
 -> decltype(std::invoke(std::forward<Callable>(function), std::forward<TTuple>(tuple)))
 {
