@@ -14,7 +14,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         int side_effect_value = 0;
 
         auto result = fxt::expected<int, std::string>{42}
-                    | fxt::tap([&side_effect_value](int x) {
+                    | fxt::tee([&side_effect_value](int x) {
                         side_effect_value = x;
                     });
 
@@ -28,7 +28,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         bool executed = false;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                    | fxt::tap([&executed](int x) {
+                    | fxt::tee([&executed](int x) {
                         executed = true;
                     });
 
@@ -40,7 +40,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
     SECTION("tap does not modify the value")
     {
         auto result = fxt::expected<int, std::string>{100}
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         // Even if we try to modify x, it won't affect the result
                         int modified = x * 2;
                     });
@@ -54,11 +54,11 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         std::vector<int> trace;
 
         auto result = fxt::expected<int, std::string>{10}
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x * 2; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x + 5; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); });
+                    | fxt::tee([&trace](int x) { trace.push_back(x); });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 25);
@@ -73,7 +73,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         std::string logged_value;
 
         auto result = fxt::expected<std::string, int>{"hello"}
-                    | fxt::tap([&logged_value](const std::string& s) {
+                    | fxt::tee([&logged_value](const std::string& s) {
                         logged_value = s;
                     });
 
@@ -91,7 +91,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         Point logged_point{0, 0};
 
         auto result = fxt::expected<Point, std::string>{Point{3, 4}}
-                    | fxt::tap([&logged_point](const Point& p) {
+                    | fxt::tee([&logged_point](const Point& p) {
                         logged_point = p;
                     });
 
@@ -107,11 +107,11 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         int count = 0;
 
         auto result = fxt::expected<int, std::string>{5}
-                    | fxt::tap([&count](int x) { count++; })
+                    | fxt::tee([&count](int x) { count++; })
                     | fxt::transform([](int x) { return x * 2; })
-                    | fxt::tap([&count](int x) { count++; })
+                    | fxt::tee([&count](int x) { count++; })
                     | fxt::transform([](int x) { return x + 3; })
-                    | fxt::tap([&count](int x) { count++; });
+                    | fxt::tee([&count](int x) { count++; });
 
         REQUIRE(result.has_value());
         REQUIRE(count == 3);
@@ -122,7 +122,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         bool tap_executed = false;
 
         auto result = fxt::expected<int, std::string>{10}
-                    | fxt::tap([&tap_executed](int x) { tap_executed = true; })
+                    | fxt::tee([&tap_executed](int x) { tap_executed = true; })
                     | fxt::and_then([](int x) -> fxt::expected<std::string, std::string> {
                         return "value: " + std::to_string(x);
                     });
@@ -137,7 +137,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         bool tap_executed = false;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                    | fxt::tap([&tap_executed](int x) { tap_executed = true; })
+                    | fxt::tee([&tap_executed](int x) { tap_executed = true; })
                     | fxt::or_else([](const std::string& err) {
                         return fxt::expected<int, std::string>{0};
                     });
@@ -152,7 +152,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
         int side_effect = 0;
         auto original = fxt::expected<int, std::string>{42};
 
-        auto result = original | fxt::tap([&side_effect](int x) { side_effect = x; });
+        auto result = original | fxt::tee([&side_effect](int x) { side_effect = x; });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 42);
@@ -167,7 +167,7 @@ TEST_CASE("tap on fxt::expected", "[tap][expected]")
 
         auto make_expected = []() { return fxt::expected<int, std::string>{99}; };
 
-        auto result = make_expected() | fxt::tap([&side_effect](int x) { side_effect = x; });
+        auto result = make_expected() | fxt::tee([&side_effect](int x) { side_effect = x; });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 99);
@@ -182,7 +182,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         int side_effect_value = 0;
 
         auto result = fxt::optional<int>{42}
-                    | fxt::tap([&side_effect_value](int x) {
+                    | fxt::tee([&side_effect_value](int x) {
                         side_effect_value = x;
                     });
 
@@ -196,7 +196,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         bool executed = false;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tap([&executed](int x) {
+                    | fxt::tee([&executed](int x) {
                         executed = true;
                     });
 
@@ -207,7 +207,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
     SECTION("tap does not modify the value")
     {
         auto result = fxt::optional<int>{100}
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         int modified = x * 2;
                     });
 
@@ -220,11 +220,11 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         std::vector<int> trace;
 
         auto result = fxt::optional<int>{10}
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x * 2; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x + 5; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); });
+                    | fxt::tee([&trace](int x) { trace.push_back(x); });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 25);
@@ -239,7 +239,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         std::string logged_value;
 
         auto result = fxt::optional<std::string>{"world"}
-                    | fxt::tap([&logged_value](const std::string& s) {
+                    | fxt::tee([&logged_value](const std::string& s) {
                         logged_value = s;
                     });
 
@@ -253,11 +253,11 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         int count = 0;
 
         auto result = fxt::optional<int>{7}
-                    | fxt::tap([&count](int x) { count++; })
+                    | fxt::tee([&count](int x) { count++; })
                     | fxt::transform([](int x) { return x * 3; })
-                    | fxt::tap([&count](int x) { count++; })
+                    | fxt::tee([&count](int x) { count++; })
                     | fxt::transform([](int x) { return x - 1; })
-                    | fxt::tap([&count](int x) { count++; });
+                    | fxt::tee([&count](int x) { count++; });
 
         REQUIRE(result.has_value());
         REQUIRE(count == 3);
@@ -268,7 +268,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         bool tap_executed = false;
 
         auto result = fxt::optional<int>{15}
-                    | fxt::tap([&tap_executed](int x) { tap_executed = true; })
+                    | fxt::tee([&tap_executed](int x) { tap_executed = true; })
                     | fxt::and_then([](int x) -> fxt::optional<std::string> {
                         return "number: " + std::to_string(x);
                     });
@@ -283,7 +283,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         bool tap_executed = false;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tap([&tap_executed](int x) { tap_executed = true; })
+                    | fxt::tee([&tap_executed](int x) { tap_executed = true; })
                     | fxt::or_else([]() {
                         return fxt::optional<int>{-1};
                     });
@@ -298,7 +298,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         int side_effect = 0;
         auto original = fxt::optional<int>{88};
 
-        auto result = original | fxt::tap([&side_effect](int x) { side_effect = x; });
+        auto result = original | fxt::tee([&side_effect](int x) { side_effect = x; });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 88);
@@ -313,7 +313,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
 
         auto make_optional = []() { return fxt::optional<int>{77}; };
 
-        auto result = make_optional() | fxt::tap([&side_effect](int x) { side_effect = x; });
+        auto result = make_optional() | fxt::tee([&side_effect](int x) { side_effect = x; });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 77);
@@ -325,7 +325,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         int side_effect = 0;
 
         auto result = fxt::optional<int>{33}
-                    | fxt::tap([&side_effect](int x) { side_effect = x; })
+                    | fxt::tee([&side_effect](int x) { side_effect = x; })
                     | fxt::value_or(0);
 
         REQUIRE(result == 33);
@@ -337,7 +337,7 @@ TEST_CASE("tap on fxt::optional", "[tap][optional]")
         bool tap_executed = false;
 
         auto result = fxt::optional<int>{25}
-                    | fxt::tap([&tap_executed](int x) { tap_executed = true; })
+                    | fxt::tee([&tap_executed](int x) { tap_executed = true; })
                     | fxt::to_expected<std::string>("no value");
 
         REQUIRE(result.has_value());
@@ -353,15 +353,15 @@ TEST_CASE("tap with complex scenarios", "[tap][expected][optional]")
         std::vector<std::string> debug_log;
 
         auto result = fxt::expected<int, std::string>{5}
-                    | fxt::tap([&debug_log](int x) {
+                    | fxt::tee([&debug_log](int x) {
                         debug_log.push_back("Initial: " + std::to_string(x));
                     })
                     | fxt::transform([](int x) { return x * 2; })
-                    | fxt::tap([&debug_log](int x) {
+                    | fxt::tee([&debug_log](int x) {
                         debug_log.push_back("After *2: " + std::to_string(x));
                     })
                     | fxt::transform([](int x) { return x + 10; })
-                    | fxt::tap([&debug_log](int x) {
+                    | fxt::tee([&debug_log](int x) {
                         debug_log.push_back("After +10: " + std::to_string(x));
                     });
 
@@ -378,7 +378,7 @@ TEST_CASE("tap with complex scenarios", "[tap][expected][optional]")
         bool validation_passed = false;
 
         auto result = fxt::optional<int>{50}
-                    | fxt::tap([&validation_passed](int x) {
+                    | fxt::tee([&validation_passed](int x) {
                         validation_passed = (x >= 0 && x <= 100);
                     });
 
@@ -391,11 +391,11 @@ TEST_CASE("tap with complex scenarios", "[tap][expected][optional]")
         int counter = 0;
 
         auto result = fxt::expected<int, std::string>{1}
-                    | fxt::tap([&counter](int x) { counter += x; })
+                    | fxt::tee([&counter](int x) { counter += x; })
                     | fxt::transform([](int x) { return x + 1; })
-                    | fxt::tap([&counter](int x) { counter += x; })
+                    | fxt::tee([&counter](int x) { counter += x; })
                     | fxt::transform([](int x) { return x + 1; })
-                    | fxt::tap([&counter](int x) { counter += x; });
+                    | fxt::tee([&counter](int x) { counter += x; });
 
         REQUIRE(result.has_value());
         REQUIRE(result.value() == 3);
@@ -411,7 +411,7 @@ TEST_CASE("tap with complex scenarios", "[tap][expected][optional]")
                     | fxt::and_then([](int x) -> fxt::expected<int, std::string> {
                         return fxt::unexpected("error in and_then");
                     })
-                    | fxt::tap([&tap_executed](int x) { tap_executed = true; })
+                    | fxt::tee([&tap_executed](int x) { tap_executed = true; })
                     | fxt::transform([](int x) { return x + 5; });
 
         REQUIRE(!result.has_value());
@@ -425,9 +425,9 @@ TEST_CASE("tap with complex scenarios", "[tap][expected][optional]")
         int optional_tap_count = 0;
 
         auto result = fxt::expected<int, std::string>{10}
-                    | fxt::tap([&expected_tap_count](int x) { expected_tap_count++; })
+                    | fxt::tee([&expected_tap_count](int x) { expected_tap_count++; })
                     | fxt::to_optional()
-                    | fxt::tap([&optional_tap_count](int x) { optional_tap_count++; })
+                    | fxt::tee([&optional_tap_count](int x) { optional_tap_count++; })
                     | fxt::transform([](int x) { return x * 2; });
 
         REQUIRE(result.has_value());

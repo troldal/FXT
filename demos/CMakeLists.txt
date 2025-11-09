@@ -41,10 +41,10 @@ target_link_libraries(fxt_to_optional_demo PRIVATE fxt::fxt)
 add_executable(fxt_to_expected_demo ToExpected.cpp)
 target_link_libraries(fxt_to_expected_demo PRIVATE fxt::fxt)
 
-add_executable(fxt_tap_demo Tap.cpp)
+add_executable(fxt_tap_demo Tee.cpp)
 target_link_libraries(fxt_tap_demo PRIVATE fxt::fxt)
 
-add_executable(fxt_tap_error_and_none_demo TapErrorAndNone.cpp)
+add_executable(fxt_tap_error_and_none_demo TeeErrorAndNone.cpp)
 target_link_libraries(fxt_tap_error_and_none_demo PRIVATE fxt::fxt)
 
 add_executable(fxt_failure_demo Failure.cpp)
@@ -118,3 +118,9 @@ target_link_libraries(fxt_lazy_demo PRIVATE fxt::fxt)
 
 add_executable(fxt_attempt_demo Attempt.cpp)
 target_link_libraries(fxt_attempt_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_as_array_demo AsArrayDemo.cpp)
+target_link_libraries(fxt_as_array_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_mas_array_demo MasArrayDemo.cpp)
+target_link_libraries(fxt_mas_array_demo PRIVATE fxt::fxt)

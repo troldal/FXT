@@ -7,6 +7,7 @@ add_executable(fxt_tests
         ApplyTests.cpp
         ApplyAppendTests.cpp
         ApplyReplaceTests.cpp
+        AsArrayTests.cpp
         AttemptTests.cpp
         FailureTests.cpp
         FlatTupleTests.cpp
@@ -25,12 +26,13 @@ add_executable(fxt_tests
         DropTests.cpp
         TakeTests.cpp
         MatchTests.cpp
+        MasArrayTests.cpp
         MonadicTupleAppendTests.cpp
         MonadicTuplePrependTests.cpp
         ToOptionalTests.cpp
         ToExpectedTests.cpp
-        TapTests.cpp
-        TapErrorAndNoneTests.cpp
+        TeeTests.cpp
+        TeeErrorAndNoneTests.cpp
         TupleAppendTests.cpp
         TupleCatTests.cpp
         TupleElementTests.cpp

@@ -84,7 +84,7 @@ namespace fxt
      * // Nothing is logged, result4 is empty
      * @endcode
      */
-    inline constexpr auto tap = []<typename TFunction>(TFunction&& f) {
+    inline constexpr auto tee = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
             requires requires {container.has_value();container.value();}
         {
@@ -94,7 +94,7 @@ namespace fxt
             }
 
             // Always return the original container unchanged
-            //return std::forward<TContainer>(container);
+            return std::forward<TContainer>(container);
         };
     };
 
@@ -135,7 +135,7 @@ namespace fxt
      * // Logs either success or error, never both
      * @endcode
      */
-    inline constexpr auto tap_error = []<typename TFunction>(TFunction&& f) {
+    inline constexpr auto tee_error = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
             requires requires { container.has_value(); container.error(); }
         {
@@ -145,7 +145,7 @@ namespace fxt
             }
 
             // Always return the original container unchanged
-            //return std::forward<TContainer>(container);
+            return std::forward<TContainer>(container);
         };
     };
 
@@ -191,7 +191,7 @@ namespace fxt
      *              | fxt::tap_none([&empty_count] { empty_count++; });
      * @endcode
      */
-    inline constexpr auto tap_none = []<typename TFunction>(TFunction&& f) {
+    inline constexpr auto tee_none = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
             requires requires { container.has_value(); }
         {
@@ -201,7 +201,7 @@ namespace fxt
             }
 
             // Always return the original container unchanged
-            //return std::forward<TContainer>(container);
+            return std::forward<TContainer>(container);
         };
     };
 

@@ -57,7 +57,7 @@ int main()
     std::cout << "1. Basic tap with expected (success case):\n";
     {
         auto result = safe_divide(10.0, 2.0)
-                    | fxt::tap([](double x) {
+                    | fxt::tee([](double x) {
                         std::cout << "   [TAP] Division result: " << x << "\n";
                     })
                     | fxt::transform([](double x) { return x * 2; });
@@ -69,7 +69,7 @@ int main()
     std::cout << "\n2. Tap with expected (error case):\n";
     {
         auto result = safe_divide(10.0, 0.0)
-                    | fxt::tap([](double x) {
+                    | fxt::tee([](double x) {
                         std::cout << "   [TAP] This won't print\n";
                     })
                     | fxt::transform([](double x) { return x * 2; });
@@ -88,15 +88,15 @@ int main()
     std::cout << "\n3. Multiple taps in a pipeline:\n";
     {
         auto result = parse_int("42")
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         std::cout << "   [TAP 1] Parsed value: " << x << "\n";
                     })
                     | fxt::transform([](int x) { return x * 2; })
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         std::cout << "   [TAP 2] After doubling: " << x << "\n";
                     })
                     | fxt::transform([](int x) { return x + 10; })
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         std::cout << "   [TAP 3] After adding 10: " << x << "\n";
                     });
 
@@ -107,7 +107,7 @@ int main()
     std::cout << "\n4. Tap with optional (has value):\n";
     {
         auto result = find_user(1)
-                    | fxt::tap([](const std::string& name) {
+                    | fxt::tee([](const std::string& name) {
                         std::cout << "   [TAP] Found user: " << name << "\n";
                     })
                     | fxt::transform([](const std::string& name) {
@@ -121,7 +121,7 @@ int main()
     std::cout << "\n5. Tap with optional (empty):\n";
     {
         auto result = find_user(999)
-                    | fxt::tap([](const std::string& name) {
+                    | fxt::tee([](const std::string& name) {
                         std::cout << "   [TAP] This won't print\n";
                     })
                     | fxt::transform([](const std::string& name) {
@@ -142,17 +142,17 @@ int main()
     std::cout << "\n6. Debugging a complex pipeline with tap:\n";
     {
         auto result = parse_int("100")
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         std::cout << "   [DEBUG] Input: " << x << "\n";
                     })
                     | fxt::transform([](int x) { return x / 4; })
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         std::cout << "   [DEBUG] After division: " << x << "\n";
                     })
                     | fxt::and_then([](int x) -> fxt::expected<double, std::string> {
                         return safe_divide(1000.0, static_cast<double>(x));
                     })
-                    | fxt::tap([](double x) {
+                    | fxt::tee([](double x) {
                         std::cout << "   [DEBUG] After safe_divide: " << x << "\n";
                     });
 
@@ -165,17 +165,17 @@ int main()
         int operation_count = 0;
 
         auto result = fxt::expected<int, std::string>{10}
-                    | fxt::tap([&operation_count](int x) {
+                    | fxt::tee([&operation_count](int x) {
                         operation_count++;
                         std::cout << "   [LOG] Operation " << operation_count << ": value = " << x << "\n";
                     })
                     | fxt::transform([](int x) { return x * 3; })
-                    | fxt::tap([&operation_count](int x) {
+                    | fxt::tee([&operation_count](int x) {
                         operation_count++;
                         std::cout << "   [LOG] Operation " << operation_count << ": value = " << x << "\n";
                     })
                     | fxt::transform([](int x) { return x + 5; })
-                    | fxt::tap([&operation_count](int x) {
+                    | fxt::tee([&operation_count](int x) {
                         operation_count++;
                         std::cout << "   [LOG] Operation " << operation_count << ": value = " << x << "\n";
                     });
@@ -188,7 +188,7 @@ int main()
     std::cout << "\n8. Tap for validation in pipeline:\n";
     {
         auto result = parse_int("50")
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         if (x < 0 || x > 100)
                         {
                             std::cout << "   [WARN] Value out of expected range: " << x << "\n";
@@ -211,13 +211,13 @@ int main()
         };
 
         auto result = fxt::expected<Point, std::string>{Point{3.0, 4.0}}
-                    | fxt::tap([](const Point& p) {
+                    | fxt::tee([](const Point& p) {
                         std::cout << "   [TAP] Point: (" << p.x << ", " << p.y << ")\n";
                     })
                     | fxt::transform([](const Point& p) {
                         return Point{p.x * 2, p.y * 2};
                     })
-                    | fxt::tap([](const Point& p) {
+                    | fxt::tee([](const Point& p) {
                         std::cout << "   [TAP] Scaled point: (" << p.x << ", " << p.y << ")\n";
                     });
 
@@ -229,7 +229,7 @@ int main()
     {
         auto process = [](const std::string& input) {
             return parse_int(input)
-                 | fxt::tap([&input](int x) {
+                 | fxt::tee([&input](int x) {
                      std::cout << "   [SUCCESS] Parsed '" << input << "' as: " << x << "\n";
                  })
                  | fxt::or_else([&input](const std::string& err) {
@@ -251,13 +251,13 @@ int main()
         std::vector<int> trace;
 
         auto result = fxt::expected<int, std::string>{5}
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x * 2; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x + 3; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); })
+                    | fxt::tee([&trace](int x) { trace.push_back(x); })
                     | fxt::transform([](int x) { return x * x; })
-                    | fxt::tap([&trace](int x) { trace.push_back(x); });
+                    | fxt::tee([&trace](int x) { trace.push_back(x); });
 
         std::cout << "   Trace: ";
         for (size_t i = 0; i < trace.size(); ++i)
@@ -272,11 +272,11 @@ int main()
     std::cout << "\n12. Tap with optional in a transformation chain:\n";
     {
         auto result = find_user(2)
-                    | fxt::tap([](const std::string& name) {
+                    | fxt::tee([](const std::string& name) {
                         std::cout << "   [LOOKUP] User found: " << name << "\n";
                     })
                     | fxt::to_expected<std::string>("User not found")
-                    | fxt::tap([](const std::string& name) {
+                    | fxt::tee([](const std::string& name) {
                         std::cout << "   [CONVERT] Converted to expected: " << name << "\n";
                     })
                     | fxt::transform([](const std::string& name) {
@@ -290,7 +290,7 @@ int main()
     std::cout << "\n13. Verify tap doesn't change the value:\n";
     {
         auto result = fxt::expected<int, std::string>{42}
-                    | fxt::tap([](int x) {
+                    | fxt::tee([](int x) {
                         std::cout << "   [TAP] Value before: " << x << "\n";
                         // Even if we try to modify x here, it won't affect the pipeline
                         int modified = x * 100;
