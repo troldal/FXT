@@ -109,37 +109,126 @@
 #include <functional>
 #include <tuple>
 
+// namespace fxt
+// {
+//     /**
+//      * @brief Alias for std::tuple
+//      *
+//      * Provides a consistent fxt namespace interface for tuple types,
+//      * allowing users to write fxt::tuple instead of std::tuple.
+//      */
+//     template<typename... Ts>
+//     using tuple = std::tuple<Ts...>;
+//
+//     /**
+//      * @brief Create a tuple, deducing the target type from the types of arguments
+//      *
+//      * Forwards to std::make_tuple. Provides a consistent fxt::make_tuple
+//      * interface that matches fxt::tuple.
+//      *
+//      * @tparam Ts Types of the elements
+//      * @param args Values to initialize the tuple with
+//      * @return A tuple containing the given values
+//      *
+//      * @code
+//      * auto t = fxt::make_tuple(42, 3.14, "hello");
+//      * // Creates fxt::tuple<int, double, const char*>
+//      * @endcode
+//      */
+//     template<typename... Ts>
+//     constexpr auto make_tuple(Ts&&... args)
+//     {
+//         return std::make_tuple(std::forward<Ts>(args)...);
+//     }
+//
+// }    // namespace fxt
+//
+
+// In Tuple.hpp
 namespace fxt
 {
     /**
-     * @brief Alias for std::tuple
+     * @brief Wrapper around std::tuple providing FXT namespace interface
      *
-     * Provides a consistent fxt namespace interface for tuple types,
-     * allowing users to write fxt::tuple instead of std::tuple.
+     * This is a distinct type (not an alias) to enable proper ADL lookup
+     * for fxt::get, allowing structured bindings to work correctly.
      */
-    template<typename... Ts>
-    using tuple = std::tuple<Ts...>;
+    // template<typename... Ts>
+    // struct tuple : private std::tuple<Ts...>
+    // {
+    //     using base = std::tuple<Ts...>;
+    //     using base::base;  // Inherit constructors
+    //
+    //     // Allow implicit conversion from std::tuple
+    //     constexpr tuple(const std::tuple<Ts...>& t) : base(t) {}
+    //     constexpr tuple(std::tuple<Ts...>&& t) : base(std::move(t)) {}
+    //
+    //     // Allow implicit conversion to std::tuple
+    //     constexpr operator const std::tuple<Ts...>&() const& noexcept { return *this; }
+    //     constexpr operator std::tuple<Ts...>&() & noexcept { return *this; }
+    //     constexpr operator std::tuple<Ts...>&&() && noexcept { return std::move(*this); }
+    //
+    //     // Access to underlying tuple
+    //     constexpr const base& as_std_tuple() const& noexcept { return *this; }
+    //     constexpr base& as_std_tuple() & noexcept { return *this; }
+    //     constexpr base&& as_std_tuple() && noexcept { return std::move(*this); }
+    //
+    //     // For structured bindings support
+    //     template<std::size_t I>
+    //     friend constexpr auto& get(tuple& t) noexcept { return std::get<I>(static_cast<base&>(t)); }
+    //
+    //     template<std::size_t I>
+    //     friend constexpr const auto& get(const tuple& t) noexcept { return std::get<I>(static_cast<const base&>(t)); }
+    //
+    //     template<std::size_t I>
+    //     friend constexpr auto&& get(tuple&& t) noexcept { return std::get<I>(static_cast<base&&>(t)); }
+    //
+    //     template<std::size_t I>
+    //     friend constexpr const auto&& get(const tuple&& t) noexcept { return std::get<I>(static_cast<const base&&>(t)); }
+    // };
 
-    /**
-     * @brief Create a tuple, deducing the target type from the types of arguments
-     *
-     * Forwards to std::make_tuple. Provides a consistent fxt::make_tuple
-     * interface that matches fxt::tuple.
-     *
-     * @tparam Ts Types of the elements
-     * @param args Values to initialize the tuple with
-     * @return A tuple containing the given values
-     *
-     * @code
-     * auto t = fxt::make_tuple(42, 3.14, "hello");
-     * // Creates fxt::tuple<int, double, const char*>
-     * @endcode
-     */
+
+    // In Tuple.hpp - change private to public inheritance
+    template<typename... Ts>
+    struct tuple : public std::tuple<Ts...>  // Changed from private to public
+    {
+        using base = std::tuple<Ts...>;
+        using base::base;  // Inherit constructors
+
+        // Allow implicit conversion from std::tuple
+        constexpr tuple(const std::tuple<Ts...>& t) : base(t) {}
+        constexpr tuple(std::tuple<Ts...>&& t) : base(std::move(t)) {}
+
+        // For structured bindings support - these find fxt::get via ADL
+        template<std::size_t I>
+        friend constexpr auto& get(tuple& t) noexcept { return std::get<I>(static_cast<base&>(t)); }
+
+        template<std::size_t I>
+        friend constexpr const auto& get(const tuple& t) noexcept { return std::get<I>(static_cast<const base&>(t)); }
+
+        template<std::size_t I>
+        friend constexpr auto&& get(tuple&& t) noexcept { return std::get<I>(static_cast<base&&>(t)); }
+
+        template<std::size_t I>
+        friend constexpr const auto&& get(const tuple&& t) noexcept { return std::get<I>(static_cast<const base&&>(t)); }
+    };
+
+
+    // Deduction guide
+    template<typename... Ts>
+    tuple(Ts...) -> tuple<Ts...>;
+
     template<typename... Ts>
     constexpr auto make_tuple(Ts&&... args)
     {
-        return std::make_tuple(std::forward<Ts>(args)...);
+        return tuple<std::decay_t<Ts>...>(std::forward<Ts>(args)...);
     }
 
-}    // namespace fxt
+}
 
+// Structured bindings support
+template<typename... Ts>
+struct std::tuple_size<fxt::tuple<Ts...>> : std::tuple_size<std::tuple<Ts...>> {};
+
+template<std::size_t I, typename... Ts>
+struct std::tuple_element<I, fxt::tuple<Ts...>> : std::tuple_element<I, std::tuple<Ts...>> {};
