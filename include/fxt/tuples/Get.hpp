@@ -48,6 +48,12 @@
 namespace fxt
 {
 
+    //template<class... Ts> void get(std::tuple<Ts...>&) = delete;
+    //template<class... Ts> void get(const std::tuple<Ts...>&) = delete;
+    //template<class... Ts> void get(std::tuple<Ts...>&&) = delete;
+
+
+
     /**
      * @brief Get element from tuple by index
      *
