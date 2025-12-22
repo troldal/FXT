@@ -52,6 +52,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <tuple>
 
 namespace fxt
 {
@@ -70,28 +71,52 @@ namespace fxt
      * @param t Tuple whose elements are used as function arguments
      * @return Result of invoking f with tuple elements as arguments
      */
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>& t)
+    // {
+    //     return std::apply(std::forward<F>(f), t);
+    // }
+    //
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>& t)
+    // {
+    //     return std::apply(std::forward<F>(f), t);
+    // }
+    //
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>&& t)
+    // {
+    //     return std::apply(std::forward<F>(f), std::move(t));
+    // }
+    //
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>&& t)
+    // {
+    //     return std::apply(std::forward<F>(f), std::move(t));
+    // }
+
     template<typename F, typename... Ts>
     constexpr decltype(auto) apply(F&& f, tuple<Ts...>& t)
     {
-        return std::apply(std::forward<F>(f), t);
+        return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&>(t));
     }
 
     template<typename F, typename... Ts>
     constexpr decltype(auto) apply(F&& f, const tuple<Ts...>& t)
     {
-        return std::apply(std::forward<F>(f), t);
+        return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&>(t));
     }
 
     template<typename F, typename... Ts>
     constexpr decltype(auto) apply(F&& f, tuple<Ts...>&& t)
     {
-        return std::apply(std::forward<F>(f), std::move(t));
+        return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&&>(std::move(t)));
     }
 
     template<typename F, typename... Ts>
     constexpr decltype(auto) apply(F&& f, const tuple<Ts...>&& t)
     {
-        return std::apply(std::forward<F>(f), std::move(t));
+        return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&&>(std::move(t)));
     }
 
     /**
