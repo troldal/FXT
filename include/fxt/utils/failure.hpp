@@ -341,29 +341,15 @@ namespace fxt
         /**
          * @brief Gets the attached context as a specific type
          * @tparam T The type to retrieve
-         * @return Pointer to the context if it matches type T, nullptr otherwise
+         * @return Optional containing a copy of the context if it matches type T, nullopt otherwise
          */
         template<typename T>
-        [[nodiscard]] T* get_context() noexcept
+        [[nodiscard]] std::optional<T> get_context() const noexcept
         {
             if (has_context<T>()) {
-                return static_cast<T*>(m_context->get());
+                return *static_cast<const T*>(m_context->get());
             }
-            return nullptr;
-        }
-
-        /**
-         * @brief Gets the attached context as a specific type (const version)
-         * @tparam T The type to retrieve
-         * @return Const pointer to the context if it matches type T, nullptr otherwise
-         */
-        template<typename T>
-        [[nodiscard]] const T* get_context() const noexcept
-        {
-            if (has_context<T>()) {
-                return static_cast<const T*>(m_context->get());
-            }
-            return nullptr;
+            return std::nullopt;
         }
 
         /**
