@@ -124,3 +124,13 @@ target_link_libraries(fxt_as_array_demo PRIVATE fxt::fxt)
 
 add_executable(fxt_mas_array_demo MasArrayDemo.cpp)
 target_link_libraries(fxt_mas_array_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_string_enum_demo StringEnum.cpp)
+target_link_libraries(fxt_string_enum_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_type_enum_demo TypeEnum.cpp)
+target_link_libraries(fxt_type_enum_demo PRIVATE fxt::fxt)
+
+add_executable(fxt_tuple_conversion_demo TupleConversion.cpp)
+target_link_libraries(fxt_tuple_conversion_demo PRIVATE fxt::fxt)
+

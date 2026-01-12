@@ -130,7 +130,7 @@ namespace fxt
     template<typename TupleT, typename Fn>
     void tuple_foreach(TupleT&& tp, Fn&& fn)
     {
-        std::apply([&fn]<typename... T>(T&&... args) { (fn(std::forward<T>(args)), ...); }, std::forward<TupleT>(tp));
+        fxt::apply([&fn]<typename... T>(T&&... args) { (fn(std::forward<T>(args)), ...); }, std::forward<TupleT>(tp));
     }
 
     /**

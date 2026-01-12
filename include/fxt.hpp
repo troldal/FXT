@@ -45,6 +45,10 @@
 #include "fxt/concepts/IsOptional.hpp"
 #include "fxt/concepts/IsTuple.hpp"
 #include "fxt/concepts/IsVariant.hpp"
+#include "fxt/enums/StringEnum.hpp"
+#include "fxt/enums/TypeEnum.hpp"
+#include "fxt/enums/TypedString.hpp"
+#include "fxt/enums/EnumBase.hpp"
 #include "fxt/monads/AndThen.hpp"
 #include "fxt/monads/Expected.hpp"
 #include "fxt/monads/LogicalOr.hpp"
@@ -87,8 +91,8 @@
 #include "fxt/utils/Lazy.hpp"
 #include "fxt/utils/Lift.hpp"
 #include "fxt/utils/Overload.hpp"
-#include "fxt/utils/Unit.hpp"
 #include "fxt/utils/TypeValue.hpp"
+#include "fxt/utils/Unit.hpp"
 #include "fxt/variants/Variant.hpp"
 #include "fxt/variants/VariantHoldsAlternative.hpp"
 #include "fxt/variants/VariantIndex.hpp"
@@ -96,5 +100,3 @@
 #include "fxt/variants/VariantTransformWhen.hpp"
 #include "fxt/variants/VariantVisit.hpp"
 #include "fxt/variants/VariantWhen.hpp"
-
-

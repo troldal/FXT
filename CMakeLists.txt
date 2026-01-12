@@ -45,6 +45,12 @@ CPMFindPackage(
         SYSTEM
 )
 
+CPMAddPackage(
+        NAME fixed_string
+        GITHUB_REPOSITORY unterumarmung/fixed_string
+        GIT_TAG v0.1.1
+)
+
 
 
 
@@ -53,7 +59,7 @@ CPMFindPackage(
 #==============================================================================
 add_library(fxt INTERFACE)
 target_include_directories(fxt INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(fxt INTERFACE tl::expected tl::optional)
+target_link_libraries(fxt INTERFACE tl::expected tl::optional fixed_string::fixed_string)
 add_library(fxt::fxt ALIAS fxt)
 
 #==============================================================================

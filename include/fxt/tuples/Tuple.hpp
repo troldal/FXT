@@ -199,6 +199,17 @@ namespace fxt
         constexpr tuple(const std::tuple<Ts...>& t) : base(t) {}
         constexpr tuple(std::tuple<Ts...>&& t) : base(std::move(t)) {}
 
+        // Allow implicit conversion to std::tuple
+        constexpr operator const std::tuple<Ts...>&() const& noexcept {
+            return static_cast<const base&>(*this);
+        }
+        constexpr operator std::tuple<Ts...>&() & noexcept {
+            return static_cast<base&>(*this);
+        }
+        constexpr operator std::tuple<Ts...>&&() && noexcept {
+            return static_cast<base&&>(*this);
+        }
+
         // For structured bindings support - these find fxt::get via ADL
         template<std::size_t I>
         friend constexpr auto& get(tuple& t) noexcept { return std::get<I>(static_cast<base&>(t)); }
