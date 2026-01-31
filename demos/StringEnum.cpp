@@ -31,14 +31,28 @@ int main()
     HttpMethod method2 = "POST";
     std::cout << "  HttpMethod method2 = \"POST\";  // Value: \"" << method2.value() << "\"\n";
 
-    // Construct from invalid string
-    HttpMethod method3 = "INVALID";
-    std::cout << "  HttpMethod method3 = \"INVALID\";  // Invalid: "
-              << (method3.is_valid() ? "Valid" : "Invalid") << "\n";
+    // Construct from invalid string - throws exception
+    std::cout << "\n  HttpMethod method3 = \"INVALID\";  // Throws std::invalid_argument\n";
+    try {
+        HttpMethod method3 = "INVALID";
+        std::cout << "  ERROR: Should have thrown exception!\n";
+    } catch (const std::invalid_argument& e) {
+        std::cout << "  Caught exception: " << e.what() << "\n";
+    }
 
     // Assignment
     method1 = "DELETE";
-    std::cout << "  method1 = \"DELETE\";  // Now: \"" << method1.value() << "\"\n";
+    std::cout << "\n  method1 = \"DELETE\";  // Now: \"" << method1.value() << "\"\n";
+
+    // Invalid assignment - throws exception
+    std::cout << "\n  method1 = \"INVALID\";  // Throws std::invalid_argument\n";
+    try {
+        method1 = "INVALID";
+        std::cout << "  ERROR: Should have thrown exception!\n";
+    } catch (const std::invalid_argument& e) {
+        std::cout << "  Caught exception: " << e.what() << "\n";
+        std::cout << "  method1 remains: \"" << method1.value() << "\"\n";
+    }
 
     print_separator("2. Checking Current Value");
 
@@ -125,66 +139,75 @@ int main()
 
     print_separator("6. Handling Invalid States");
 
-    std::cout << "Working with invalid enum values:\n\n";
+    std::cout << "Attempting to create enum with invalid value:\n\n";
 
-    HttpMethod invalid_method = "TRACE";
     std::cout << "  HttpMethod invalid_method = \"TRACE\";  // Not in enum\n";
-    std::cout << "  invalid_method.is_valid(): " << (invalid_method.is_valid() ? "true" : "false") << "\n";
-    std::cout << "  invalid_method.value(): \"" << invalid_method.value() << "\" (empty)\n";
+    try {
+        HttpMethod invalid_method = "TRACE";
+        std::cout << "  ERROR: Should have thrown exception!\n";
+    } catch (const std::invalid_argument& e) {
+        std::cout << "  Exception thrown: " << e.what() << "\n";
+    }
 
-    std::cout << "\nVisiting invalid enum:\n";
-    invalid_method.visit(fxt::overload{
-        [](HttpMethod::Type<"GET"> s) { std::cout << "  GET\n"; },
-        [](HttpMethod::Type<"POST"> s) { std::cout << "  POST\n"; },
-        [](HttpMethod::Type<"PUT"> s) { std::cout << "  PUT\n"; },
-        [](HttpMethod::Type<"DELETE"> s) { std::cout << "  DELETE\n"; },
-        [](HttpMethod::Type<"PATCH"> s) { std::cout << "  PATCH\n"; },
-        [](fxt::invalid_t) { std::cout << "  Invalid state detected!\n"; }
-    });
-
-    // Manually invalidate an enum
+    std::cout << "\nManually invalidating an enum:\n";
     HttpMethod valid_method = "GET";
-    std::cout << "\n  HttpMethod valid_method = \"GET\";\n";
+    std::cout << "  HttpMethod valid_method = \"GET\";\n";
     std::cout << "  valid_method.is_valid(): " << (valid_method.is_valid() ? "true" : "false") << "\n";
 
     valid_method.invalidate();
     std::cout << "  valid_method.invalidate();\n";
     std::cout << "  valid_method.is_valid(): " << (valid_method.is_valid() ? "true" : "false") << "\n";
+    std::cout << "  valid_method.value(): \"" << valid_method.value() << "\" (empty)\n";
+
+    std::cout << "\nVisiting invalidated enum:\n";
+    valid_method.visit(fxt::overload{
+        [](HttpMethod::Type<"GET"> s) { std::cout << "  GET\n"; },
+        [](HttpMethod::Type<"POST"> s) { std::cout << "  POST\n"; },
+        [](HttpMethod::Type<"PUT"> s) { std::cout << "  PUT\n"; },
+        [](HttpMethod::Type<"DELETE"> s) { std::cout << "  DELETE\n"; },
+        [](HttpMethod::Type<"PATCH"> s) { std::cout << "  PATCH\n"; },
+        [](fxt::invalid_t) { std::cout << "  Invalid state handler called!\n"; }
+    });
 
     print_separator("7. Practical Example: HTTP Request Router");
 
     std::cout << "Simple HTTP router using string_enum:\n\n";
 
-    auto handle_request = [](HttpMethod method, const std::string& path) {
-        std::cout << "  Request: " << method.value() << " " << path << "\n";
+    auto handle_request = [](const std::string& method_str, const std::string& path) {
+        std::cout << "  Request: " << method_str << " " << path << "\n";
         std::cout << "  Response: ";
 
-        method.visit(fxt::overload{
-            [&](HttpMethod::Type<"GET"> s) {
-                std::cout << "200 OK - Resource retrieved\n";
-            },
-            [&](HttpMethod::Type<"POST"> s) {
-                std::cout << "201 Created - Resource created\n";
-            },
-            [&](HttpMethod::Type<"PUT"> s) {
-                std::cout << "200 OK - Resource updated\n";
-            },
-            [&](HttpMethod::Type<"DELETE"> s) {
-                std::cout << "204 No Content - Resource deleted\n";
-            },
-            [&](HttpMethod::Type<"PATCH"> s) {
-                std::cout << "200 OK - Resource partially updated\n";
-            },
-            [](fxt::invalid_t) {
-                std::cout << "405 Method Not Allowed\n";
-            }
-        });
+        try {
+            HttpMethod method = std::string_view(method_str);
+            method.visit(fxt::overload{
+                [&](HttpMethod::Type<"GET"> s) {
+                    std::cout << "200 OK - Resource retrieved\n";
+                },
+                [&](HttpMethod::Type<"POST"> s) {
+                    std::cout << "201 Created - Resource created\n";
+                },
+                [&](HttpMethod::Type<"PUT"> s) {
+                    std::cout << "200 OK - Resource updated\n";
+                },
+                [&](HttpMethod::Type<"DELETE"> s) {
+                    std::cout << "204 No Content - Resource deleted\n";
+                },
+                [&](HttpMethod::Type<"PATCH"> s) {
+                    std::cout << "200 OK - Resource partially updated\n";
+                },
+                [](fxt::invalid_t) {
+                    std::cout << "405 Method Not Allowed\n";
+                }
+            });
+        } catch (const std::invalid_argument&) {
+            std::cout << "405 Method Not Allowed\n";
+        }
     };
 
     handle_request("GET", "/users/123");
     handle_request("POST", "/users");
     handle_request("DELETE", "/users/123");
-    handle_request("INVALID", "/users/123");
+    handle_request("TRACE", "/users/123");
 
     print_separator("8. Comparison and Equality");
 
@@ -204,7 +227,8 @@ int main()
     std::cout << "  • Each string value becomes a distinct type\n";
     std::cout << "  • Supports switch statements via compile-time indices\n";
     std::cout << "  • Type-safe visitation with overloaded lambdas\n";
-    std::cout << "  • Handles invalid states gracefully\n";
+    std::cout << "  • Throws std::invalid_argument for invalid string assignments\n";
+    std::cout << "  • Can be manually invalidated for special cases\n";
     std::cout << "  • All string checking happens at compile time\n\n";
 
     return 0;

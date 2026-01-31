@@ -17,6 +17,7 @@
 #include "EnumBase.hpp"
 #include <fixed_string.hpp>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -209,42 +210,54 @@ namespace fxt
          * @brief Constructor from string literal
          *
          * If the string matches one of the template arguments, the enum is set to that
-         * string. Otherwise, it's set to an invalid state.
+         * string. Otherwise, throws std::invalid_argument.
          *
          * @param str C-style string literal to initialize with
+         * @throws std::invalid_argument if the string doesn't match any template argument
          */
         constexpr string_enum(const char* str) : index_(INVALID_INDEX)
         {    // NOLINT
-            if (const auto idx = find_index_impl(std::string_view(str))) { index_ = *idx; }
+            if (const auto idx = find_index_impl(std::string_view(str))) {
+                index_ = *idx;
+            } else {
+                throw std::invalid_argument("Invalid string for string_enum: " + std::string(str));
+            }
         }
 
         /**
          * @brief Constructor from string_view
          *
          * If the string matches one of the template arguments, the enum is set to that
-         * string. Otherwise, it's set to an invalid state.
+         * string. Otherwise, throws std::invalid_argument.
          *
          * @param sv String view to initialize with
+         * @throws std::invalid_argument if the string doesn't match any template argument
          */
         constexpr string_enum(const std::string_view sv) : index_(INVALID_INDEX)
         {    // NOLINT
-            if (const auto idx = find_index_impl(sv)) { index_ = *idx; }
+            if (const auto idx = find_index_impl(sv)) {
+                index_ = *idx;
+            } else {
+                throw std::invalid_argument("Invalid string for string_enum: " + std::string(sv));
+            }
         }
 
         /**
          * @brief Assignment from string literal
          *
          * If the string matches one of the template arguments, the enum is set to that
-         * string. Otherwise, it's set to an invalid state.
+         * string. Otherwise, throws std::invalid_argument.
          *
          * @param str C-style string literal to assign
          * @return Reference to this object
+         * @throws std::invalid_argument if the string doesn't match any template argument
          */
         constexpr string_enum& operator=(const char* str)
         {
-            if (const auto idx = find_index_impl(std::string_view(str))) { index_ = *idx; }
-            else {
-                index_ = INVALID_INDEX;
+            if (const auto idx = find_index_impl(std::string_view(str))) {
+                index_ = *idx;
+            } else {
+                throw std::invalid_argument("Invalid string for string_enum: " + std::string(str));
             }
             return *this;
         }
@@ -253,16 +266,18 @@ namespace fxt
          * @brief Assignment from string_view
          *
          * If the string matches one of the template arguments, the enum is set to that
-         * string. Otherwise, it's set to an invalid state.
+         * string. Otherwise, throws std::invalid_argument.
          *
          * @param sv String view to assign
          * @return Reference to this object
+         * @throws std::invalid_argument if the string doesn't match any template argument
          */
         constexpr string_enum& operator=(const std::string_view sv)
         {
-            if (const auto idx = find_index_impl(sv)) { index_ = *idx; }
-            else {
-                index_ = INVALID_INDEX;
+            if (const auto idx = find_index_impl(sv)) {
+                index_ = *idx;
+            } else {
+                throw std::invalid_argument("Invalid string for string_enum: " + std::string(sv));
             }
             return *this;
         }
