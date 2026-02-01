@@ -304,10 +304,8 @@ namespace fxt
          */
         [[nodiscard]] constexpr std::string_view value() const noexcept
         {
-            std::string_view result;
-            std::size_t idx = 0;
-            ((idx++ == index_ ? (result = std::string_view(Strings), true) : false) || ...);
-            return result;
+            constexpr auto values_array = std::array{std::string_view(Strings)...};
+            return values_array[index_];
         }
 
         /**
