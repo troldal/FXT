@@ -24,9 +24,6 @@
 
 namespace fxt
 {
-
-
-
     /**
      * @brief Helper to find the index of a fixed_string in a parameter pack
      *
