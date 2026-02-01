@@ -16,6 +16,8 @@
 #include "TypedString.hpp"
 #include "EnumBase.hpp"
 #include <fixed_string.hpp>
+#include <ostream>
+#include <array>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -130,7 +132,7 @@ namespace fxt
          * @param sv The string to search for
          * @return Optional containing the index if found, empty optional otherwise
          */
-        static constexpr std::optional<std::size_t> find_index_impl(const std::string_view sv)
+        static constexpr std::optional<std::size_t> find_index_impl(const std::string_view sv) noexcept
         {
             std::size_t result_idx  = 0;
             std::size_t current_idx = 0;    // NOLINT
@@ -148,6 +150,23 @@ namespace fxt
             (check_one(Strings), ...);
 
             return found ? std::optional<std::size_t>(result_idx) : std::nullopt;
+        }
+
+        /**
+         * @brief Validate and set index from string view
+         *
+         * Extracts common validation logic used by constructors and assignment operators.
+         *
+         * @param sv The string to validate and set
+         * @throws std::invalid_argument if the string doesn't match any template argument
+         */
+        constexpr void validate_and_set(std::string_view sv)
+        {
+            if (const auto idx = find_index_impl(sv)) {
+                index_ = *idx;
+            } else {
+                throw std::invalid_argument("Invalid string for string_enum: " + std::string(sv));
+            }
         }
 
     public:
@@ -183,13 +202,9 @@ namespace fxt
          * @param str C-style string literal to initialize with
          * @throws std::invalid_argument if the string doesn't match any template argument
          */
-        constexpr string_enum(const char* str)
-        {    // NOLINT
-            if (const auto idx = find_index_impl(std::string_view(str))) {
-                index_ = *idx;
-            } else {
-                throw std::invalid_argument("Invalid string for string_enum: " + std::string(str));
-            }
+        explicit constexpr string_enum(const char* str)
+        {
+            validate_and_set(std::string_view(str));
         }
 
         /**
@@ -201,13 +216,9 @@ namespace fxt
          * @param sv String view to initialize with
          * @throws std::invalid_argument if the string doesn't match any template argument
          */
-        constexpr string_enum(const std::string_view sv)
-        {    // NOLINT
-            if (const auto idx = find_index_impl(sv)) {
-                index_ = *idx;
-            } else {
-                throw std::invalid_argument("Invalid string for string_enum: " + std::string(sv));
-            }
+        explicit constexpr string_enum(const std::string_view sv)
+        {
+            validate_and_set(sv);
         }
 
         /**
@@ -222,11 +233,7 @@ namespace fxt
          */
         constexpr string_enum& operator=(const char* str)
         {
-            if (const auto idx = find_index_impl(std::string_view(str))) {
-                index_ = *idx;
-            } else {
-                throw std::invalid_argument("Invalid string for string_enum: " + std::string(str));
-            }
+            validate_and_set(std::string_view(str));
             return *this;
         }
 
@@ -242,11 +249,7 @@ namespace fxt
          */
         constexpr string_enum& operator=(const std::string_view sv)
         {
-            if (const auto idx = find_index_impl(sv)) {
-                index_ = *idx;
-            } else {
-                throw std::invalid_argument("Invalid string for string_enum: " + std::string(sv));
-            }
+            validate_and_set(sv);
             return *this;
         }
 
@@ -255,7 +258,7 @@ namespace fxt
          *
          * @return The zero-based index of the current string
          */
-        [[nodiscard]] constexpr std::size_t index() const { return index_; }
+        [[nodiscard]] constexpr std::size_t index() const noexcept { return index_; }
 
         /**
          * @brief Static method to get the compile-time index of a specific string
@@ -270,7 +273,7 @@ namespace fxt
          * @endcode
          */
         template<fixstr::basic_fixed_string Str>
-        static constexpr std::size_t IndexOf()
+        static constexpr std::size_t IndexOf() noexcept
         {
             static_assert(StringInPack_v<Str, Strings...>, "String not in StringEnum");
             return StringIndex_v<Str, Strings...>;
@@ -291,23 +294,92 @@ namespace fxt
          * @endcode
          */
         template<fixstr::basic_fixed_string Str>
-        [[nodiscard]] constexpr bool is() const
+        [[nodiscard]] constexpr bool is() const noexcept
         { return index_ == IndexOf<Str>(); }
 
         /**
-         * @brief Get the current string value as std::string
+         * @brief Get the current string value as std::string_view
          *
-         * @return The current string as std::string
+         * @return The current string as std::string_view (points to compile-time string data)
          */
-        [[nodiscard]] std::string value() const
+        [[nodiscard]] constexpr std::string_view value() const noexcept
         {
-
-            std::string result;
+            std::string_view result;
             std::size_t idx = 0;
-            static_cast<void>(((idx++ == index_ ? (result = std::string(Strings), true) : false) || ...));
+            ((idx++ == index_ ? (result = std::string_view(Strings), true) : false) || ...);
             return result;
         }
 
+        /**
+         * @brief Get the number of enum values
+         *
+         * @return The number of strings in the enum
+         */
+        static constexpr std::size_t size() noexcept
+        {
+            return sizeof...(Strings);
+        }
+
+        /**
+         * @brief Get an array of all enum values
+         *
+         * @return Array containing all enum strings as std::string_view
+         *
+         * @details Example:
+         * @code
+         * using MyEnum = StringEnum<"A", "B", "C">;
+         * for (auto val : MyEnum::values()) {
+         *     std::cout << val << '\n';
+         * }
+         * @endcode
+         */
+        static constexpr auto values() noexcept
+        {
+            return std::array<std::string_view, sizeof...(Strings)>{
+                std::string_view(Strings)...
+            };
+        }
+
+        /**
+         * @brief Construct a string_enum from an index
+         *
+         * Creates a string_enum instance set to the string at the specified zero-based index.
+         * This is useful for deserialization, when working with integer representations,
+         * or when iterating through enum values programmatically.
+         *
+         * @param idx The zero-based index of the string to select (must be < size())
+         * @return A string_enum set to the string at the given index
+         * @throws std::out_of_range if idx >= size()
+         *
+         * @details Example:
+         * @code
+         * using Status = StringEnum<"Pending", "Active", "Completed">;
+         *
+         * // Construct from index
+         * auto s = Status::from_index(1);  // s holds "Active"
+         *
+         * // Useful for deserialization
+         * int stored_value = 2;
+         * auto status = Status::from_index(stored_value);
+         *
+         * // Iterate through all values
+         * for (std::size_t i = 0; i < Status::size(); ++i) {
+         *     auto s = Status::from_index(i);
+         *     std::cout << i << ": " << s << '\n';
+         * }
+         * @endcode
+         */
+        static constexpr string_enum from_index(std::size_t idx)
+        {
+            if (idx >= sizeof...(Strings)) {
+                throw std::out_of_range("Index " + std::to_string(idx) +
+                                       " out of range for string_enum (size: " +
+                                       std::to_string(sizeof...(Strings)) + ")");
+            }
+            string_enum result;
+            result.index_ = idx;
+            return result;
+        }
 
         /**
          * @brief Visit with a callable that accepts specific typed_string types (const version)
@@ -347,6 +419,101 @@ namespace fxt
         {
 
             return this->visit_with_index(std::forward<Visitor>(visitor));
+        }
+
+        /**
+         * @brief Equality comparison with another string_enum
+         *
+         * @param other The other string_enum to compare with
+         * @return true if both enums hold the same string
+         */
+        constexpr bool operator==(const string_enum& other) const noexcept = default;
+
+        /**
+         * @brief Three-way comparison with another string_enum
+         *
+         * @param other The other string_enum to compare with
+         * @return Ordering result based on index comparison
+         */
+        constexpr auto operator<=>(const string_enum& other) const noexcept = default;
+
+        /**
+         * @brief Equality comparison with a string_view
+         *
+         * @param sv The string_view to compare with
+         * @return true if the enum's current value matches the string_view
+         */
+        constexpr bool operator==(std::string_view sv) const noexcept
+        {
+            return value() == sv;
+        }
+
+        /**
+         * @brief Three-way comparison with a string_view
+         *
+         * @param sv The string_view to compare with
+         * @return Ordering result based on index comparison
+         */
+        constexpr auto operator<=>(std::string_view sv) const noexcept
+        {
+            return value() <=> sv;
+        }
+
+        /**
+         * @brief Convert to string for generic code (ADL-friendly)
+         *
+         * @param e The string_enum to convert
+         * @return String representation of the current value
+         */
+        [[nodiscard]] friend std::string to_string(const string_enum& e)
+        {
+            return std::string(e.value());
+        }
+
+        /**
+         * @brief Stream output operator
+         *
+         * Enables direct output of string_enum to streams like std::cout.
+         *
+         * @param os The output stream
+         * @param e The string_enum to output
+         * @return Reference to the stream for chaining
+         *
+         * @details Example:
+         * @code
+         * MyEnum e{"Option1"};
+         * std::cout << "Current value: " << e << '\n';
+         * @endcode
+         */
+        friend constexpr std::ostream& operator<<(std::ostream& os, const string_enum& e)
+        {
+            return os << e.value();
+        }
+
+        /**
+         * @brief Compute hash value for string_enum (ADL-friendly)
+         *
+         * Provides a hash function that can be found via argument-dependent lookup.
+         * The hash is computed based on the string value, not the index, ensuring
+         * consistent hashing across different string_enum instantiations with the
+         * same string values.
+         *
+         * @param e The string_enum to hash
+         * @return Hash value of the current string
+         *
+         * @details This function enables ADL-based hashing. For standard library
+         * containers like std::unordered_map, use the std::hash specialization
+         * defined after the class.
+         *
+         * @code
+         * using MyEnum = StringEnum<"A", "B", "C">;
+         * MyEnum e{"B"};
+         * std::size_t h = hash_value(e);  // ADL finds this function
+         * @endcode
+         */
+        [[nodiscard]] friend constexpr std::size_t hash_value(const string_enum& e) noexcept
+        {
+            return std::hash<std::string_view>{}(e.value());
         }
 
     private:
@@ -398,3 +565,91 @@ namespace fxt
     };
 
 }    // namespace fxt
+
+// std::format support for C++20 and later
+#if __cpp_lib_format >= 201907L
+#include <format>
+
+template<fixstr::basic_fixed_string... Strings>
+struct std::formatter<fxt::string_enum<Strings...>> : std::formatter<std::string_view>
+{
+    /**
+     * @brief Format a string_enum using std::format
+     *
+     * Delegates to std::formatter<std::string_view> to handle format specifications.
+     *
+     * @param e The string_enum to format
+     * @param ctx The format context
+     * @return Iterator to the end of the formatted output
+     *
+     * @details Supports all std::string_view format specifications:
+     * @code
+     * using MyEnum = fxt::string_enum<"Short", "VeryLongValue">;
+     * MyEnum e{"Short"};
+     *
+     * std::format("{}", e);           // "Short"
+     * std::format("{:>15}", e);       // "          Short" (right-aligned)
+     * std::format("{:<15}", e);       // "Short          " (left-aligned)
+     * std::format("{:^15}", e);       // "     Short     " (centered)
+     * std::format("{:.3}", e);        // "Sho" (truncated)
+     * @endcode
+     */
+    auto format(const fxt::string_enum<Strings...>& e, std::format_context& ctx) const
+    {
+        return std::formatter<std::string_view>::format(e.value(), ctx);
+    }
+};
+
+#endif // __cpp_lib_format
+
+/**
+ * @brief Standard library hash specialization for string_enum
+ *
+ * Enables use of string_enum in standard library unordered containers such as
+ * std::unordered_map, std::unordered_set, and std::unordered_multimap.
+ *
+ * The hash is computed based on the string value (not the index), ensuring
+ * consistent and collision-resistant hashing. Two string_enum instances with
+ * the same string value will have the same hash, even if they come from
+ * different enum types.
+ *
+ * @tparam Strings The compile-time strings defining the enum
+ *
+ * @details Example usage:
+ * @code
+ * using HttpMethod = fxt::string_enum<"GET", "POST", "PUT", "DELETE">;
+ * using StatusCode = fxt::string_enum<"200", "404", "500">;
+ *
+ * // Use in unordered_map
+ * std::unordered_map<HttpMethod, std::function<void()>> handlers;
+ * handlers[HttpMethod{"GET"}] = []{ std::cout << "GET handler\n"; };
+ * handlers[HttpMethod{"POST"}] = []{ std::cout << "POST handler\n"; };
+ *
+ * // Use in unordered_set
+ * std::unordered_set<StatusCode> error_codes;
+ * error_codes.insert(StatusCode{"404"});
+ * error_codes.insert(StatusCode{"500"});
+ *
+ * // Check containment
+ * if (error_codes.contains(StatusCode{"404"})) {
+ *     std::cout << "404 is an error code\n";
+ * }
+ * @endcode
+ *
+ * @note This specialization is explicitly allowed by the C++ standard for
+ * user-defined types (C++11 §17.6.3.3).
+ */
+template<fixstr::basic_fixed_string... Strings>
+struct std::hash<fxt::string_enum<Strings...>>
+{
+    /**
+     * @brief Compute hash value for a string_enum instance
+     *
+     * @param e The string_enum instance to hash
+     * @return Hash value computed from the current string value
+     */
+    constexpr std::size_t operator()(const fxt::string_enum<Strings...>& e) const noexcept
+    {
+        return std::hash<std::string_view>{}(e.value());
+    }
+};

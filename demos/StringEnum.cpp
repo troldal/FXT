@@ -4,6 +4,12 @@
 #include <fxt.hpp>
 #include <iostream>
 #include <string>
+#include <sstream>
+
+// Include std::format if available (C++20)
+#if __cpp_lib_format >= 201907L
+#include <format>
+#endif
 
 void print_separator(const std::string& title) {
     std::cout << "\n========== " << title << " ==========\n\n";
@@ -27,20 +33,20 @@ int main()
     HttpMethod method1;
     std::cout << "  HttpMethod method1;  // Defaults to first: \"" << method1.value() << "\"\n";
 
-    // Construct from string literal
-    HttpMethod method2 = "POST";
-    std::cout << "  HttpMethod method2 = \"POST\";  // Value: \"" << method2.value() << "\"\n";
+    // Construct from string literal - now requires explicit syntax
+    HttpMethod method2{"POST"};
+    std::cout << "  HttpMethod method2{\"POST\"};  // Value: \"" << method2.value() << "\"\n";
 
     // Construct from invalid string - throws exception
-    std::cout << "\n  HttpMethod method3 = \"INVALID\";  // Throws std::invalid_argument\n";
+    std::cout << "\n  HttpMethod method3{\"INVALID\"};  // Throws std::invalid_argument\n";
     try {
-        HttpMethod method3 = "INVALID";
+        HttpMethod method3{"INVALID"};
         std::cout << "  ERROR: Should have thrown exception!\n";
     } catch (const std::invalid_argument& e) {
         std::cout << "  Caught exception: " << e.what() << "\n";
     }
 
-    // Assignment
+    // Assignment (assignment operators don't need to be explicit)
     method1 = "DELETE";
     std::cout << "\n  method1 = \"DELETE\";  // Now: \"" << method1.value() << "\"\n";
 
@@ -56,8 +62,8 @@ int main()
 
     print_separator("2. Checking Current Value");
 
-    LogLevel level = "WARNING";
-    std::cout << "LogLevel level = \"WARNING\";\n\n";
+    LogLevel level{"WARNING"};
+    std::cout << "LogLevel level{\"WARNING\"};\n\n";
 
     // Check specific values using is<>()
     std::cout << "  level.is<\"DEBUG\">(): " << (level.is<"DEBUG">() ? "true" : "false") << "\n";
@@ -79,10 +85,49 @@ int main()
     std::cout << "  LogLevel::IndexOf<\"ERROR\">(): " << LogLevel::IndexOf<"ERROR">() << "\n";
     std::cout << "  LogLevel::IndexOf<\"CRITICAL\">(): " << LogLevel::IndexOf<"CRITICAL">() << "\n";
 
+    std::cout << "\nStatic metadata methods:\n\n";
+    std::cout << "  LogLevel::size(): " << LogLevel::size() << "\n";
+    std::cout << "  LogLevel::values(): [";
+    bool first = true;
+    for (auto val : LogLevel::values()) {
+        if (!first) std::cout << ", ";
+        std::cout << "\"" << val << "\"";
+        first = false;
+    }
+    std::cout << "]\n";
+
+    std::cout << "\nConstruct from index using from_index():\n\n";
+    std::cout << "  auto level0 = LogLevel::from_index(0);\n";
+    auto level0 = LogLevel::from_index(0);
+    std::cout << "  level0.value(): \"" << level0.value() << "\"\n";
+
+    std::cout << "\n  auto level2 = LogLevel::from_index(2);\n";
+    auto level2 = LogLevel::from_index(2);
+    std::cout << "  level2.value(): \"" << level2.value() << "\"\n";
+
+    std::cout << "\nIterate through all values:\n";
+    std::cout << "  for (size_t i = 0; i < LogLevel::size(); ++i) {\n";
+    std::cout << "    auto level = LogLevel::from_index(i);\n";
+    std::cout << "    std::cout << i << \": \" << level << '\\n';\n";
+    std::cout << "  }\n\n";
+    for (std::size_t i = 0; i < LogLevel::size(); ++i) {
+        auto level_iter = LogLevel::from_index(i);
+        std::cout << "  " << i << ": " << level_iter << "\n";
+    }
+
+    std::cout << "\nOut of range throws exception:\n";
+    std::cout << "  try { LogLevel::from_index(99); }\n";
+    try {
+        auto bad_level = LogLevel::from_index(99);
+        std::cout << "  ERROR: Should have thrown exception!\n";
+    } catch (const std::out_of_range& e) {
+        std::cout << "  Caught: " << e.what() << "\n";
+    }
+
     print_separator("4. Switch Statement Support");
 
-    HttpMethod method = "PUT";
-    std::cout << "HttpMethod method = \"PUT\";\n\n";
+    HttpMethod method{"PUT"};
+    std::cout << "HttpMethod method{\"PUT\"};\n\n";
     std::cout << "switch (method.index()) {\n";
 
     switch (method.index()) {
@@ -112,8 +157,8 @@ int main()
 
     std::cout << "Using visit() with overloaded lambdas:\n\n";
 
-    LogLevel log = "ERROR";
-    std::cout << "LogLevel log = \"ERROR\";\n\n";
+    LogLevel log{"ERROR"};
+    std::cout << "LogLevel log{\"ERROR\"};\n\n";
 
     // Visit with typed_string parameters
     log.visit(fxt::overload{
@@ -138,10 +183,9 @@ int main()
 
     std::cout << "String enums always hold valid values - invalid strings throw exceptions:\n\n";
 
-    std::cout << "  HttpMethod method = \"GET\";\n";
-    HttpMethod safe_method = "GET";
+    std::cout << "  HttpMethod method{\"GET\"};\n";
+    HttpMethod safe_method{"GET"};
     std::cout << "  method.value(): \"" << safe_method.value() << "\"\n";
-    std::cout << "  method.is_valid(): " << (safe_method.is_valid() ? "true" : "false") << "\n";
 
     std::cout << "\n  try { method = \"INVALID\"; }\n";
     try {
@@ -150,13 +194,12 @@ int main()
     } catch (const std::invalid_argument& e) {
         std::cout << "  Caught: " << e.what() << "\n";
         std::cout << "  method.value(): \"" << safe_method.value() << "\" (unchanged)\n";
-        std::cout << "  method.is_valid(): " << (safe_method.is_valid() ? "true" : "false") << "\n";
     }
 
     std::cout << "\nConstructing with invalid string:\n";
-    std::cout << "  try { HttpMethod bad = \"TRACE\"; }\n";
+    std::cout << "  try { HttpMethod bad{\"TRACE\"}; }\n";
     try {
-        HttpMethod bad_method = "TRACE";
+        HttpMethod bad_method{"TRACE"};
         std::cout << "  ERROR: Should have thrown exception!\n";
     } catch (const std::invalid_argument& e) {
         std::cout << "  Caught: " << e.what() << "\n";
@@ -172,7 +215,7 @@ int main()
         std::cout << "  Response: ";
 
         try {
-            HttpMethod method = std::string_view(method_str);
+            HttpMethod method{std::string_view(method_str)};
             method.visit(fxt::overload{
                 [&](HttpMethod::Type<"GET"> s) {
                     std::cout << "200 OK - Resource retrieved\n";
@@ -202,14 +245,77 @@ int main()
 
     print_separator("8. Comparison and Equality");
 
-    HttpMethod m1 = "GET";
-    HttpMethod m2 = "GET";
-    HttpMethod m3 = "POST";
+    HttpMethod m1{"GET"};
+    HttpMethod m2{"GET"};
+    HttpMethod m3{"POST"};
 
-    std::cout << "HttpMethod m1 = \"GET\", m2 = \"GET\", m3 = \"POST\";\n\n";
+    std::cout << "HttpMethod m1{\"GET\"}, m2{\"GET\"}, m3{\"POST\"};\n\n";
     std::cout << "  m1 == m2: " << (m1 == m2 ? "true" : "false") << "\n";
     std::cout << "  m1 == m3: " << (m1 == m3 ? "true" : "false") << "\n";
     std::cout << "  m1 != m3: " << (m1 != m3 ? "true" : "false") << "\n";
+    std::cout << "  m1 < m3: " << (m1 < m3 ? "true" : "false") << " (based on index)\n";
+
+    std::cout << "\nComparison with string_view:\n";
+    std::cout << "  m1 == \"GET\": " << (m1 == "GET" ? "true" : "false") << "\n";
+    std::cout << "  m1 == \"POST\": " << (m1 == "POST" ? "true" : "false") << "\n";
+
+    std::cout << "\nUsing to_string() for generic code:\n";
+    std::cout << "  to_string(m1): \"" << to_string(m1) << "\"\n";
+    std::cout << "  to_string(m3): \"" << to_string(m3) << "\"\n";
+
+    print_separator("9. Stream Output and Formatting");
+
+    HttpMethod http_method{"POST"};
+    LogLevel log_level{"WARNING"};
+
+    std::cout << "Stream output operator (direct use with std::cout):\n\n";
+    std::cout << "  std::cout << http_method;\n";
+    std::cout << "  Output: " << http_method << "\n\n";
+
+    std::cout << "  std::cout << \"Method: \" << http_method << \", Level: \" << log_level;\n";
+    std::cout << "  Output: Method: " << http_method << ", Level: " << log_level << "\n";
+
+    std::cout << "\nWorks with std::ostringstream:\n";
+    std::ostringstream oss;
+    oss << "Status: " << http_method << " (" << log_level << ")";
+    std::cout << "  std::ostringstream result: \"" << oss.str() << "\"\n";
+
+#if __cpp_lib_format >= 201907L
+    std::cout << "\nstd::format support (C++20):\n\n";
+
+    std::cout << "  std::format(\"{}\", http_method);\n";
+    std::cout << "  Output: \"" << std::format("{}", http_method) << "\"\n\n";
+
+    std::cout << "  std::format(\"Method: {}, Level: {}\", http_method, log_level);\n";
+    std::cout << "  Output: \"" << std::format("Method: {}, Level: {}", http_method, log_level) << "\"\n\n";
+
+    std::cout << "Format specifications (like std::string_view):\n\n";
+
+    HttpMethod methods[] = {HttpMethod{"GET"}, HttpMethod{"POST"}, HttpMethod{"DELETE"}};
+    std::cout << "  Right-aligned in 10 chars:\n";
+    for (const auto& m : methods) {
+        std::cout << "    std::format(\"{:>10}\", method) = \"" << std::format("{:>10}", m) << "\"\n";
+    }
+
+    std::cout << "\n  Left-aligned in 10 chars:\n";
+    for (const auto& m : methods) {
+        std::cout << "    std::format(\"{:<10}\", method) = \"" << std::format("{:<10}", m) << "\"\n";
+    }
+
+    std::cout << "\n  Center-aligned in 10 chars:\n";
+    for (const auto& m : methods) {
+        std::cout << "    std::format(\"{:^10}\", method) = \"" << std::format("{:^10}", m) << "\"\n";
+    }
+
+    std::cout << "\nPractical example - formatted table:\n";
+    std::cout << "  " << std::format("{:<10} | {:<12}", "Method", "Level") << "\n";
+    std::cout << "  " << std::format("{:-<10}-+-{:-<12}", "", "") << "\n";
+    std::cout << "  " << std::format("{:<10} | {:<12}", http_method, log_level) << "\n";
+    std::cout << "  " << std::format("{:<10} | {:<12}", HttpMethod{"GET"}, LogLevel{"ERROR"}) << "\n";
+    std::cout << "  " << std::format("{:<10} | {:<12}", HttpMethod{"PATCH"}, LogLevel{"INFO"}) << "\n";
+#else
+    std::cout << "\nstd::format support: Not available (requires C++20)\n";
+#endif
 
     print_separator("Demo Complete");
 
@@ -220,6 +326,14 @@ int main()
     std::cout << "  • Type-safe visitation with overloaded lambdas\n";
     std::cout << "  • Throws std::invalid_argument for invalid string assignments\n";
     std::cout << "  • Always holds a valid value - no invalid state possible\n";
+    std::cout << "  • Explicit constructors prevent accidental implicit conversions\n";
+    std::cout << "  • value() returns std::string_view for zero-cost abstraction\n";
+    std::cout << "  • Provides comparison operators and to_string() support\n";
+    std::cout << "  • Stream output operator for easy printing (std::cout << enum)\n";
+    std::cout << "  • std::format support with full format specifications (C++20)\n";
+    std::cout << "  • Static metadata via size() and values() methods\n";
+    std::cout << "  • from_index() factory for constructing from integer indices\n";
+    std::cout << "  • Hash support for use in std::unordered_map and std::unordered_set\n";
     std::cout << "  • All string checking happens at compile time\n\n";
 
     return 0;
