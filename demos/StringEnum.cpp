@@ -131,43 +131,37 @@ int main()
         },
         [](LogLevel::Type<"CRITICAL"> s) {
             std::cout << "  CRITICAL handler: System failure imminent!\n";
-        },
-        [](fxt::invalid_t) {
-            std::cout << "  Invalid state handler\n";
         }
     });
 
-    print_separator("6. Handling Invalid States");
+    print_separator("6. Exception Safety");
 
-    std::cout << "Attempting to create enum with invalid value:\n\n";
+    std::cout << "String enums always hold valid values - invalid strings throw exceptions:\n\n";
 
-    std::cout << "  HttpMethod invalid_method = \"TRACE\";  // Not in enum\n";
+    std::cout << "  HttpMethod method = \"GET\";\n";
+    HttpMethod safe_method = "GET";
+    std::cout << "  method.value(): \"" << safe_method.value() << "\"\n";
+    std::cout << "  method.is_valid(): " << (safe_method.is_valid() ? "true" : "false") << "\n";
+
+    std::cout << "\n  try { method = \"INVALID\"; }\n";
     try {
-        HttpMethod invalid_method = "TRACE";
+        safe_method = "INVALID";
         std::cout << "  ERROR: Should have thrown exception!\n";
     } catch (const std::invalid_argument& e) {
-        std::cout << "  Exception thrown: " << e.what() << "\n";
+        std::cout << "  Caught: " << e.what() << "\n";
+        std::cout << "  method.value(): \"" << safe_method.value() << "\" (unchanged)\n";
+        std::cout << "  method.is_valid(): " << (safe_method.is_valid() ? "true" : "false") << "\n";
     }
 
-    std::cout << "\nManually invalidating an enum:\n";
-    HttpMethod valid_method = "GET";
-    std::cout << "  HttpMethod valid_method = \"GET\";\n";
-    std::cout << "  valid_method.is_valid(): " << (valid_method.is_valid() ? "true" : "false") << "\n";
-
-    valid_method.invalidate();
-    std::cout << "  valid_method.invalidate();\n";
-    std::cout << "  valid_method.is_valid(): " << (valid_method.is_valid() ? "true" : "false") << "\n";
-    std::cout << "  valid_method.value(): \"" << valid_method.value() << "\" (empty)\n";
-
-    std::cout << "\nVisiting invalidated enum:\n";
-    valid_method.visit(fxt::overload{
-        [](HttpMethod::Type<"GET"> s) { std::cout << "  GET\n"; },
-        [](HttpMethod::Type<"POST"> s) { std::cout << "  POST\n"; },
-        [](HttpMethod::Type<"PUT"> s) { std::cout << "  PUT\n"; },
-        [](HttpMethod::Type<"DELETE"> s) { std::cout << "  DELETE\n"; },
-        [](HttpMethod::Type<"PATCH"> s) { std::cout << "  PATCH\n"; },
-        [](fxt::invalid_t) { std::cout << "  Invalid state handler called!\n"; }
-    });
+    std::cout << "\nConstructing with invalid string:\n";
+    std::cout << "  try { HttpMethod bad = \"TRACE\"; }\n";
+    try {
+        HttpMethod bad_method = "TRACE";
+        std::cout << "  ERROR: Should have thrown exception!\n";
+    } catch (const std::invalid_argument& e) {
+        std::cout << "  Caught: " << e.what() << "\n";
+        std::cout << "  Object was not constructed\n";
+    }
 
     print_separator("7. Practical Example: HTTP Request Router");
 
@@ -194,9 +188,6 @@ int main()
                 },
                 [&](HttpMethod::Type<"PATCH"> s) {
                     std::cout << "200 OK - Resource partially updated\n";
-                },
-                [](fxt::invalid_t) {
-                    std::cout << "405 Method Not Allowed\n";
                 }
             });
         } catch (const std::invalid_argument&) {
@@ -228,7 +219,7 @@ int main()
     std::cout << "  • Supports switch statements via compile-time indices\n";
     std::cout << "  • Type-safe visitation with overloaded lambdas\n";
     std::cout << "  • Throws std::invalid_argument for invalid string assignments\n";
-    std::cout << "  • Can be manually invalidated for special cases\n";
+    std::cout << "  • Always holds a valid value - no invalid state possible\n";
     std::cout << "  • All string checking happens at compile time\n\n";
 
     return 0;

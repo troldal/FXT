@@ -25,34 +25,7 @@
 namespace fxt
 {
 
-    /**
-     * @brief Wrapper to mark a string as the default value for a StringEnum.
-     * @tparam Str The string to use as default
-     *
-     * @details When used in a StringEnum template parameter list, this marks
-     * the specified string as the default value to use when an invalid string
-     * is assigned.
-     *
-     * @code
-     * using MyEnum = StringEnum<Default("S1"), "S2", "S3">;
-     * MyEnum e = "invalid"; // Will be set to "S1" instead of invalid_t
-     * @endcode
-     */
-    template<fixstr::basic_fixed_string Str>
-    struct Default
-    {
-        static constexpr auto value = Str;
-    };
 
-    /**
-     * @brief Type representing an invalid state in StringEnum
-     *
-     * This type is passed to visitors when a StringEnum is in an invalid state
-     * (e.g., assigned a string that doesn't match any of its template arguments).
-     */
-    struct invalid_t
-    {
-    };
 
     /**
      * @brief Helper to find the index of a fixed_string in a parameter pack
@@ -112,22 +85,23 @@ namespace fxt
      * Each string becomes a distinct type through typed_string, enabling:
      * - Type-safe visitation with overloaded lambdas
      * - Switch statement support via index conversion
-     * - Runtime validation with invalid state handling
+     * - Runtime validation with exceptions
      *
      * @tparam Strings Compile-time string literals that define the enum elements
      *
-     * @details Example usage:
+     * @details A string_enum always holds a valid value. Attempting to construct or assign
+     * an invalid string throws std::invalid_argument. Example usage:
      * @code
      * using MyEnum = StringEnum<"Option1", "Option2", "Option3">;
      *
      * MyEnum e = "Option1";
      *
      * // Switch statement
-     * switch (e) {
-     *     case MyEnum::Index<"Option1">():
+     * switch (e.index()) {
+     *     case MyEnum::IndexOf<"Option1">():
      *         // Handle Option1
      *         break;
-     *     case MyEnum::Index<"Option2">():
+     *     case MyEnum::IndexOf<"Option2">():
      *         // Handle Option2
      *         break;
      * }
@@ -136,8 +110,7 @@ namespace fxt
      * e.visit(overloaded{
      *     [](MyEnum::Type<"Option1"> s) { std::cout << "Option1: " << s << '\n'; },
      *     [](MyEnum::Type<"Option2"> s) { std::cout << "Option2: " << s << '\n'; },
-     *     [](MyEnum::Type<"Option3"> s) { std::cout << "Option3: " << s << '\n'; },
-     *     [](invalid_t) { std::cout << "Invalid state\n"; }
+     *     [](MyEnum::Type<"Option3"> s) { std::cout << "Option3: " << s << '\n'; }
      * });
      * @endcode
      */
@@ -147,8 +120,6 @@ namespace fxt
         friend class detail::enum_base<string_enum, sizeof...(Strings)>;
 
     private:
-        /// Special index value indicating an invalid state
-        static constexpr std::size_t INVALID_INDEX = sizeof...(Strings);
 
         /// Current index into the Strings parameter pack (default to first string)
         std::size_t index_ = 0;
@@ -215,7 +186,7 @@ namespace fxt
          * @param str C-style string literal to initialize with
          * @throws std::invalid_argument if the string doesn't match any template argument
          */
-        constexpr string_enum(const char* str) : index_(INVALID_INDEX)
+        constexpr string_enum(const char* str)
         {    // NOLINT
             if (const auto idx = find_index_impl(std::string_view(str))) {
                 index_ = *idx;
@@ -233,7 +204,7 @@ namespace fxt
          * @param sv String view to initialize with
          * @throws std::invalid_argument if the string doesn't match any template argument
          */
-        constexpr string_enum(const std::string_view sv) : index_(INVALID_INDEX)
+        constexpr string_enum(const std::string_view sv)
         {    // NOLINT
             if (const auto idx = find_index_impl(sv)) {
                 index_ = *idx;
@@ -285,7 +256,7 @@ namespace fxt
         /**
          * @brief Get the current index
          *
-         * @return The zero-based index of the current string, or INVALID_INDEX if invalid
+         * @return The zero-based index of the current string
          */
         [[nodiscard]] constexpr std::size_t index() const { return index_; }
 
@@ -312,7 +283,7 @@ namespace fxt
          * @brief Check if currently holding a specific string
          *
          * @tparam Str The compile-time string to check for
-         * @return true if the enum is valid and currently holds the specified string
+         * @return true if the enum currently holds the specified string
          *
          * @details Example:
          * @code
@@ -324,16 +295,15 @@ namespace fxt
          */
         template<fixstr::basic_fixed_string Str>
         [[nodiscard]] constexpr bool is() const
-        { return this->is_valid() && index_ == IndexOf<Str>(); }
+        { return index_ == IndexOf<Str>(); }
 
         /**
          * @brief Get the current string value as std::string
          *
-         * @return The current string as std::string, or empty string if invalid
+         * @return The current string as std::string
          */
         [[nodiscard]] std::string value() const
         {
-            if (!this->is_valid()) { return {}; }
 
             std::string result;
             std::size_t idx = 0;
@@ -341,19 +311,11 @@ namespace fxt
             return result;
         }
 
-        /**
-         * @brief Mark as invalid explicitly
-         *
-         * Sets the enum to an invalid state. Subsequent calls to is_valid() will
-         * return false, and visit() will invoke the visitor with invalid_t.
-         */
-        constexpr void invalidate() { index_ = INVALID_INDEX; }
 
         /**
          * @brief Visit with a callable that accepts specific typed_string types (const version)
          *
-         * Invokes the visitor with the current string's typed_string type. If the enum
-         * is in an invalid state, invokes the visitor with invalid_t instead.
+         * Invokes the visitor with the current string's typed_string type.
          *
          * @tparam Visitor A callable type that can handle all possible typed_string types
          * @param visitor The visitor callable to invoke
@@ -364,24 +326,20 @@ namespace fxt
          * MyEnum e = "A";
          * e.visit(overloaded{
          *     [](MyEnum::Type<"A"> a) { std::cout << "Got A\n"; },
-         *     [](MyEnum::Type<"B"> b) { std::cout << "Got B\n"; },
-         *     [](invalid_t) { std::cout << "Invalid\n"; }
+         *     [](MyEnum::Type<"B"> b) { std::cout << "Got B\n"; }
          * });
          * @endcode
          */
         template<typename Visitor>
         constexpr decltype(auto) visit(Visitor&& visitor) const
         {
-            if (!this->is_valid()) { return std::forward<Visitor>(visitor)(invalid_t {}); }
-
             return this->visit_with_index(std::forward<Visitor>(visitor));
         }
 
         /**
          * @brief Visit with a callable that accepts specific typed_string types (non-const version)
          *
-         * Invokes the visitor with the current string's typed_string type. If the enum
-         * is in an invalid state, invokes the visitor with invalid_t instead.
+         * Invokes the visitor with the current string's typed_string type.
          *
          * @tparam Visitor A callable type that can handle all possible typed_string types
          * @param visitor The visitor callable to invoke
@@ -390,7 +348,6 @@ namespace fxt
         template<typename Visitor>
         constexpr decltype(auto) visit(Visitor&& visitor)
         {
-            if (!this->is_valid()) { return std::forward<Visitor>(visitor)(invalid_t {}); }
 
             return this->visit_with_index(std::forward<Visitor>(visitor));
         }
