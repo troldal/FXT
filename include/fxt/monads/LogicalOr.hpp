@@ -46,6 +46,13 @@
 
 // Operators are in global namespace so they can be found via ADL (Argument Dependent Lookup)
 
+// operator|| overloads intentionally evaluate both arguments (function call semantics).
+// -Weffc++ warns about this because the built-in || short-circuits; suppress for this file.
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Weffc++"
+#endif
+
 // expected || expected: const lvalue references
 template<typename TV, typename TE>
 auto operator||(const fxt::expected<TV, TE>& v1, const fxt::expected<TV, TE>& v2) -> fxt::expected<TV, TE>
@@ -133,3 +140,7 @@ auto operator||(fxt::optional<T>&& v1, U&& v2) -> fxt::optional<T>
 {
   return v1.has_value() ? std::move(v1) : fxt::optional<T>(std::forward<U>(v2));
 }
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif

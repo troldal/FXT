@@ -312,12 +312,12 @@ namespace fxt
         {
             return std::forward<TArg>(tupleContainer).and_then([this](const auto&& tuple) {
                 auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
-                return result.transform([](auto&& value) {
+                return result.transform([](auto&& _value) {
                     // Preserve tuple type
                     if constexpr (impl::is_fxt_tuple_v<TTuple>) {
-                        return fxt::make_tuple(std::forward<decltype(value)>(value));
+                        return fxt::make_tuple(std::forward<decltype(_value)>(_value));
                     } else {
-                        return fxt::make_flat_tuple(std::forward<decltype(value)>(value));
+                        return fxt::make_flat_tuple(std::forward<decltype(_value)>(_value));
                     }
                 });
             });
@@ -334,12 +334,12 @@ namespace fxt
         {
             return std::forward<TArg>(tupleExpected).and_then([this](auto&& tuple) {
                 auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
-                return result.transform([](auto&& value) {
+                return result.transform([](auto&& _value) {
                     // Preserve tuple type
                     if constexpr (impl::is_fxt_tuple_v<TTuple>) {
-                        return fxt::make_tuple(std::forward<decltype(value)>(value));
+                        return fxt::make_tuple(std::forward<decltype(_value)>(_value));
                     } else {
-                        return fxt::make_flat_tuple(std::forward<decltype(value)>(value));
+                        return fxt::make_flat_tuple(std::forward<decltype(_value)>(_value));
                     }
                 });
             });

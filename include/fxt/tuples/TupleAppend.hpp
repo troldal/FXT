@@ -339,8 +339,8 @@ namespace fxt
     constexpr auto mtuple_append(Container1&& container1, Container2&& container2)
     {
         return std::forward<Container1>(container1).and_then([container2 = std::forward<Container2>(container2)]<typename TTuple>(TTuple&& t) mutable {
-            return std::forward<Container2>(container2).transform([t = std::forward<TTuple>(t)]<typename TValue>(TValue&& value) mutable {
-                return fxt::tuple_append(std::move(t), std::forward<TValue>(value));
+            return std::forward<Container2>(container2).transform([t = std::forward<TTuple>(t)]<typename TValue>(TValue&& _value) mutable {
+                return fxt::tuple_append(std::move(t), std::forward<TValue>(_value));
             });
         });
     }

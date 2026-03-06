@@ -338,8 +338,8 @@ namespace fxt
         {
             return std::forward<TArg>(tupleContainer).and_then([this](const TTuple& tuple) {
                 auto result = fxt::apply(function, tuple);
-                return result.transform([&tuple](auto&& value) {
-                    return fxt::tuple_append(tuple, std::forward<decltype(value)>(value));
+                return result.transform([&tuple](auto&& _value) {
+                    return fxt::tuple_append(tuple, std::forward<decltype(_value)>(_value));
                 });
             });
         }
@@ -355,8 +355,8 @@ namespace fxt
         {
             return std::forward<TArg>(tupleExpected).and_then([this](const TTuple& tuple) {
                 auto result = fxt::apply(function, tuple);
-                return result.transform([&tuple](auto&& value) {
-                    return fxt::tuple_append(tuple, std::forward<decltype(value)>(value));
+                return result.transform([&tuple](auto&& _value) {
+                    return fxt::tuple_append(tuple, std::forward<decltype(_value)>(_value));
                 });
             });
         }

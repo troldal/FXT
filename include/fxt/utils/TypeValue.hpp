@@ -430,7 +430,7 @@ namespace fxt
      *
      * @tparam TType The type tag (must be explicitly specified)
      * @tparam TValue The value type (automatically deduced)
-     * @param value The value to store in the Type wrapper
+     * @param _value The value to store in the Type wrapper
      * @return A Type<TType, std::decay_t<TValue>> containing the value
      *
      * @example
@@ -443,8 +443,8 @@ namespace fxt
      * @endcode
      */
     template<typename TType, typename TValue>
-    [[nodiscard]] constexpr auto make_type(TValue&& value) {
-        return type_value<TType, std::decay_t<TValue>>(std::forward<TValue>(value));
+    [[nodiscard]] constexpr auto make_type(TValue&& _value) {
+        return type_value<TType, std::decay_t<TValue>>(std::forward<TValue>(_value));
     }
 
     /**

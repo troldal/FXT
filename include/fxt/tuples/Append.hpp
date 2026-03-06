@@ -221,13 +221,13 @@ namespace fxt
          */
         template<typename Self, typename TValue>
             requires (!expected_like<std::remove_cvref_t<TValue>>) && (!optional_like<std::remove_cvref_t<TValue>>)
-        auto operator()(this Self&&, TValue&& value)
+        auto operator()(this Self&&, TValue&& _value)
         {
-            return [value = std::forward<TValue>(value)]<typename TContainer>(const TContainer& container) mutable
+            return [_value = std::forward<TValue>(_value)]<typename TContainer>(const TContainer& container) mutable
             {
                 return container.transform(
-                    [value = std::move(value)](const auto& tuple) mutable {
-                        return fxt::tuple_append(tuple, std::move(value));
+                    [_value = std::move(_value)](const auto& tuple) mutable {
+                        return fxt::tuple_append(tuple, std::move(_value));
                     });
             };
         }
