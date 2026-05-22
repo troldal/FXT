@@ -236,6 +236,10 @@ namespace fxt
     /**
      * @brief Global instance of AppendWrapper for convenient pipeline-style usage
      *
+     * Provides overloaded call operators to append values to tuples contained in
+     * expected-like or optional-like containers, preserving the monadic semantics.
+     * Supports both lvalue and rvalue references for optimal performance.
+     *
      * Used with the pipe operator (|) to append values to tuples in monadic containers.
      *
      * Example:
