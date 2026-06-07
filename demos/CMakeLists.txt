@@ -143,3 +143,6 @@ target_link_libraries(fxt_with_demo PRIVATE fxt::fxt)
 add_executable(fxt_sequence_demo Sequence.cpp)
 target_link_libraries(fxt_sequence_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_sequence_tuple_demo SequenceTuple.cpp)
+target_link_libraries(fxt_sequence_tuple_demo PRIVATE fxt::fxt)
+
