@@ -302,12 +302,11 @@ namespace fxt
         } else {
             // Multiple values prepend
             return std::forward<Container>(container).transform([values = fxt::tuple<U, Us...>{std::forward<U>(u), std::forward<Us>(us)...}]<typename TTuple>(TTuple&& t) mutable {
-                constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<TTuple>>;
                 constexpr std::size_t M = sizeof...(Us) + 1;
                 return [&t, &values]<std::size_t... I>(std::index_sequence<I...>) {
                     return impl::prepend_impl_variadic(
                         std::forward<TTuple>(t),
-                        std::make_index_sequence<N>{},
+                        std::make_index_sequence<fxt::tuple_size_v<std::remove_reference_t<TTuple>>>{},
                         std::move(fxt::get<I>(values))...
                     );
                 }(std::make_index_sequence<M>{});

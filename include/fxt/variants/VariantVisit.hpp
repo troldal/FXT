@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../concepts/IsVariant.hpp"
+#include "../concepts/IsMonad.hpp"
 #include <variant>
 
 namespace fxt
@@ -84,9 +85,7 @@ namespace fxt
      * @endcode
      */
     template<typename TVisitor, typename TMonad>
-        requires requires(TMonad&& monad, TVisitor&& visitor) {
-            { std::forward<TMonad>(monad).transform(visit(std::forward<TVisitor>(visitor))) };
-        }
+        requires monad_like<std::remove_cvref_t<TMonad>>
     constexpr auto mvisit(TVisitor&& visitor, TMonad&& monad)
     {
         return std::forward<TMonad>(monad).transform(visit(std::forward<TVisitor>(visitor)));
@@ -114,9 +113,7 @@ namespace fxt
     constexpr auto mvisit(TVisitor&& visitor)
     {
         return [visitor = std::forward<TVisitor>(visitor)]<typename TMonad>(TMonad&& monad)
-            requires requires {
-                { std::forward<TMonad>(monad).transform(visit(visitor)) };
-            }
+            requires monad_like<std::remove_cvref_t<TMonad>>
         {
             return std::forward<TMonad>(monad).transform(visit(visitor));
         };

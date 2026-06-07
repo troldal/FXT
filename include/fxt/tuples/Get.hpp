@@ -64,31 +64,54 @@ namespace fxt
      * @param t Tuple to get element from
      * @return Reference to the element at index I
      */
-    template<std::size_t I, typename... Ts>
-    constexpr auto& get(tuple<Ts...>& t) noexcept
-    {
-        return std::get<I>(t);
-    }
+    // template<std::size_t I, typename... Ts>
+    // constexpr auto& get(tuple<Ts...>& t) noexcept
+    // {
+    //     return std::get<I>(t);
+    // }
+    //
+    // template<std::size_t I, typename... Ts>
+    // constexpr const auto& get(const tuple<Ts...>& t) noexcept
+    // {
+    //     return std::get<I>(t);
+    // }
+    //
+    // template<std::size_t I, typename... Ts>
+    // constexpr auto&& get(tuple<Ts...>&& t) noexcept
+    // {
+    //     return std::get<I>(std::move(t));
+    // }
+    //
+    // template<std::size_t I, typename... Ts>
+    // constexpr const auto&& get(const tuple<Ts...>&& t) noexcept
+    // {
+    //     return std::get<I>(std::move(t));
+    // }
+    //
+    // // Free functions for element access in fxt namespace (similar to std::get for std::tuple)
+    // template<size_t I, class... Ts>
+    // auto& get(flat_tuple<Ts...>& tuple) {
+    //     return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
+    // }
+    //
+    // template<size_t I, class... Ts>
+    // const auto& get(const flat_tuple<Ts...>& tuple) {
+    //     return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
+    // }
+    //
+    // template<size_t I, class... Ts>
+    // auto&& get(flat_tuple<Ts...>&& tuple) {
+    //     return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
+    // }
+    //
+    // template<size_t I, class... Ts>
+    // const auto&& get(const flat_tuple<Ts...>&& tuple) {
+    //     return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
+    // }
 
-    template<std::size_t I, typename... Ts>
-    constexpr const auto& get(const tuple<Ts...>& t) noexcept
-    {
-        return std::get<I>(t);
-    }
+    using std::get;
 
-    template<std::size_t I, typename... Ts>
-    constexpr auto&& get(tuple<Ts...>&& t) noexcept
-    {
-        return std::get<I>(std::move(t));
-    }
-
-    template<std::size_t I, typename... Ts>
-    constexpr const auto&& get(const tuple<Ts...>&& t) noexcept
-    {
-        return std::get<I>(std::move(t));
-    }
-
-    // Free functions for element access in fxt namespace (similar to std::get for std::tuple)
+    // Free functions for element access on fxt::flat_tuple (not covered by std::get)
     template<size_t I, class... Ts>
     auto& get(flat_tuple<Ts...>& tuple) {
         return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;

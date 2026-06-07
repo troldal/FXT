@@ -310,7 +310,7 @@ namespace fxt
                 && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
         auto operator()(TArg&& tupleContainer) const
         {
-            return std::forward<TArg>(tupleContainer).and_then([this](const auto&& tuple) {
+            return std::forward<TArg>(tupleContainer).and_then([this](auto&& tuple) {
                 auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
                 return result.transform([](auto&& _value) {
                     // Preserve tuple type
@@ -354,7 +354,7 @@ namespace fxt
                 && (std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
         auto operator()(TArg&& opt) const
         {
-            return std::forward<TArg>(opt).transform([this](const auto&& tuple) {
+            return std::forward<TArg>(opt).transform([this](auto&& tuple) {
                 fxt::apply(function, std::forward<decltype(tuple)>(tuple));
                 // Return empty tuple of the appropriate type
                 if constexpr (impl::is_fxt_tuple_v<TTuple>) {
@@ -374,7 +374,7 @@ namespace fxt
                 && (std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
         auto operator()(TArg&& tupleExpected) const
         {
-            return std::forward<TArg>(tupleExpected).transform([this](const auto&& tuple) {
+            return std::forward<TArg>(tupleExpected).transform([this](auto&& tuple) {
                 fxt::apply(function, std::forward<decltype(tuple)>(tuple));
                 // Return empty tuple of the appropriate type
                 if constexpr (impl::is_fxt_tuple_v<TTuple>) {
@@ -395,7 +395,7 @@ namespace fxt
                 && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
         auto operator()(TArg&& opt) const
         {
-            return std::forward<TArg>(opt).transform([this](const auto&& tuple) {
+            return std::forward<TArg>(opt).transform([this](auto&& tuple) {
                 auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
                 // Preserve tuple type
                 if constexpr (impl::is_fxt_tuple_v<TTuple>) {
@@ -416,7 +416,7 @@ namespace fxt
                 && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
         auto operator()(TArg&& tupleExpected) const
         {
-            return std::forward<TArg>(tupleExpected).transform([this](const auto&& tuple) {
+            return std::forward<TArg>(tupleExpected).transform([this](auto&& tuple) {
                 auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
                 // Preserve tuple type
                 if constexpr (impl::is_fxt_tuple_v<TTuple>) {
