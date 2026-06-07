@@ -64,6 +64,7 @@
 #include "fxt/monads/Value.hpp"
 #include "fxt/monads/ValueOr.hpp"
 #include "fxt/monads/With.hpp"
+#include "fxt/monads/Sequence.hpp"
 #include "fxt/ranges/ForEach.hpp"
 #include "fxt/tuples/Append.hpp"
 #include "fxt/tuples/Apply.hpp"
