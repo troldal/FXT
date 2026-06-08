@@ -96,9 +96,9 @@ int main()
         auto result = fxt::sequence(std::move(args))
             | fxt::and_then([](auto validated) -> fxt::expected<double, XLError> {
                 return compute_enthalpy(
-                    std::get<0>(validated),
-                    std::get<1>(validated),
-                    std::get<2>(validated)
+                    fxt::get<0>(validated),
+                    fxt::get<1>(validated),
+                    fxt::get<2>(validated)
                 );
               });
 
@@ -187,7 +187,7 @@ int main()
 
         auto result = fxt::sequence(std::move(args))
             | fxt::transform([](auto validated) {
-                return std::apply(compute_enthalpy, validated);
+                return fxt::apply(compute_enthalpy, validated);
               });
 
         print(result, "enthalpy");
@@ -253,6 +253,55 @@ int main()
         } else {
             std::cout << "    Error: " << result.error() << "\n";
         }
+        std::cout << "\n";
+    }
+
+    // 3d. Mixed numeric + non-numeric tuple — fxt::overload dispatches per element type
+    std::cout << "3d. Heterogeneous tuple (double, string, int) with fxt::overload validator:\n";
+    {
+        // Each overload handles its own type and returns the same error type E,
+        // which is the only constraint traverse imposes on a heterogeneous tuple.
+        auto validator = fxt::overload{
+            [](double d)             -> fxt::expected<double,      XLError> {
+                if (d <= 0.0) return fxt::unexpected<XLError>(std::format("value {} must be positive", d));
+                return d;
+            },
+            [](const std::string& s) -> fxt::expected<std::string, XLError> {
+                if (s.empty()) return fxt::unexpected<XLError>("label must not be empty");
+                return s;
+            },
+            [](int i)                -> fxt::expected<int,         XLError> {
+                if (i < 0) return fxt::unexpected<XLError>(std::format("count {} must be non-negative", i));
+                return i;
+            }
+        };
+
+        // All elements valid
+        {
+            auto mixed  = fxt::make_tuple(3.14, std::string("steam"), 7);
+            auto result = mixed | fxt::traverse(validator);
+            // result : expected<tuple<double, string, int>, XLError>
+
+            if (result.has_value()) {
+                std::cout << std::format("    valid   -> ({:.2f}, \"{}\", {})\n",
+                    std::get<0>(*result), std::get<1>(*result), std::get<2>(*result));
+            } else {
+                std::cout << "    Error: " << result.error() << "\n";
+            }
+        }
+
+        // Second element (string) invalid — short-circuits there
+        {
+            auto mixed  = fxt::make_tuple(3.14, std::string(""), 7);
+            auto result = mixed | fxt::traverse(validator);
+
+            if (result.has_value()) {
+                std::cout << "    (unexpected success)\n";
+            } else {
+                std::cout << "    invalid -> Error: " << result.error() << "\n";
+            }
+        }
+
         std::cout << "\n";
     }
 

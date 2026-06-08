@@ -95,29 +95,31 @@ namespace fxt
     //     return std::apply(std::forward<F>(f), std::move(t));
     // }
 
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, tuple<Ts...>& t)
-    {
-        return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&>(t));
-    }
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>& t)
+    // {
+    //     return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&>(t));
+    // }
+    //
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>& t)
+    // {
+    //     return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&>(t));
+    // }
+    //
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>&& t)
+    // {
+    //     return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&&>(std::move(t)));
+    // }
+    //
+    // template<typename F, typename... Ts>
+    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>&& t)
+    // {
+    //     return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&&>(std::move(t)));
+    // }
 
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, const tuple<Ts...>& t)
-    {
-        return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&>(t));
-    }
-
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, tuple<Ts...>&& t)
-    {
-        return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&&>(std::move(t)));
-    }
-
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, const tuple<Ts...>&& t)
-    {
-        return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&&>(std::move(t)));
-    }
+    using std::apply;
 
     /**
      * @brief Apply a function to elements of fxt::flat_tuple
