@@ -318,3 +318,145 @@ TEST_CASE("fxt::with applicative — pipeline composition with other adaptors", 
         REQUIRE(result.error() == "validation failed");
     }
 }
+
+TEST_CASE("fxt::mwith applicative — entry point (Case 1: plain callable returning expected)", "[mwith][expected][applicative]")
+{
+    // The curried callable returns expected<R, E>; mwith() flattens it via and_then()
+    // rather than wrapping it, so the result is expected<R, E>, never expected<expected<R, E>, E>.
+    auto reciprocal = [](double x) -> fxt::expected<double, std::string> {
+        if (x == 0.0) return fxt::unexpected<std::string>("division by zero");
+        return 1.0 / x;
+    };
+
+    SECTION("single-argument function, callable succeeds")
+    {
+        auto result = fxt::curry(reciprocal)
+            | fxt::mwith(fxt::expected<double, std::string>{4.0});
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 0.25);
+    }
+
+    SECTION("single-argument function, callable returns unexpected")
+    {
+        auto result = fxt::curry(reciprocal)
+            | fxt::mwith(fxt::expected<double, std::string>{0.0});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "division by zero");
+    }
+
+    SECTION("single-argument function, argument error propagated (callable not invoked)")
+    {
+        auto result = fxt::curry(reciprocal)
+            | fxt::mwith(fxt::expected<double, std::string>{fxt::unexpected<std::string>("bad input")});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "bad input");
+    }
+
+    SECTION("result is flattened, not nested")
+    {
+        // The deduced result type must be expected<double, string>, so .value() yields a double.
+        auto result = fxt::curry(reciprocal)
+            | fxt::mwith(fxt::expected<double, std::string>{2.0});
+
+        static_assert(std::is_same_v<std::remove_cvref_t<decltype(result)>,
+                                     fxt::expected<double, std::string>>,
+                      "mwith() must flatten the callable's expected result");
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 0.5);
+    }
+}
+
+TEST_CASE("fxt::mwith applicative — multi-argument (with() for intermediate, mwith() for final)", "[mwith][expected][applicative]")
+{
+    // For a multi-argument curried callable, intermediate arguments are fed with with()
+    // (each yields a partial application wrapped in expected), and the final monadic step
+    // — where the callable returns expected<R, E> — uses mwith() to flatten the result.
+    auto divide = [](double a, double b) -> fxt::expected<double, std::string> {
+        if (b == 0.0) return fxt::unexpected<std::string>("div by zero");
+        return a / b;
+    };
+
+    SECTION("two-argument function, all valid and callable succeeds")
+    {
+        auto result = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{10.0})
+            | fxt::mwith(fxt::expected<double, std::string>{2.0});
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 5.0);
+    }
+
+    SECTION("two-argument function, callable returns unexpected")
+    {
+        auto result = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{10.0})
+            | fxt::mwith(fxt::expected<double, std::string>{0.0});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "div by zero");
+    }
+
+    SECTION("error in first argument propagated (callable not invoked)")
+    {
+        auto result = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{fxt::unexpected<std::string>("numerator invalid")})
+            | fxt::mwith(fxt::expected<double, std::string>{2.0});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "numerator invalid");
+    }
+
+    SECTION("error in final argument propagated")
+    {
+        auto result = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{10.0})
+            | fxt::mwith(fxt::expected<double, std::string>{fxt::unexpected<std::string>("denominator invalid")});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "denominator invalid");
+    }
+
+    SECTION("argument error wins over a would-be callable error")
+    {
+        // First argument is invalid; the callable (which would also fail on b == 0) is never run.
+        auto result = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{fxt::unexpected<std::string>("first error")})
+            | fxt::mwith(fxt::expected<double, std::string>{0.0});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "first error");
+    }
+}
+
+TEST_CASE("fxt::mwith applicative — pipeline composition with other adaptors", "[mwith][expected][applicative]")
+{
+    auto safe_div = [](double a, double b) -> fxt::expected<double, std::string> {
+        if (b == 0.0) return fxt::unexpected<std::string>("div by zero");
+        return a / b;
+    };
+
+    SECTION("mwith() result can be further piped with transform()")
+    {
+        auto result = fxt::curry(safe_div)
+            | fxt::with(fxt::expected<double, std::string>{12.0})
+            | fxt::mwith(fxt::expected<double, std::string>{4.0})
+            | fxt::transform([](double x) { return x + 1.0; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 4.0);
+    }
+
+    SECTION("mwith() callable error propagates through subsequent transform()")
+    {
+        auto result = fxt::curry(safe_div)
+            | fxt::with(fxt::expected<double, std::string>{12.0})
+            | fxt::mwith(fxt::expected<double, std::string>{0.0})
+            | fxt::transform([](double x) { return x + 1.0; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "div by zero");
+    }
+}

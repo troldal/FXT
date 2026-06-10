@@ -403,6 +403,88 @@ int main() {
         std::cout << "    (same result; applicative is flatter for independent args)\n\n";
     }
 
+    // ========================================================================
+    // Part 8: Monadic with() — fxt::mwith
+    // ========================================================================
+
+    std::cout << "PART 8: Monadic with() — fxt::mwith\n";
+    std::cout << "===================================\n\n";
+
+    // fxt::with() is for *pure* curried callables: it wraps the plain result in
+    // expected<R, E> via transform().
+    //
+    // fxt::mwith() is for curried callables that *themselves* return expected<R, E>.
+    // It uses and_then() instead of transform(), flattening the result so you get
+    // expected<R, E> rather than a nested expected<expected<R, E>, E>.
+    //
+    //   - single-argument callable:  curry(f) | mwith(arg)
+    //   - multi-argument callable:   curry(f) | with(arg1) | ... | mwith(argN)
+    //                                (intermediate args use with(); the final
+    //                                 monadic step uses mwith())
+
+    // Example 20: Single-argument callable returning expected — mwith() entry point
+    std::cout << "20. Single-argument callable returning expected:\n";
+    {
+        auto reciprocal = [](double x) -> fxt::expected<double, std::string> {
+            if (x == 0.0) return fxt::unexpected<std::string>("division by zero");
+            return 1.0 / x;
+        };
+
+        auto ok  = fxt::curry(reciprocal) | fxt::mwith(fxt::expected<double, std::string>{4.0});
+        auto err = fxt::curry(reciprocal) | fxt::mwith(fxt::expected<double, std::string>{0.0});
+
+        std::cout << "    curry(reciprocal) | mwith(4.0) -> "; print_result(ok);  std::cout << "\n";
+        std::cout << "    curry(reciprocal) | mwith(0.0) -> "; print_result(err); std::cout << "  (callable's own error)\n\n";
+    }
+
+    // Example 21: Two-argument callable — with() for the first arg, mwith() for the last
+    std::cout << "21. Two-argument callable returning expected:\n";
+    {
+        auto divide = [](double a, double b) -> fxt::expected<double, std::string> {
+            if (b == 0.0) return fxt::unexpected<std::string>("div by zero");
+            return a / b;
+        };
+
+        auto ok      = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{10.0})
+            | fxt::mwith(fxt::expected<double, std::string>{2.0});
+
+        auto div0    = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{10.0})
+            | fxt::mwith(fxt::expected<double, std::string>{0.0});
+
+        auto bad_arg = fxt::curry(divide)
+            | fxt::with(fxt::expected<double, std::string>{fxt::unexpected<std::string>("numerator invalid")})
+            | fxt::mwith(fxt::expected<double, std::string>{2.0});
+
+        std::cout << "    with(10.0) | mwith(2.0)              -> "; print_result(ok);      std::cout << "\n";
+        std::cout << "    with(10.0) | mwith(0.0)              -> "; print_result(div0);    std::cout << "  (callable's own error)\n";
+        std::cout << "    with(<invalid>) | mwith(2.0)         -> "; print_result(bad_arg); std::cout << "  (arg error short-circuits)\n\n";
+    }
+
+    // Example 22: Contrast with() vs mwith() on the same flattening problem
+    std::cout << "22. Why mwith() flattens — contrast with with():\n";
+    {
+        // A pure computation (returns double) uses with():
+        auto add = [](double a, double b) { return a + b; };
+        auto pure = fxt::curry(add)
+            | fxt::with(fxt::expected<double, std::string>{3.0})
+            | fxt::with(fxt::expected<double, std::string>{4.0});           // expected<double, string>
+
+        // A fallible computation (returns expected<double, string>) uses mwith()
+        // for the final step, so the result stays flat:
+        auto checked_add = [](double a, double b) -> fxt::expected<double, std::string> {
+            if (a + b > 100.0) return fxt::unexpected<std::string>("sum too large");
+            return a + b;
+        };
+        auto monadic = fxt::curry(checked_add)
+            | fxt::with(fxt::expected<double, std::string>{3.0})
+            | fxt::mwith(fxt::expected<double, std::string>{4.0});          // expected<double, string>, flattened
+
+        std::cout << "    with()-only  (pure add):       "; print_result(pure);    std::cout << "\n";
+        std::cout << "    with()+mwith (checked add):    "; print_result(monadic); std::cout << "  (flattened, not nested)\n\n";
+    }
+
     std::cout << "=== Demo Complete ===\n";
     return 0;
 }

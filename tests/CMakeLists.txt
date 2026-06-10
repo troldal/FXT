@@ -45,6 +45,7 @@ add_executable(fxt_tests
         VariantWhenTests.cpp
         VariantTransformWhenTests.cpp
         WithTests.cpp
+        JoinTests.cpp
         SequenceTests.cpp
         SequenceTupleTests.cpp
 )
