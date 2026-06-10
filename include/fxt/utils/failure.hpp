@@ -273,6 +273,10 @@ namespace fxt
          * @note Returns a temporary, use with caution
          * @deprecated Use message() instead for safer access
          */
+        // TODO: DOCS/API — message_view() claims to return a string_view ("zero-copy") but
+        //       actually returns std::string by value, i.e. it is just message() with a
+        //       misleading name. It is already marked deprecated in prose — mark it
+        //       [[deprecated]] for real, or remove it.
         [[nodiscard]] std::string message_view() const noexcept { return message(); }
 
         /**
@@ -418,7 +422,12 @@ struct std::hash<fxt::failure>
     {
         std::size_t h1 = std::hash<std::string>{}(f.message());
 
-        // Hash the exception pointer using its address
+        // TODO: BUG — `&exc` takes the address of the LOCAL copy of the exception_ptr,
+        //       not of the exception object. The hash therefore depends on a stack address
+        //       and is neither stable nor consistent with operator== (which compares
+        //       message() only). Two equal failures can hash differently, breaking the
+        //       unordered-container contract. Hash the message only (matching operator==)
+        //       and drop the exception component.
         std::size_t h2 = 0;
         auto exc = f.exception();
         if (exc) {
