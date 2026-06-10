@@ -94,6 +94,14 @@ namespace fxt
      * @tparam T The value type of the wrapped argument
      * @tparam E The shared error type for the entire pipeline
      */
+    // TODO: COMPLETENESS — with()/mwith() only support fxt::expected. An optional-based
+    //       applicative pipeline (curry(f) | with(opt_x) | with(opt_y)) would be the natural
+    //       counterpart and is currently impossible; consider a second overload set or a
+    //       generic adaptor gated on monad_like.
+    // TODO: ERGONOMICS — with() takes fxt::expected<T, E> by value with exact-type matching,
+    //       so expected-like types (e.g. tl::expected when FXT_USE_TL_EXPECTED is not the
+    //       active alias) and convertible arguments don't deduce. A forwarding-reference
+    //       overload constrained on expected_like would be more flexible.
     template<typename T, typename E>
     class with_adaptor
     {

@@ -63,6 +63,10 @@ namespace fxt
      *            | fxt::to_optional();
      * // error is fxt::optional<int>{fxt::nullopt}
      */
+    // TODO: ERGONOMICS — same issues as to_expected: const-lvalue-only parameter forces a
+    //       copy of the contained value (no move from rvalue expected), and the nullary
+    //       factory requires `| fxt::to_optional()` while sibling adaptors like and_then(f)
+    //       are used without the extra `()` (see TODO in Value.hpp on unifying the convention).
     inline constexpr auto to_optional = []() {
         return []<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) -> fxt::optional<TValue> {
             if (ex.has_value()) return ex.value();

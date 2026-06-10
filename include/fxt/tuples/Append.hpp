@@ -250,6 +250,14 @@ namespace fxt
      * // result: std::expected<std::tuple<int, std::string, double>, Error>
      * @endcode
      */
+    // TODO: CONSISTENCY — `mappend` overlaps almost entirely with `mtuple_append`
+    //       (TupleAppend.hpp): both append plain or monadic values to a tuple inside a
+    //       monad. Two names for one operation is confusing — fold mappend's
+    //       error-type-conversion behavior into mtuple_append and remove this file, or
+    //       document the intended distinction.
+    // TODO: DOCS — every example in this file (and the doc block above) writes
+    //       `fxt::append(...)`, but the instance is named `mappend`; `fxt::append` does not
+    //       exist. Fix the examples or provide the documented name.
     inline constexpr AppendWrapper mappend = {};
 
 }    // namespace fxt

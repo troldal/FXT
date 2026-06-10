@@ -432,6 +432,12 @@ namespace fxt
         // ========================================================================
         // Case 2b: Expected-like container + fxt::tuple + Function returning void
         // ========================================================================
+        // TODO: BUG — this overload constrains `expected_like<TArg>` on the DEDUCED forwarding
+        //       reference type instead of `expected_like<std::remove_cvref_t<TArg>>` like every
+        //       other case in this struct. expected_like rejects reference types (it requires
+        //       std::is_same_v<std::decay_t<T>, T>), so Case 2b never matches an lvalue
+        //       expected — `lvalue_exp | mapply(void_fn)` fails to compile while the optional
+        //       counterpart (Case 2a) works. Add the remove_cvref_t.
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires expected_like<TArg>
                 && tuple_like<std::remove_cvref_t<TTuple>>
@@ -513,6 +519,13 @@ namespace fxt
      *              | fxt::apply([](int a, int b, int sum) { return sum * 2; });
      * @endcode
      */
+    // TODO: DOCS — the doc block above is stale on two counts: (1) the examples invoke
+    //       `fxt::apply(...)` on monadic containers, but this entity is named `mapply`
+    //       (fxt::apply on a monad resolves to the non-monadic apply_curried and fails);
+    //       (2) the examples claim append semantics (`expected<tuple<int,int,int>>{3,4,7}`),
+    //       but the implementation REPLACES the tuple with the function result (the
+    //       tuple_append calls are commented out) — that behavior now lives in
+    //       fxt::mapply_append. Rewrite the examples to match mapply's actual semantics.
     struct apply_fn
     {
         template<typename TFunction>

@@ -84,6 +84,13 @@ namespace fxt
      * // Nothing is logged, result4 is empty
      * @endcode
      */
+    // TODO: BUG — the `return std::forward<TContainer>(container);` below is commented out,
+    //       so tap() returns void and terminates any pipeline, contradicting the documentation
+    //       above ("returns it unchanged"). Tee.hpp contains the working version of exactly
+    //       this code. Either restore the return statements here, or (better) delete this file
+    //       and keep a single implementation: tap/tee are duplicate names for the same
+    //       operation (consistency issue). Pick one family (tap/tap_error/tap_none or
+    //       tee/tee_error/tee_none) and alias or remove the other.
     inline constexpr auto tap = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
             requires requires {container.has_value();container.value();}

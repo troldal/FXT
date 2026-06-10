@@ -93,6 +93,9 @@ namespace fxt
      * auto result = value | transform_fn | validate_fn;
      * @endcode
      */
+    // TODO: CLEANUP — the three commented-out operator| overloads below (and their doc
+    //       blocks) are superseded by the single forwarding-reference overload at the end
+    //       of this file; delete them (git history preserves them).
     // template<typename ValueType, typename ErrorType, typename Callable>
     //     requires std::invocable<Callable, const fxt::expected<ValueType, ErrorType>&>
     // constexpr auto operator|(const fxt::expected<ValueType, ErrorType>& expected, Callable&& function)

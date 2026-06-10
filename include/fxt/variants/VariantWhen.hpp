@@ -80,6 +80,13 @@ namespace fxt
      * }); // Nothing printed
      * @endcode
      */
+    // TODO: SAFETY — when() returns std::forward<TVariant>(variant), i.e. an rvalue
+    //       reference to its own parameter for rvalue inputs. Through the pipe operator
+    //       (VariantPipe.hpp deduces its return type as decltype(invoke(...)) = TVariant&&),
+    //       `auto&& v = make_variant() | fxt::when<int>(f);` binds a reference to a dead
+    //       temporary. Return by value for rvalue inputs, or document that pipeline results
+    //       must be captured by value. Same pattern in mwhen below and in
+    //       transform_when/mtransform_when (VariantTransformWhen.hpp).
     template<typename T, typename TVariant, typename F>
         requires fxt::variant_like<std::remove_cvref_t<TVariant>> &&
                  std::invocable<F, T>

@@ -30,6 +30,10 @@ namespace fxt
      * bool has_string = fxt::holds_alternative<std::string>(v);  // Returns true
      * @endcode
      */
+    // TODO: COMPLETENESS — unlike fxt::index()/fxt::visit()/fxt::when(), there is no
+    //       curried/pipe form (`v | fxt::holds_alternative<T>()`) and no monadic
+    //       counterpart (mholds_alternative); every other variant operation provides both.
+    //       Also missing the FXT license banner.
     template<typename T, typename TVariant>
         requires fxt::variant_like<std::remove_cvref_t<TVariant>>
     constexpr bool holds_alternative(TVariant&& variant)

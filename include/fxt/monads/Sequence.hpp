@@ -123,6 +123,13 @@ namespace fxt
      * Satisfied by any type with begin/end iterators and push_back, excluding
      * tuple-like types (handled by separate overloads below).
      */
+    // TODO: COMPLETENESS — sequence()/traverse() only support fxt::expected. The classic
+    //       optional counterparts (Container<optional<T>> -> optional<Container<T>>, and the
+    //       tuple equivalents) are missing; other m-prefixed operations in the library
+    //       uniformly support both monads.
+    // TODO: COMPLETENESS — sequenceable_container requires push_back, which excludes
+    //       std::array, std::set, std::map and other non-push_back ranges; consider building
+    //       results via std::ranges::to or an output-iterator strategy.
     template<typename C>
     concept sequenceable_container = requires(C& c) {
         std::begin(c);

@@ -91,6 +91,14 @@ namespace fxt
      *   auto ft = fxt::make_flat_tuple(1, 2.0, "three");
      *   auto result6 = ft | fxt::mselect<0, 2>();  // result is fxt::flat_tuple<int, std::string>{1, "three"}
      */
+    // TODO: ERGONOMICS — the monadic overloads in this overload set only accept
+    //       const-lvalue monads of exactly fxt::expected/fxt::optional holding exactly
+    //       fxt::tuple/fxt::flat_tuple, so rvalue pipelines copy and other expected-like
+    //       types don't match; a transform-based implementation constrained on monad_like +
+    //       tuple_like (like mtake/mdrop) would be shorter and more general.
+    // TODO: CONSISTENCY — mselect bundles monadic AND plain-tuple handling in one adaptor,
+    //       whereas the rest of the library separates them (select vs mselect, take vs
+    //       mtake). The plain-tuple overloads here duplicate fxt::select below.
     template<size_t... Is>
     auto mselect()
     {

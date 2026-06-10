@@ -236,6 +236,11 @@ namespace fxt
          * @note Explicit to make copying uncommon operations visible. Use
          *       regular assignment for implicit sharing when needed.
          */
+        // TODO: ERGONOMICS/DOCS — the copy and move constructors are `explicit`, which makes
+        //       copy-initialization ill-formed: the file's own example `auto copy = expensive;`
+        //       does not compile (must be `lazy copy{expensive};`), and returning a lazy from
+        //       a function by value is awkward. Explicit copy/move constructors are highly
+        //       unusual; drop `explicit` or fix the documentation.
         explicit lazy(const lazy& other)       = default;    // NOLINT
 
         /**

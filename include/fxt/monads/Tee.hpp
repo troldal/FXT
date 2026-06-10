@@ -84,6 +84,15 @@ namespace fxt
      * // Nothing is logged, result4 is empty
      * @endcode
      */
+    // TODO: CONSISTENCY — this file is a verbatim duplicate of Tap.hpp (including the doc
+    //       comments, which still say "tap"/"tap_error"/"tap_none") except that the return
+    //       statements are active here. Keep one implementation under one name and remove
+    //       the other file; having both fxt::tap (broken) and fxt::tee (working) for the
+    //       same operation is confusing.
+    // TODO: COMPLETENESS — tee passes the container through but only invokes the side effect
+    //       via `container.value()` on an lvalue; consider std::invoke(f, ...) for member
+    //       pointers, and a plain-value overload (docs show `42 | fxt::tap(...)`, which the
+    //       requires-clause `container.has_value()` rejects).
     inline constexpr auto tee = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
             requires requires {container.has_value();container.value();}

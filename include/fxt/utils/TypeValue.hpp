@@ -118,6 +118,13 @@ namespace fxt
      *       to prevent accidental conversions.
      * @note Both versions are fully constexpr-enabled for compile-time computation.
      */
+    // TODO: DOCS — the entire doc block above (and the examples in make_type/is_type below)
+    //       refer to this template as `fxt::Type<...>`, but it is named `type_value`; none
+    //       of the documented spellings compile. Likewise the docs say the member alias is
+    //       `::type` while the code defines `::type_t` — and the free alias `fxt::type_t<T>`
+    //       below expects a member also called `type_t`, which reads doubly confusing.
+    //       Settle on one name (`type` member + `type_t<T>` free alias is the standard
+    //       convention) and update the docs.
     template<typename TType, typename... TArgs>
     struct type_value
     {

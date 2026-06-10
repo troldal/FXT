@@ -141,6 +141,12 @@ namespace fxt
      * @see fxt::unit
      * @see std::invoke
      */
+    // TODO: SAFETY — attempt is declared noexcept, but the catch handler constructs a
+    //       fxt::failure (which allocates a std::string for the message) and the success
+    //       path copies/moves Ret into the expected; if either throws (e.g. bad_alloc, or a
+    //       throwing move of Ret outside the try block is fine, but inside the catch it is
+    //       not caught), std::terminate is called. Either drop noexcept or make the catch
+    //       path non-allocating.
     template<typename Fn, typename... Args>
     requires std::invocable<Fn, Args...>
     auto attempt(Fn &&fn, Args &&...args) noexcept

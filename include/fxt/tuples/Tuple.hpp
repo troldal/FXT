@@ -145,6 +145,11 @@ namespace fxt
 
 }    // namespace fxt
 
+// TODO: CLEANUP — everything below this point (~100 lines) is commented-out experiments
+//       with a distinct fxt::tuple wrapper type. The library has settled on the plain
+//       std::tuple alias above; delete the dead code (git history preserves it). The same
+//       applies to the commented-out blocks in Get.hpp, Apply.hpp, ApplyReplace.hpp,
+//       TuplePipe.hpp, Expected.hpp, Optional.hpp, IsOptional.hpp and Lazy.hpp.
 
 // In Tuple.hpp
 // namespace fxt

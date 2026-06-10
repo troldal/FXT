@@ -80,6 +80,14 @@ namespace fxt
      *       that contains an error, or an optional that is empty.
      * @note Only works with types that have a .value() member function.
      */
+    // TODO: ERGONOMICS/DOCS — `value` is a nullary adaptor factory, so pipelines must write
+    //       `| fxt::value()`, but every example above shows `| fxt::value` (which does not
+    //       compile: the pipe operators require the callable to be invocable with the
+    //       container). Either fix the docs, or make `value` itself the adaptor (like
+    //       fxt::and_then(f) returns one directly) so `| fxt::value` works. The same
+    //       factory-vs-adaptor inconsistency exists across the API: and_then/transform/...
+    //       take the function and return the adaptor, while value()/to_optional()/join()/
+    //       index()/mindex()/take<N>()/drop<N>() need an extra `()` — consider one convention.
     inline constexpr auto value = []() {
         return []<typename TContainer>(TContainer&& container)
             requires requires(TContainer&& c) { c.value(); }

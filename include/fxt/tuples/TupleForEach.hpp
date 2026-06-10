@@ -127,6 +127,13 @@ namespace fxt
      * // sum is now 60
      * @endcode
      */
+    // TODO: CONSISTENCY — this is `tuple_foreach` while the ranges counterpart is
+    //       `fxt::for_each` (ranges/ForEach.hpp); pick one spelling (for_each) for both.
+    //       There is also no monadic counterpart (mtuple_foreach) even though every other
+    //       tuple operation has an m-prefixed version — completeness gap.
+    // TODO: COMPLETENESS — this header uses fxt::apply but includes neither Apply.hpp nor
+    //       the tuple headers; it only compiles when included after them (fxt.hpp ordering).
+    //       Add the missing #include "Apply.hpp".
     template<typename TupleT, typename Fn>
     void tuple_foreach(TupleT&& tp, Fn&& fn)
     {

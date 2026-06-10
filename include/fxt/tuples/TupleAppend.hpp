@@ -221,6 +221,13 @@ namespace fxt
      * auto result3 = ft | fxt::tuple_append(3.0, 4.0); // fxt::flat_tuple{1.0, 2.0, 3.0, 4.0}
      * @endcode
      */
+    // TODO: SAFETY — the curried adaptors below are `mutable` lambdas that move out of their
+    //       captures (`std::forward<U>(value)` / `std::move(fxt::get<I>(values))`) on every
+    //       call. Storing the adaptor (`auto add3 = fxt::tuple_append(3);`) and piping two
+    //       tuples through it silently appends moved-from values the second time. Either
+    //       copy from the capture (drop `mutable`/the moves) or document the adaptors as
+    //       single-use. The same pattern exists in tuple_prepend, mtuple_append,
+    //       mtuple_prepend, tuple_cat and mtuple_cat.
     template<class U, class... Us>
         requires (!impl::is_tuple_like_v<std::remove_cvref_t<U>>)
     auto tuple_append(U&& u, Us&&... us)

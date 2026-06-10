@@ -149,6 +149,16 @@ namespace fxt
      * // result3 is fxt::tuple<std::string, std::string, std::string>
      * @endcode
      */
+    // TODO: DOCS — the examples in this file's doc comments call `fxt::transform_tuple` /
+    //       `fxt::mtransform_tuple`, but the functions are named tuple_transform /
+    //       mtuple_transform. The stale names also appear in examples in FlatTuple.hpp,
+    //       Take.hpp, Drop.hpp, TupleAppend.hpp and TuplePrepend.hpp — fix them everywhere,
+    //       or provide aliases under the documented names.
+    // TODO: CONSISTENCY — argument order is (f, tuple) here, while apply_append/apply_replace
+    //       use (f, tuple) but tuple_append/tuple_cat use (tuple, values...). Within the
+    //       m-prefixed family, mtuple_transform(f, container) takes the function first while
+    //       mtuple_append(container, values...) takes the container first — consider a
+    //       uniform parameter order for direct-call forms.
     template<typename F, typename Tuple>
         requires tuple_like<std::remove_cvref_t<Tuple>>
     constexpr auto tuple_transform(F&& f, Tuple&& tpl)

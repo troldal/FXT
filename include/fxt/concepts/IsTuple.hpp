@@ -97,6 +97,12 @@ namespace fxt
      * process_tuple(42); // Error: 42 is not tuple_like
      * @endcode
      */
+    // TODO: NAMING/COMPLETENESS — `tuple_like` only matches fxt::tuple (std::tuple) and
+    //       fxt::flat_tuple, but the name suggests the broader C++23 tuple-like notion
+    //       (std::pair, std::array, std::ranges::subrange all have tuple_size/tuple_element
+    //       and would be rejected here). Either rename (e.g. fxt_tuple) or widen the concept
+    //       to anything with std::tuple_size — note `variant_like` (IsVariant.hpp) has the
+    //       same exact-match-only behavior behind a "-like" name.
     template<typename T>
     concept tuple_like = impl::is_tuple_like_v<std::remove_cvref_t<T>>;
 

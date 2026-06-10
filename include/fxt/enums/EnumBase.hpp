@@ -92,6 +92,12 @@ namespace fxt::detail
          * }
          * @endcode
          */
+        // TODO: SAFETY — an IMPLICIT conversion to std::size_t lets unrelated enum types
+        //       compare and mix arithmetically (`string_enum_a == type_enum_b`, `e + 1`,
+        //       accidental use as an array index) without any diagnostic, defeating the
+        //       type safety these classes exist to provide. Make the conversion explicit
+        //       and let switch statements use e.index() — or keep it implicit but document
+        //       the trade-off prominently.
         constexpr operator std::size_t() const
         {    // NOLINT
             return current_index();

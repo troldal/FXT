@@ -163,6 +163,12 @@ namespace fxt
          * constexpr auto idx = MyEnum::Index<TypeB>();  // Returns 1
          * @endcode
          */
+        // TODO: DOCS/CONSISTENCY — the class doc above and the EnumBase docs show
+        //       `MyEnum::Index<TypeA>()` in switch examples, but the method is named
+        //       IndexOf(). Also, the helpers in this header (TypeIndex, TypeIndex_v,
+        //       IndexOf) use PascalCase while the rest of the library is snake_case
+        //       (tuple_size_v, is_fxt_tuple_v, ...) — same applies to StringIndex /
+        //       StringInPack / IndexOf in StringEnum.hpp.
         template<typename T>
         static constexpr std::size_t IndexOf()
         {

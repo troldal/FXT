@@ -63,6 +63,16 @@
 //     return std::invoke(std::forward<Callable>(callable), std::move(tuple));
 // }
 
+// TODO: CLEANUP — delete the commented-out per-value-category overloads above; they are
+//       superseded by the forwarding-reference overload below.
+// TODO: DESIGN — this operator| lives in the GLOBAL namespace and matches any
+//       fxt::tuple (i.e. any std::tuple) piped to any compatible callable. Like
+//       LogicalOr.hpp, it is found by unqualified lookup rather than ADL and injects a
+//       very broad operator into every translation unit that includes fxt.hpp, which can
+//       change overload resolution in unrelated code using std::tuple. Consider scoping it
+//       to namespace fxt with an explicit opt-in. Also: missing #include <functional> /
+//       <utility> for std::invoke/std::forward, and no license banner (every other header
+//       has one).
 template<typename TTuple, typename Callable>
     requires fxt::tuple_like<std::remove_cvref_t<TTuple>> && requires(TTuple&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::forward<TTuple>(t)); }
 constexpr auto operator|(TTuple&& tuple, Callable&& function)

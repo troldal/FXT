@@ -178,6 +178,12 @@ namespace fxt
      *     );
      * @endcode
      */
+    // TODO: SAFETY — the returned matcher is a `mutable` lambda that does
+    //       `std::move(on_value)` / `std::move(on_error)` on EVERY invocation. Storing the
+    //       matcher in a variable and applying it to two monads silently uses moved-from
+    //       handlers the second time (UB for handlers owning resources). Either copy the
+    //       handlers into the match_*_t struct (drop the moves and `mutable`), or take the
+    //       monad's value category into account and only move for rvalue invocations.
     inline constexpr auto match = []<typename OnValue, typename OnError>(OnValue&& on_value, OnError&& on_error)
     {
         // Return a callable that can work with both expected and optional

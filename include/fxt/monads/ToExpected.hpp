@@ -65,6 +65,13 @@ namespace fxt
      *            | fxt::to_expected<std::string>("no value");
      * // error is fxt::expected<int, std::string>{fxt::unexpected("no value")}
      */
+    // TODO: ERGONOMICS — the adaptor only accepts `const fxt::optional<TValue>&`, so the
+    //       contained value is always copied; add an rvalue overload (or take the optional
+    //       by forwarding reference) so `make_opt() | to_expected(...)` can move. Note also
+    //       that TError deduced from a forwarding reference can become an lvalue reference
+    //       type (e.g. passing a named std::string), making the returned expected's error
+    //       type a reference — decay TError. The doc example `to_expected<std::string>(...)`
+    //       suggests an explicit template parameter that the deduced signature ignores.
     template<typename TError>
     inline constexpr auto to_expected(TError&& err)
     {

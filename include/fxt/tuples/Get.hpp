@@ -112,6 +112,11 @@ namespace fxt
     using std::get;
 
     // Free functions for element access on fxt::flat_tuple (not covered by std::get)
+    // TODO: CONSISTENCY — std::get is constexpr and noexcept; these flat_tuple overloads are
+    //       neither, so flat_tuple silently loses constexpr usability that fxt::tuple has.
+    //       Mark them constexpr (and noexcept — the variant alternative is known by
+    //       construction, though std::get on variant can throw; consider
+    //       *std::get_if<...>(...) to make the noexcept claim honest).
     template<size_t I, class... Ts>
     auto& get(flat_tuple<Ts...>& tuple) {
         return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
@@ -151,6 +156,10 @@ namespace fxt
      *   auto opt = fxt::optional<std::tuple<int, double, std::string>>{std::make_tuple(1, 2.0, "three")};
      *   auto result = opt | fxt::get<0>();  // result contains 1
      */
+    // TODO: DOCS — the doc blocks for both mget overloads still show `fxt::get<0>()` /
+    //       `fxt::get<std::string>()` in their examples; the function was renamed to mget.
+    // TODO: ERGONOMICS — mget only accepts const-lvalue monads, so the extracted element is
+    //       always copied; rvalue overloads would allow moving out of temporary pipelines.
     template<size_t I>
     auto mget()
     {

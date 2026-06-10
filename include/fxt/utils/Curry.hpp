@@ -121,6 +121,15 @@ namespace fxt
      *   auto add5 = curriedAdd(5);
      *   int result = add5(10); // 15
      */
+    // TODO: SAFETY — `inline auto` (not `inline constexpr auto`) makes curry a mutable
+    //       global object: it is assignable, participates in dynamic initialization order,
+    //       and differs from every other adaptor in the library which is declared
+    //       `inline constexpr`. Make it `inline constexpr auto curry` (the deducing-this
+    //       self-reference then needs `this auto const&`).
+    // TODO: ERGONOMICS — partial application goes through std::bind_front, so each step
+    //       copies the callable and all bound arguments; reference arguments must be
+    //       wrapped in std::ref and move-only callables cannot be curried in stages.
+    //       Worth documenting at minimum.
     inline auto curry = []<typename F>(this auto& _curry, F&& f) {
         return [_curry, f = std::forward<F>(f)]<typename Self, typename... Ts>(this Self&&, Ts&&... ts) -> decltype(auto) {
             if constexpr (requires { std::forward_like<Self>(f)(std::forward<Ts>(ts)...); }) {

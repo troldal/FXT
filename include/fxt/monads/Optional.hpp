@@ -158,6 +158,9 @@ namespace fxt
     // }
 
 
+    // TODO: CLEANUP — the commented-out operator| overloads above are superseded by this
+    //       forwarding-reference overload; delete them. Also rename the parameter below from
+    //       `expected` to `optional` (copy-paste leftover from Expected.hpp).
     template<typename TOptional, typename Callable>
         requires std::invocable<Callable, TOptional> && optional_like<std::remove_cvref_t<TOptional>>
     constexpr auto operator|(TOptional&& expected, Callable&& function)

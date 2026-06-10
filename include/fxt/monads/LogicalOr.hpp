@@ -45,6 +45,17 @@
 #include "Optional.hpp"
 
 // Operators are in global namespace so they can be found via ADL (Argument Dependent Lookup)
+// TODO: CORRECTNESS — the comment above is wrong: ADL for std::expected/std::optional looks
+//       in namespace std, never in the global namespace. These overloads are found only by
+//       ordinary unqualified lookup, which works for code at global/namespace scope but can
+//       be hidden by any other operator|| in an enclosing namespace. Consider moving them
+//       into namespace fxt and having users opt in (e.g. `using fxt::operator||;`), which
+//       also stops polluting the global namespace for every includer of fxt.hpp.
+// TODO: SAFETY/ERGONOMICS — unlike the built-in operator||, these overloads always evaluate
+//       BOTH operands (no short-circuit), so `opt || expensive_fallback()` runs the fallback
+//       even when opt has a value. The -Weffc++ suppression acknowledges this, but the
+//       behavioral difference deserves a prominent doc comment, or a named function
+//       (e.g. fxt::either / or_value) instead of operator overloading.
 
 // operator|| overloads intentionally evaluate both arguments (function call semantics).
 // -Weffc++ warns about this because the built-in || short-circuits; suppress for this file.

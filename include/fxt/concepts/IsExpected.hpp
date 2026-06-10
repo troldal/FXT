@@ -55,6 +55,14 @@ namespace fxt
      * It ensures the type has the necessary members and operations to be
      * used in monadic contexts.
      */
+    // TODO: DESIGN — requiring `typename T::unexpected_type` is stricter than the name
+    //       suggests; expected-like result types from other libraries (e.g. boost::outcome,
+    //       custom Result types) often lack that alias even though they model everything
+    //       else used by the library (has_value/value/error/transform/and_then). Consider
+    //       dropping it or splitting a minimal concept from the full one. Note also that
+    //       the concept rejects reference types (is_same_v<decay_t<T>, T>), which is why
+    //       call sites must remember remove_cvref_t — forgetting it has already caused the
+    //       Case-2b bug in tuples/Apply.hpp.
     template<typename T>
     concept expected_like = requires(T t) {
         // Required type aliases

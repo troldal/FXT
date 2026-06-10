@@ -235,6 +235,21 @@
 namespace fxt
 {
 
+    // TODO: DOCS/DESIGN — the file comment above oversells flat_tuple: storage is
+    //       std::array<std::variant<indexed<Is,Ts>...>, N>, so EVERY slot occupies
+    //       max(sizeof(Ts)...) plus a discriminator. For heterogeneous element sizes this is
+    //       usually LARGER than std::tuple and the "contiguous memory / better cache
+    //       locality" claim only holds for same-sized elements; element access also goes
+    //       through a variant. Either document the real trade-offs or reimplement with
+    //       aligned byte storage.
+    // TODO: COMPLETENESS — flat_tuple lacks std::tuple_size / std::tuple_element
+    //       specializations and an ADL get, so structured bindings (`auto [a, b] = ft;`)
+    //       and std::apply do not work, unlike fxt::tuple. It also has no operator== /
+    //       operator<=>, so two flat_tuples cannot be compared.
+    // TODO: SAFETY — the variadic constructor takes `Ts... args` by value via the
+    //       index_sequence overload, forcing a copy/move per element even when Args are
+    //       lvalues that could bind by reference; consider perfect forwarding to the
+    //       indexed wrappers.
     template<class... Ts>
     class flat_tuple {
         template<size_t I, class T>

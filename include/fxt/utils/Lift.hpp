@@ -56,6 +56,11 @@
  *     bar(FWD(arg));  // Equivalent to: bar(std::forward<decltype(arg)>(arg))
  * }
  */
+// TODO: SAFETY — FWD and LIFT are unprefixed object-like macro names defined for every
+//       includer of fxt.hpp; they leak into all downstream code and will silently collide
+//       with other libraries' FWD/LIFT macros (a common name in forwarding utilities).
+//       Prefix them (FXT_FWD / FXT_LIFT) and/or guard with #ifndef. Also: this header uses
+//       std::forward but does not #include <utility>.
 #define FWD(...) std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
 /**
