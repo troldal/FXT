@@ -161,3 +161,86 @@ TEST_CASE("fxt::join — preserves value type, including move-only values", "[jo
         REQUIRE(result->size() == 64);
     }
 }
+
+TEST_CASE("fxt::join — flattens nested optional", "[join][optional][monad]")
+{
+    using Inner = fxt::optional<int>;
+    using Nested = fxt::optional<Inner>;
+
+    SECTION("outer has value, inner has value — flattened to value (call syntax)")
+    {
+        Nested nested{Inner{42}};
+        auto result = fxt::join()(nested);
+
+        static_assert(std::is_same_v<std::remove_cvref_t<decltype(result)>, fxt::optional<int>>,
+                      "join must collapse optional<optional<T>> to optional<T>");
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 42);
+    }
+
+    SECTION("outer has value, inner is empty — flattened to empty (pipe syntax)")
+    {
+        Nested nested{Inner{fxt::nullopt}};
+        auto result = nested | fxt::join();
+
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("outer is empty — flattened to empty")
+    {
+        Nested nested{fxt::nullopt};
+        auto result = nested | fxt::join();
+
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("join result composes with later adaptors")
+    {
+        Nested nested{Inner{20}};
+        auto result = nested
+            | fxt::join()
+            | fxt::transform([](int x) { return x + 1; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 21);
+    }
+
+    SECTION("flattening a move-only value moves it through unchanged")
+    {
+        using InnerStr = fxt::optional<std::string>;
+        using NestedStr = fxt::optional<InnerStr>;
+
+        NestedStr nested{InnerStr{std::string(64, 'x')}};
+        auto result = std::move(nested) | fxt::join();
+
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 64);
+    }
+}
+
+TEST_CASE("fxt::join — impl::joinable concept gates valid nestings", "[join][monad][concepts]")
+{
+    SECTION("nested expected with matching error types is joinable")
+    {
+        using Nested = fxt::expected<fxt::expected<int, std::string>, std::string>;
+        static_assert(fxt::impl::joinable<Nested>);
+    }
+
+    SECTION("nested expected with mismatched error types is not joinable")
+    {
+        using Nested = fxt::expected<fxt::expected<int, std::string>, int>;
+        static_assert(!fxt::impl::joinable<Nested>);
+    }
+
+    SECTION("nested optional is joinable")
+    {
+        using Nested = fxt::optional<fxt::optional<int>>;
+        static_assert(fxt::impl::joinable<Nested>);
+    }
+
+    SECTION("a single layer is not joinable")
+    {
+        static_assert(!fxt::impl::joinable<fxt::expected<int, std::string>>);
+        static_assert(!fxt::impl::joinable<fxt::optional<int>>);
+    }
+}
