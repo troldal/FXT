@@ -76,14 +76,9 @@ namespace fxt
      *              | fxt::and_then(double_it);
      * @endcode
      */
-    // TODO: ERGONOMICS — taking `const TFunction&` and capturing `[f]` by copy means
-    //       move-only callables (e.g. lambdas capturing a std::unique_ptr) cannot be used,
-    //       and the function is copied once per adaptor. Take TFunction&& and capture with
-    //       `[f = std::forward<TFunction>(f)]` like fxt::tee does. The same applies to
-    //       transform, or_else, transform_error and value_or.
-    inline constexpr auto and_then = []<typename TFunction>(const TFunction& f) {
-        return [f]<typename TContainer>(TContainer&& container)
-            requires requires(TContainer&& c) { c.and_then(f); }
-        { return std::forward<TContainer>(container).and_then(f); };
-    };
+    inline constexpr auto and_then = []<typename TFunction>(TFunction&& f) {
+    return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+        requires requires(TContainer&& c, TFunction fn) { c.and_then(fn); }
+    { return std::forward<TContainer>(container).and_then(f); };
+};
 }    // namespace fxt

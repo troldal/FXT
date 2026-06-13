@@ -76,10 +76,10 @@ namespace fxt
      *              | fxt::or_else(return_zero);
      * @endcode
      */
-    inline constexpr auto or_else = []<typename TFunction>(const TFunction& f) {
-        return [f]<typename TContainer>(TContainer&& container)
-            requires requires(TContainer&& c) { c.or_else(f); }
-        { return std::forward<TContainer>(container).or_else(f); };
-    };
+    inline constexpr auto or_else = []<typename TFunction>(TFunction&& f) {
+    return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+        requires requires(TContainer&& c, TFunction fn) { c.or_else(fn); }
+    { return std::forward<TContainer>(container).or_else(f); };
+};
 
 }    // namespace fxt

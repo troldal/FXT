@@ -79,10 +79,10 @@ namespace fxt
      *              | fxt::value_or(0);
      * @endcode
      */
-    inline constexpr auto value_or = []<typename TAlternative>(const TAlternative& val) {
-        return [val]<typename TContainer>(TContainer&& container)
-            requires requires(TContainer&& c) { c.value_or(val); }
-        { return std::forward<TContainer>(container).value_or(val); };
-    };
+    inline constexpr auto value_or = []<typename TFunction>(TFunction&& f) {
+    return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
+        requires requires(TContainer&& c, TFunction fn) { c.value_or(fn); }
+    { return std::forward<TContainer>(container).value_or(f); };
+};
 
 }    // namespace fxt
