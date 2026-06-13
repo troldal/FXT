@@ -14,7 +14,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         bool error_logged = false;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                    | fxt::tee_error([&error_logged](const std::string& err) {
+                    | fxt::tap_error([&error_logged](const std::string& err) {
                         error_logged = true;
                     });
 
@@ -28,7 +28,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         bool executed = false;
 
         auto result = fxt::expected<int, std::string>{42}
-                    | fxt::tee_error([&executed](const std::string& err) {
+                    | fxt::tap_error([&executed](const std::string& err) {
                         executed = true;
                     });
 
@@ -40,7 +40,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
     SECTION("tap_error does not modify the error")
     {
         auto result = fxt::expected<int, std::string>{fxt::unexpected("original error")}
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         // Even if we try to modify, it won't affect the result
                         std::string modified = err + " modified";
                     });
@@ -54,13 +54,13 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         std::vector<std::string> logs;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("failure")}
-                    | fxt::tee_error([&logs](const std::string& err) {
+                    | fxt::tap_error([&logs](const std::string& err) {
                         logs.push_back("Log 1: " + err);
                     })
-                    | fxt::tee_error([&logs](const std::string& err) {
+                    | fxt::tap_error([&logs](const std::string& err) {
                         logs.push_back("Log 2: " + err);
                     })
-                    | fxt::tee_error([&logs](const std::string& err) {
+                    | fxt::tap_error([&logs](const std::string& err) {
                         logs.push_back("Log 3: " + err);
                     });
 
@@ -76,7 +76,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         int logged_code = 0;
 
         auto result = fxt::expected<std::string, int>{fxt::unexpected(404)}
-                    | fxt::tee_error([&logged_code](int code) {
+                    | fxt::tap_error([&logged_code](int code) {
                         logged_code = code;
                     });
 
@@ -95,7 +95,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         ErrorInfo logged_error{0, ""};
 
         auto result = fxt::expected<int, ErrorInfo>{fxt::unexpected(ErrorInfo{500, "Server Error"})}
-                    | fxt::tee_error([&logged_error](const ErrorInfo& err) {
+                    | fxt::tap_error([&logged_error](const ErrorInfo& err) {
                         logged_error = err;
                     });
 
@@ -119,7 +119,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
 
         for (const auto& val : test_values)
         {
-            auto result = val | fxt::tee_error([&error_count](const std::string& err) {
+            auto result = val | fxt::tap_error([&error_count](const std::string& err) {
                 error_count++;
             });
         }
@@ -133,8 +133,8 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         bool error_logged = false;
 
         auto result1 = fxt::expected<int, std::string>{42}
-                     | fxt::tee([&value_logged](int x) { value_logged = true; })
-                     | fxt::tee_error([&error_logged](const std::string& err) { error_logged = true; });
+                     | fxt::tap([&value_logged](int x) { value_logged = true; })
+                     | fxt::tap_error([&error_logged](const std::string& err) { error_logged = true; });
 
         REQUIRE(result1.has_value());
         REQUIRE(value_logged);
@@ -144,8 +144,8 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         error_logged = false;
 
         auto result2 = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                     | fxt::tee([&value_logged](int x) { value_logged = true; })
-                     | fxt::tee_error([&error_logged](const std::string& err) { error_logged = true; });
+                     | fxt::tap([&value_logged](int x) { value_logged = true; })
+                     | fxt::tap_error([&error_logged](const std::string& err) { error_logged = true; });
 
         REQUIRE(!result2.has_value());
         REQUIRE(!value_logged);
@@ -157,7 +157,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         bool error_logged = false;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                    | fxt::tee_error([&error_logged](const std::string& err) {
+                    | fxt::tap_error([&error_logged](const std::string& err) {
                         error_logged = true;
                     })
                     | fxt::or_else([](const std::string& err) {
@@ -175,13 +175,13 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         std::string transformed_error;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                    | fxt::tee_error([&original_error](const std::string& err) {
+                    | fxt::tap_error([&original_error](const std::string& err) {
                         original_error = err;
                     })
                     | fxt::transform_error([](const std::string& err) {
                         return "[WRAPPED] " + err;
                     })
-                    | fxt::tee_error([&transformed_error](const std::string& err) {
+                    | fxt::tap_error([&transformed_error](const std::string& err) {
                         transformed_error = err;
                     });
 
@@ -195,7 +195,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         std::string logged_error;
         auto original = fxt::expected<int, std::string>{fxt::unexpected("test error")};
 
-        auto result = original | fxt::tee_error([&logged_error](const std::string& err) {
+        auto result = original | fxt::tap_error([&logged_error](const std::string& err) {
             logged_error = err;
         });
 
@@ -214,7 +214,7 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
             return fxt::expected<int, std::string>{fxt::unexpected("rvalue error")};
         };
 
-        auto result = make_error() | fxt::tee_error([&logged_error](const std::string& err) {
+        auto result = make_error() | fxt::tap_error([&logged_error](const std::string& err) {
             logged_error = err;
         });
 
@@ -228,11 +228,11 @@ TEST_CASE("tap_error on fxt::expected", "[tap_error][expected]")
         int error_accumulator = 0;
 
         auto result = fxt::expected<int, int>{fxt::unexpected(10)}
-                    | fxt::tee_error([&error_accumulator](int code) {
+                    | fxt::tap_error([&error_accumulator](int code) {
                         error_accumulator += code;
                     })
                     | fxt::transform_error([](int code) { return code * 2; })
-                    | fxt::tee_error([&error_accumulator](int code) {
+                    | fxt::tap_error([&error_accumulator](int code) {
                         error_accumulator += code;
                     });
 
@@ -248,7 +248,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tee_none([&none_logged]() {
+                    | fxt::tap_none([&none_logged]() {
                         none_logged = true;
                     });
 
@@ -261,7 +261,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool executed = false;
 
         auto result = fxt::optional<int>{42}
-                    | fxt::tee_none([&executed]() {
+                    | fxt::tap_none([&executed]() {
                         executed = true;
                     });
 
@@ -275,13 +275,13 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         std::vector<std::string> logs;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tee_none([&logs]() {
+                    | fxt::tap_none([&logs]() {
                         logs.push_back("Log 1");
                     })
-                    | fxt::tee_none([&logs]() {
+                    | fxt::tap_none([&logs]() {
                         logs.push_back("Log 2");
                     })
-                    | fxt::tee_none([&logs]() {
+                    | fxt::tap_none([&logs]() {
                         logs.push_back("Log 3");
                     });
 
@@ -297,7 +297,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_detected = false;
 
         auto result = fxt::optional<std::string>{fxt::nullopt}
-                    | fxt::tee_none([&none_detected]() {
+                    | fxt::tap_none([&none_detected]() {
                         none_detected = true;
                     });
 
@@ -319,7 +319,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
 
         for (const auto& val : test_values)
         {
-            auto result = val | fxt::tee_none([&empty_count]() {
+            auto result = val | fxt::tap_none([&empty_count]() {
                 empty_count++;
             });
         }
@@ -333,8 +333,8 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
 
         auto result1 = fxt::optional<int>{42}
-                     | fxt::tee([&value_logged](int x) { value_logged = true; })
-                     | fxt::tee_none([&none_logged]() { none_logged = true; });
+                     | fxt::tap([&value_logged](int x) { value_logged = true; })
+                     | fxt::tap_none([&none_logged]() { none_logged = true; });
 
         REQUIRE(result1.has_value());
         REQUIRE(value_logged);
@@ -344,8 +344,8 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         none_logged = false;
 
         auto result2 = fxt::optional<int>{fxt::nullopt}
-                     | fxt::tee([&value_logged](int x) { value_logged = true; })
-                     | fxt::tee_none([&none_logged]() { none_logged = true; });
+                     | fxt::tap([&value_logged](int x) { value_logged = true; })
+                     | fxt::tap_none([&none_logged]() { none_logged = true; });
 
         REQUIRE(!result2.has_value());
         REQUIRE(!value_logged);
@@ -357,7 +357,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tee_none([&none_logged]() {
+                    | fxt::tap_none([&none_logged]() {
                         none_logged = true;
                     })
                     | fxt::or_else([]() {
@@ -374,7 +374,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tee_none([&none_logged]() {
+                    | fxt::tap_none([&none_logged]() {
                         none_logged = true;
                     })
                     | fxt::value_or(0);
@@ -388,7 +388,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
         auto original = fxt::optional<int>{fxt::nullopt};
 
-        auto result = original | fxt::tee_none([&none_logged]() {
+        auto result = original | fxt::tap_none([&none_logged]() {
             none_logged = true;
         });
 
@@ -405,7 +405,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
             return fxt::optional<int>{fxt::nullopt};
         };
 
-        auto result = make_empty() | fxt::tee_none([&none_logged]() {
+        auto result = make_empty() | fxt::tap_none([&none_logged]() {
             none_logged = true;
         });
 
@@ -423,7 +423,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
 
         auto result = fxt::optional<Data>{fxt::nullopt}
-                    | fxt::tee_none([&none_logged]() {
+                    | fxt::tap_none([&none_logged]() {
                         none_logged = true;
                     });
 
@@ -436,7 +436,7 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         bool none_logged = false;
 
         auto result = fxt::optional<int>{fxt::nullopt}
-                    | fxt::tee_none([&none_logged]() {
+                    | fxt::tap_none([&none_logged]() {
                         none_logged = true;
                     })
                     | fxt::to_expected<std::string>("no value");
@@ -451,17 +451,17 @@ TEST_CASE("tap_none on fxt::optional", "[tap_none][optional]")
         int empty_counter = 0;
 
         auto result1 = fxt::optional<int>{fxt::nullopt}
-                     | fxt::tee_none([&empty_counter]() {
+                     | fxt::tap_none([&empty_counter]() {
                          empty_counter++;
                      });
 
         auto result2 = fxt::optional<int>{fxt::nullopt}
-                     | fxt::tee_none([&empty_counter]() {
+                     | fxt::tap_none([&empty_counter]() {
                          empty_counter++;
                      });
 
         auto result3 = fxt::optional<int>{42}
-                     | fxt::tee_none([&empty_counter]() {
+                     | fxt::tap_none([&empty_counter]() {
                          empty_counter++;
                      });
 
@@ -477,11 +477,11 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
         bool none_logged = false;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                    | fxt::tee_error([&error_logged](const std::string& err) {
+                    | fxt::tap_error([&error_logged](const std::string& err) {
                         error_logged = true;
                     })
                     | fxt::to_optional()
-                    | fxt::tee_none([&none_logged]() {
+                    | fxt::tap_none([&none_logged]() {
                         none_logged = true;
                     });
 
@@ -495,17 +495,17 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
         std::vector<std::string> trace;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("initial error")}
-                    | fxt::tee_error([&trace](const std::string& err) {
+                    | fxt::tap_error([&trace](const std::string& err) {
                         trace.push_back("Error in expected: " + err);
                     })
                     | fxt::transform_error([](const std::string& err) {
                         return "[WRAPPED] " + err;
                     })
-                    | fxt::tee_error([&trace](const std::string& err) {
+                    | fxt::tap_error([&trace](const std::string& err) {
                         trace.push_back("Transformed error: " + err);
                     })
                     | fxt::to_optional()
-                    | fxt::tee_none([&trace]() {
+                    | fxt::tap_none([&trace]() {
                         trace.push_back("Converted to empty optional");
                     });
 
@@ -524,10 +524,10 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
 
         // Success case
         auto result1 = fxt::expected<int, std::string>{42}
-                     | fxt::tee([&value_logged](int x) { value_logged = true; })
-                     | fxt::tee_error([&error_logged](const std::string& err) { error_logged = true; })
+                     | fxt::tap([&value_logged](int x) { value_logged = true; })
+                     | fxt::tap_error([&error_logged](const std::string& err) { error_logged = true; })
                      | fxt::to_optional()
-                     | fxt::tee_none([&none_logged]() { none_logged = true; });
+                     | fxt::tap_none([&none_logged]() { none_logged = true; });
 
         REQUIRE(result1.has_value());
         REQUIRE(value_logged);
@@ -541,10 +541,10 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
 
         // Error case
         auto result2 = fxt::expected<int, std::string>{fxt::unexpected("error")}
-                     | fxt::tee([&value_logged](int x) { value_logged = true; })
-                     | fxt::tee_error([&error_logged](const std::string& err) { error_logged = true; })
+                     | fxt::tap([&value_logged](int x) { value_logged = true; })
+                     | fxt::tap_error([&error_logged](const std::string& err) { error_logged = true; })
                      | fxt::to_optional()
-                     | fxt::tee_none([&none_logged]() { none_logged = true; });
+                     | fxt::tap_none([&none_logged]() { none_logged = true; });
 
         REQUIRE(!result2.has_value());
         REQUIRE(!value_logged);
@@ -563,8 +563,8 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
 
         auto process = [&stats](const fxt::optional<int>& opt) {
             return opt
-                 | fxt::tee([&stats](int x) { stats.found++; })
-                 | fxt::tee_none([&stats]() { stats.not_found++; });
+                 | fxt::tap([&stats](int x) { stats.found++; })
+                 | fxt::tap_none([&stats]() { stats.not_found++; });
         };
 
         process(fxt::optional<int>{10});
@@ -582,14 +582,14 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
         std::vector<std::string> recovery_log;
 
         auto result = fxt::expected<int, std::string>{fxt::unexpected("network error")}
-                    | fxt::tee_error([&recovery_log](const std::string& err) {
+                    | fxt::tap_error([&recovery_log](const std::string& err) {
                         recovery_log.push_back("Detected: " + err);
                     })
                     | fxt::or_else([&recovery_log](const std::string& err) {
                         recovery_log.push_back("Recovering from: " + err);
                         return fxt::expected<int, std::string>{0};
                     })
-                    | fxt::tee([&recovery_log](int x) {
+                    | fxt::tap([&recovery_log](int x) {
                         recovery_log.push_back("Using default: " + std::to_string(x));
                     });
 
@@ -601,4 +601,5 @@ TEST_CASE("tap_error and tap_none combined scenarios", "[tap_error][tap_none][ex
         REQUIRE(recovery_log[2] == "Using default: 0");
     }
 }
+
 

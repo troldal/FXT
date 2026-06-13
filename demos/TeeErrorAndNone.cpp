@@ -77,7 +77,7 @@ int main()
     std::cout << "1. Basic tap_error (error case):\n";
     {
         auto result = safe_divide(10.0, 0.0)
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         std::cout << "   [ERROR] " << err << "\n";
                     });
 
@@ -91,7 +91,7 @@ int main()
     std::cout << "\n2. tap_error (success case - not executed):\n";
     {
         auto result = safe_divide(10.0, 2.0)
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         std::cout << "   [ERROR] This won't print\n";
                     });
 
@@ -103,19 +103,19 @@ int main()
     {
         std::cout << "   Success case:\n";
         auto result1 = safe_divide(100.0, 5.0)
-                     | fxt::tee([](double x) {
+                     | fxt::tap([](double x) {
                          std::cout << "      [SUCCESS] Result: " << x << "\n";
                      })
-                     | fxt::tee_error([](const std::string& err) {
+                     | fxt::tap_error([](const std::string& err) {
                          std::cout << "      [ERROR] " << err << "\n";
                      });
 
         std::cout << "   Error case:\n";
         auto result2 = safe_divide(100.0, 0.0)
-                     | fxt::tee([](double x) {
+                     | fxt::tap([](double x) {
                          std::cout << "      [SUCCESS] Result: " << x << "\n";
                      })
-                     | fxt::tee_error([](const std::string& err) {
+                     | fxt::tap_error([](const std::string& err) {
                          std::cout << "      [ERROR] " << err << "\n";
                      });
     }
@@ -124,13 +124,13 @@ int main()
     std::cout << "\n4. Multiple tap_error calls:\n";
     {
         auto result = parse_int("abc")
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         std::cout << "   [LOG 1] Error detected: " << err << "\n";
                     })
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         std::cout << "   [LOG 2] Logging again: " << err << "\n";
                     })
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         std::cout << "   [LOG 3] Final error log: " << err << "\n";
                     });
     }
@@ -144,7 +144,7 @@ int main()
         for (const auto& val : test_values)
         {
             auto result = parse_int(val)
-                        | fxt::tee_error([&error_count](const std::string& err) {
+                        | fxt::tap_error([&error_count](const std::string& err) {
                             error_count++;
                         });
         }
@@ -156,7 +156,7 @@ int main()
     std::cout << "\n6. tap_error with different error types:\n";
     {
         auto result = safe_divide(10.0, -5.0)
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         if (err.find("zero") != std::string::npos)
                         {
                             std::cout << "   Math error: " << err << "\n";
@@ -172,14 +172,14 @@ int main()
     std::cout << "\n7. tap_error with error recovery:\n";
     {
         auto result = safe_divide(10.0, 0.0)
-                    | fxt::tee_error([](const std::string& err) {
+                    | fxt::tap_error([](const std::string& err) {
                         std::cout << "   [RECOVERY] Caught error: " << err << "\n";
                         std::cout << "   [RECOVERY] Attempting to use default value...\n";
                     })
                     | fxt::or_else([](const std::string& err) {
                         return fxt::expected<double, std::string>{0.0};
                     })
-                    | fxt::tee([](double x) {
+                    | fxt::tap([](double x) {
                         std::cout << "   [RECOVERY] Using value: " << x << "\n";
                     });
     }
@@ -190,13 +190,13 @@ int main()
         std::vector<std::string> error_log;
 
         auto result = parse_int("")
-                    | fxt::tee_error([&error_log](const std::string& err) {
+                    | fxt::tap_error([&error_log](const std::string& err) {
                         error_log.push_back("Parse error: " + err);
                     })
                     | fxt::transform_error([](const std::string& err) {
                         return "[WRAPPED] " + err;
                     })
-                    | fxt::tee_error([&error_log](const std::string& err) {
+                    | fxt::tap_error([&error_log](const std::string& err) {
                         error_log.push_back("Transformed error: " + err);
                     });
 
@@ -218,7 +218,7 @@ int main()
     std::cout << "9. Basic tap_none (empty case):\n";
     {
         auto result = find_user(999)
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [INFO] User not found\n";
                     });
 
@@ -232,7 +232,7 @@ int main()
     std::cout << "\n10. tap_none (has value - not executed):\n";
     {
         auto result = find_user(1)
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [INFO] This won't print\n";
                     });
 
@@ -244,19 +244,19 @@ int main()
     {
         std::cout << "   Case 1 (has value):\n";
         auto result1 = find_user(2)
-                     | fxt::tee([](const std::string& name) {
+                     | fxt::tap([](const std::string& name) {
                          std::cout << "      [FOUND] User: " << name << "\n";
                      })
-                     | fxt::tee_none([] {
+                     | fxt::tap_none([] {
                          std::cout << "      [NOT FOUND] User does not exist\n";
                      });
 
         std::cout << "   Case 2 (empty):\n";
         auto result2 = find_user(999)
-                     | fxt::tee([](const std::string& name) {
+                     | fxt::tap([](const std::string& name) {
                          std::cout << "      [FOUND] User: " << name << "\n";
                      })
-                     | fxt::tee_none([] {
+                     | fxt::tap_none([] {
                          std::cout << "      [NOT FOUND] User does not exist\n";
                      });
     }
@@ -265,13 +265,13 @@ int main()
     std::cout << "\n12. Multiple tap_none calls:\n";
     {
         auto result = lookup_config("invalid_key")
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [LOG 1] Config key not found\n";
                     })
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [LOG 2] Using default configuration\n";
                     })
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [LOG 3] Configuration fallback activated\n";
                     });
     }
@@ -285,7 +285,7 @@ int main()
         for (int id : test_ids)
         {
             auto result = find_user(id)
-                        | fxt::tee_none([&not_found_count] {
+                        | fxt::tap_none([&not_found_count] {
                             not_found_count++;
                         });
         }
@@ -297,13 +297,13 @@ int main()
     std::cout << "\n14. tap_none with or_else:\n";
     {
         auto result = lookup_config("missing_key")
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [FALLBACK] Config not found, using default\n";
                     })
                     | fxt::or_else([]() {
                         return fxt::optional<int>{9999};
                     })
-                    | fxt::tee([](int x) {
+                    | fxt::tap([](int x) {
                         std::cout << "   [CONFIG] Using value: " << x << "\n";
                     });
     }
@@ -312,16 +312,16 @@ int main()
     std::cout << "\n15. tap_none in a pipeline:\n";
     {
         auto result = find_user(500)
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [WARN] User ID not in database\n";
                     })
                     | fxt::transform([](const std::string& name) {
                         return "Hello, " + name;
                     })
-                    | fxt::tee([](const std::string& greeting) {
+                    | fxt::tap([](const std::string& greeting) {
                         std::cout << "   [OUTPUT] " << greeting << "\n";
                     })
-                    | fxt::tee_none([] {
+                    | fxt::tap_none([] {
                         std::cout << "   [OUTPUT] No greeting to display\n";
                     });
     }
@@ -340,7 +340,7 @@ int main()
         for (int id : ids)
         {
             auto result = lookup_cache(id)
-                        | fxt::tee_none([&cache_misses, id] {
+                        | fxt::tap_none([&cache_misses, id] {
                             std::cout << "   [CACHE MISS] ID: " << id << "\n";
                             cache_misses++;
                         });
@@ -361,33 +361,33 @@ int main()
     {
         std::cout << "   Pipeline 1 (expected success):\n";
         auto result1 = parse_int("42")
-                     | fxt::tee([](int x) {
+                     | fxt::tap([](int x) {
                          std::cout << "      [VALUE] " << x << "\n";
                      })
-                     | fxt::tee_error([](const std::string& err) {
+                     | fxt::tap_error([](const std::string& err) {
                          std::cout << "      [ERROR] " << err << "\n";
                      })
                      | fxt::to_optional()
-                     | fxt::tee([](int x) {
+                     | fxt::tap([](int x) {
                          std::cout << "      [OPTIONAL VALUE] " << x << "\n";
                      })
-                     | fxt::tee_none([] {
+                     | fxt::tap_none([] {
                          std::cout << "      [OPTIONAL EMPTY]\n";
                      });
 
         std::cout << "   Pipeline 2 (expected error):\n";
         auto result2 = parse_int("xyz")
-                     | fxt::tee([](int x) {
+                     | fxt::tap([](int x) {
                          std::cout << "      [VALUE] " << x << "\n";
                      })
-                     | fxt::tee_error([](const std::string& err) {
+                     | fxt::tap_error([](const std::string& err) {
                          std::cout << "      [ERROR] " << err << "\n";
                      })
                      | fxt::to_optional()
-                     | fxt::tee([](int x) {
+                     | fxt::tap([](int x) {
                          std::cout << "      [OPTIONAL VALUE] " << x << "\n";
                      })
-                     | fxt::tee_none([] {
+                     | fxt::tap_none([] {
                          std::cout << "      [OPTIONAL EMPTY]\n";
                      });
     }
@@ -399,12 +399,12 @@ int main()
         bool resulted_in_empty = false;
 
         auto result = safe_divide(10.0, 0.0)
-                    | fxt::tee_error([&error_in_expected](const std::string& err) {
+                    | fxt::tap_error([&error_in_expected](const std::string& err) {
                         std::cout << "   [TRACK] Error in expected: " << err << "\n";
                         error_in_expected = true;
                     })
                     | fxt::to_optional()
-                    | fxt::tee_none([&resulted_in_empty] {
+                    | fxt::tap_none([&resulted_in_empty] {
                         std::cout << "   [TRACK] Converted to empty optional\n";
                         resulted_in_empty = true;
                     });
@@ -426,14 +426,14 @@ int main()
 
         auto process = [&log](const std::string& input) {
             return parse_int(input)
-                 | fxt::tee([&log, input](int x) {
+                 | fxt::tap([&log, input](int x) {
                      log.successes.push_back("Parsed '" + input + "' = " + std::to_string(x));
                  })
-                 | fxt::tee_error([&log, input](const std::string& err) {
+                 | fxt::tap_error([&log, input](const std::string& err) {
                      log.errors.push_back("Failed '" + input + "': " + err);
                  })
                  | fxt::to_optional()
-                 | fxt::tee_none([&log, input] {
+                 | fxt::tap_none([&log, input] {
                      log.empties.push_back("Empty result for '" + input + "'");
                  });
         };
@@ -459,4 +459,5 @@ int main()
     std::cout << "\n=== Demo Complete ===\n";
     return 0;
 }
+
 

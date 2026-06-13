@@ -57,7 +57,6 @@
 #include "fxt/monads/Optional.hpp"
 #include "fxt/monads/OrElse.hpp"
 #include "fxt/monads/Tap.hpp"
-#include "fxt/monads/Tee.hpp"
 #include "fxt/monads/ToExpected.hpp"
 #include "fxt/monads/ToOptional.hpp"
 #include "fxt/monads/Transform.hpp"

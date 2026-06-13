@@ -46,100 +46,61 @@
 namespace fxt
 {
     /**
-     * @brief Tap (or tee) operation for injecting side effects into a pipeline without changing the value
+     * @brief Pass-through side-effect adaptor for monadic pipelines
      *
-     * This is a functional programming pattern that allows you to perform side effects (like logging,
-     * debugging, or other operations) on a value in a pipeline without modifying the value itself.
-     * The value is passed through unchanged after the side effect function is executed.
+     * Executes a side-effect function on the contained value (if present) and
+     * forwards the container unchanged. Suitable for logging, debugging, or
+     * any observation that must not alter the pipeline value.
      *
-     * The tap operation works with any type, including monadic types like expected and optional.
-     * For monadic types, the side effect is only executed if the container holds a value.
+     * Works with any type that exposes has_value() and value() — i.e. both
+     * optional-like and expected-like containers. The side effect is skipped
+     * when the container holds no value (empty optional or error state).
      *
-     * @tparam TFunction The type of the side effect function to execute
-     * @param f The function to execute as a side effect (should accept the unwrapped value)
-     * @return A callable that accepts any value and returns it unchanged after executing the side effect
+     * @tparam TFunction The type of the side-effect callable
+     * @param f The callable to invoke with the contained value
+     * @return A pipe adaptor that returns the container unchanged
      *
      * @section Usage
      * @code
-     * // With regular values
-     * auto result1 = 42 | fxt::tap([](int x) { std::cout << "Value: " << x << '\n'; });
-     * // result1 == 42, and "Value: 42" is printed
+     * // Mid-pipeline logging
+     * auto result = parse_int("42")
+     *             | fxt::tap([](int x) { std::cout << "parsed: " << x << '\n'; })
+     *             | fxt::transform([](int x) { return x * 2; });
      *
-     * // With expected types
-     * auto result2 = std::expected<int, Error>{42}
-     *              | fxt::transform([](int x) { return x * 2; })
-     *              | fxt::tap([](int x) { std::cout << "After transform: " << x << '\n'; })
-     *              | fxt::transform([](int x) { return x + 10; });
-     * // Logs "After transform: 84" and result2 contains 94
-     *
-     * // With optional types
-     * auto result3 = std::optional<std::string>{"hello"}
-     *              | fxt::tap([](const auto& s) { std::cout << "Got: " << s << '\n'; })
-     *              | fxt::transform([](const auto& s) { return s + " world"; });
-     * // Logs "Got: hello" and result3 contains "hello world"
-     *
-     * // With empty optional (side effect is not executed)
-     * auto result4 = std::optional<int>{}
-     *              | fxt::tap([](int x) { std::cout << "This won't print\n"; });
-     * // Nothing is logged, result4 is empty
+     * // Multiple taps for tracing
+     * auto result = fxt::expected<int, std::string>{5}
+     *             | fxt::tap([](int x) { log("before", x); })
+     *             | fxt::transform([](int x) { return x * 3; })
+     *             | fxt::tap([](int x) { log("after",  x); });
      * @endcode
      */
-    // TODO: BUG — the `return std::forward<TContainer>(container);` below is commented out,
-    //       so tap() returns void and terminates any pipeline, contradicting the documentation
-    //       above ("returns it unchanged"). Tee.hpp contains the working version of exactly
-    //       this code. Either restore the return statements here, or (better) delete this file
-    //       and keep a single implementation: tap/tee are duplicate names for the same
-    //       operation (consistency issue). Pick one family (tap/tap_error/tap_none or
-    //       tee/tee_error/tee_none) and alias or remove the other.
     inline constexpr auto tap = []<typename TFunction>(TFunction&& f) {
         return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
-            requires requires {container.has_value();container.value();}
+            requires requires { container.has_value(); container.value(); }
         {
             if (container.has_value()) {
-                // Execute side effect on the contained value
                 f(container.value());
             }
-
-            // Always return the original container unchanged
-            //return std::forward<TContainer>(container);
+            return std::forward<TContainer>(container);
         };
     };
 
     /**
-     * @brief Tap error operation for injecting side effects on error values in expected-like types
+     * @brief Pass-through side-effect adaptor for the error channel of expected-like types
      *
-     * This is the complementary operation to tap, specifically for handling error cases in expected types.
-     * The side effect is only executed if the container holds an error value.
-     * The container is passed through unchanged after the side effect function is executed.
+     * Executes a side-effect function on the contained error (if present) and
+     * forwards the container unchanged. The callable is skipped when the container
+     * holds a value (success state).
      *
-     * @tparam TFunction The type of the side effect function to execute
-     * @param f The function to execute as a side effect (should accept the error value)
-     * @return A callable that accepts an expected-like value and returns it unchanged after executing the side effect
+     * @tparam TFunction The type of the side-effect callable
+     * @param f The callable to invoke with the error value
+     * @return A pipe adaptor that returns the container unchanged
      *
      * @section Usage
      * @code
-     * // With expected types - success case (side effect not executed)
-     * auto result1 = fxt::expected<int, std::string>{42}
-     *              | fxt::tap_error([](const std::string& err) {
-     *                  std::cout << "Error: " << err << '\n';
-     *              });
-     * // Nothing is logged, result1 contains 42
-     *
-     * // With expected types - error case
-     * auto result2 = fxt::expected<int, std::string>{fxt::unexpected("failed")}
-     *              | fxt::tap_error([](const std::string& err) {
-     *                  std::cout << "Error: " << err << '\n';
-     *              })
-     *              | fxt::or_else([](const std::string&) {
-     *                  return fxt::expected<int, std::string>{0};
-     *              });
-     * // Logs "Error: failed" and result2 contains 0
-     *
-     * // Combined with tap for complete logging
-     * auto result3 = some_operation()
-     *              | fxt::tap([](int x) { std::cout << "Success: " << x << '\n'; })
-     *              | fxt::tap_error([](const Error& e) { std::cout << "Error: " << e << '\n'; });
-     * // Logs either success or error, never both
+     * auto result = some_operation()
+     *             | fxt::tap_error([](const Error& e) { log_error(e); })
+     *             | fxt::or_else([](const Error&) { return fallback(); });
      * @endcode
      */
     inline constexpr auto tap_error = []<typename TFunction>(TFunction&& f) {
@@ -147,55 +108,27 @@ namespace fxt
             requires requires { container.has_value(); container.error(); }
         {
             if (!container.has_value()) {
-                // Execute side effect on the error value
                 f(container.error());
             }
-
-            // Always return the original container unchanged
-            //return std::forward<TContainer>(container);
+            return std::forward<TContainer>(container);
         };
     };
 
     /**
-     * @brief Tap none operation for injecting side effects on empty optional-like types
+     * @brief Pass-through side-effect adaptor for the empty state of optional-like types
      *
-     * This is the complementary operation to tap, specifically for handling empty cases in optional types.
-     * The side effect is only executed if the container is empty (has no value).
-     * The container is passed through unchanged after the side effect function is executed.
+     * Executes a no-argument side-effect callable when the container holds no value,
+     * then forwards the container unchanged. Complementary to fxt::tap.
      *
-     * Note: Since there's no value to pass when the optional is empty, the function takes no parameters.
-     *
-     * @tparam TFunction The type of the side effect function to execute (should take no parameters)
-     * @param f The function to execute as a side effect (takes no parameters)
-     * @return A callable that accepts an optional-like value and returns it unchanged after executing the side effect
+     * @tparam TFunction The type of the side-effect callable (takes no parameters)
+     * @param f The callable to invoke when the container is empty
+     * @return A pipe adaptor that returns the container unchanged
      *
      * @section Usage
      * @code
-     * // With optional types - has value (side effect not executed)
-     * auto result1 = fxt::optional<int>{42}
-     *              | fxt::tap_none([] { std::cout << "Empty!\n"; });
-     * // Nothing is logged, result1 contains 42
-     *
-     * // With optional types - empty case
-     * auto result2 = fxt::optional<int>{fxt::nullopt}
-     *              | fxt::tap_none([] { std::cout << "No value found\n"; })
-     *              | fxt::or_else([]() { return fxt::optional<int>{0}; });
-     * // Logs "No value found" and result2 contains 0
-     *
-     * // Combined with tap for complete logging
-     * auto result3 = find_user(id)
-     *              | fxt::tap([](const User& u) {
-     *                  std::cout << "Found: " << u.name << '\n';
-     *              })
-     *              | fxt::tap_none([] {
-     *                  std::cout << "User not found\n";
-     *              });
-     * // Logs either the user name or "User not found", never both
-     *
-     * // Counting empty optionals
-     * int empty_count = 0;
-     * auto result4 = some_optional()
-     *              | fxt::tap_none([&empty_count] { empty_count++; });
+     * auto result = find_user(id)
+     *             | fxt::tap     ([](const User& u) { log_found(u); })
+     *             | fxt::tap_none([]                { log_missing(); });
      * @endcode
      */
     inline constexpr auto tap_none = []<typename TFunction>(TFunction&& f) {
@@ -203,12 +136,9 @@ namespace fxt
             requires requires { container.has_value(); }
         {
             if (!container.has_value()) {
-                // Execute side effect (no value to pass)
                 f();
             }
-
-            // Always return the original container unchanged
-            //return std::forward<TContainer>(container);
+            return std::forward<TContainer>(container);
         };
     };
 
