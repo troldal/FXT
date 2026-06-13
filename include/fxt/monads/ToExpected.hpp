@@ -43,20 +43,23 @@
 
 #include "Expected.hpp"
 #include "Optional.hpp"
+#include "../concepts/IsOptional.hpp"
 
 namespace fxt
 {
     /**
-     * @brief Converts a fxt::optional to fxt::expected, using a provided error value if empty.
+     * @brief Converts an optional-like type to fxt::expected, using a provided error value if empty.
      *
      * This operation extracts the value from an optional and wraps it in an expected.
      * If the optional is empty, an expected with the provided error is returned.
+     * The optional is taken by forwarding reference so rvalue optionals can move their
+     * contained value rather than copying it.
      *
-     * @tparam TError The error type for the resulting expected
+     * @tparam TError The error type for the resulting expected (decayed automatically)
      * @param err The error value to use if the optional is empty
-     * @return A callable that can be used with the pipe operator
+     * @return A pipe adaptor that accepts any optional_like container
      *
-     * @example
+     * @code
      * auto result = fxt::optional<int>{42}
      *             | fxt::to_expected<std::string>("no value");
      * // result is fxt::expected<int, std::string>{42}
@@ -64,20 +67,19 @@ namespace fxt
      * auto error = fxt::optional<int>{fxt::nullopt}
      *            | fxt::to_expected<std::string>("no value");
      * // error is fxt::expected<int, std::string>{fxt::unexpected("no value")}
+     * @endcode
      */
-    // TODO: ERGONOMICS — the adaptor only accepts `const fxt::optional<TValue>&`, so the
-    //       contained value is always copied; add an rvalue overload (or take the optional
-    //       by forwarding reference) so `make_opt() | to_expected(...)` can move. Note also
-    //       that TError deduced from a forwarding reference can become an lvalue reference
-    //       type (e.g. passing a named std::string), making the returned expected's error
-    //       type a reference — decay TError. The doc example `to_expected<std::string>(...)`
-    //       suggests an explicit template parameter that the deduced signature ignores.
     template<typename TError>
     inline constexpr auto to_expected(TError&& err)
     {
-        return [err = std::forward<TError>(err)]<typename TValue>(const fxt::optional<TValue>& opt) -> fxt::expected<TValue, TError> {
-            if (opt.has_value()) return opt.value();
-            return fxt::unexpected(err);
+        return [err = std::forward<TError>(err)]<typename TContainer>(TContainer&& opt)
+            requires optional_like<std::remove_cvref_t<TContainer>>
+        {
+            using TValue = typename std::remove_cvref_t<TContainer>::value_type;
+            using EType  = std::decay_t<TError>;
+            if (opt.has_value())
+                return fxt::expected<TValue, EType>(std::forward<TContainer>(opt).value());
+            return fxt::expected<TValue, EType>(fxt::unexpected(err));
         };
     }
 

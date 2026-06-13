@@ -43,18 +43,21 @@
 
 #include "Expected.hpp"
 #include "Optional.hpp"
+#include "../concepts/IsExpected.hpp"
 
 namespace fxt
 {
     /**
-     * @brief Converts a fxt::expected to fxt::optional, discarding error information.
+     * @brief Converts an expected-like type to fxt::optional, discarding error information.
      *
      * This operation extracts the success value from an expected and wraps it in an optional.
      * If the expected contains an error, an empty optional is returned.
+     * The expected is taken by forwarding reference so rvalue expected types can move
+     * their contained value rather than copying it.
      *
-     * @return A callable that can be used with the pipe operator
+     * @return A pipe adaptor that accepts any expected_like container
      *
-     * @example
+     * @code
      * auto result = fxt::expected<int, std::string>{42}
      *             | fxt::to_optional();
      * // result is fxt::optional<int>{42}
@@ -62,15 +65,16 @@ namespace fxt
      * auto error = fxt::expected<int, std::string>{fxt::unexpected("error")}
      *            | fxt::to_optional();
      * // error is fxt::optional<int>{fxt::nullopt}
+     * @endcode
      */
-    // TODO: ERGONOMICS — same issues as to_expected: const-lvalue-only parameter forces a
-    //       copy of the contained value (no move from rvalue expected), and the nullary
-    //       factory requires `| fxt::to_optional()` while sibling adaptors like and_then(f)
-    //       are used without the extra `()` (see TODO in Value.hpp on unifying the convention).
     inline constexpr auto to_optional = []() {
-        return []<typename TValue, typename TError>(const fxt::expected<TValue, TError>& ex) -> fxt::optional<TValue> {
-            if (ex.has_value()) return ex.value();
-            return fxt::nullopt;
+        return []<typename TContainer>(TContainer&& ex)
+            requires expected_like<std::remove_cvref_t<TContainer>>
+        {
+            using TValue = typename std::remove_cvref_t<TContainer>::value_type;
+            if (ex.has_value())
+                return fxt::optional<TValue>(std::forward<TContainer>(ex).value());
+            return fxt::optional<TValue>(fxt::nullopt);
         };
     };
 
