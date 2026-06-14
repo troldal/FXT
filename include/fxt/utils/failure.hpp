@@ -45,6 +45,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <utility>
 #include <compare>
@@ -270,14 +271,10 @@ namespace fxt
         /**
          * @brief Gets the error message as a string_view (zero-copy access)
          * @return A string_view of the error message
-         * @note Returns a temporary, use with caution
-         * @deprecated Use message() instead for safer access
+         * @note The returned view is only valid as long as this failure object is alive
+         *       and not modified
          */
-        // TODO: DOCS/API — message_view() claims to return a string_view ("zero-copy") but
-        //       actually returns std::string by value, i.e. it is just message() with a
-        //       misleading name. It is already marked deprecated in prose — mark it
-        //       [[deprecated]] for real, or remove it.
-        [[nodiscard]] std::string message_view() const noexcept { return message(); }
+        [[nodiscard]] std::string_view message_view() const noexcept { return m_message; }
 
         /**
          * @brief Gets the error message as a C-string (exception-like interface)
