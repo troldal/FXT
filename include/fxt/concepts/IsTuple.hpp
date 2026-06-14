@@ -43,7 +43,11 @@
 
 #include "../tuples/Tuple.hpp"
 #include "../tuples/FlatTuple.hpp"
+#include <concepts>
+#include <cstddef>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace fxt::impl
 {
@@ -71,6 +75,36 @@ namespace fxt::impl
     template<typename T>
     inline constexpr bool is_tuple_like_v = is_fxt_tuple_v<T> || is_flat_tuple_v<T>;
 
+    // ------------------------------------------------------------------
+    // Generic tuple-protocol detection: anything with std::tuple_size,
+    // std::tuple_element, and a working get<I> (member or ADL) for every
+    // index — e.g. std::pair, std::array, std::ranges::subrange, and other
+    // third-party types that opt into the structured-bindings protocol.
+    // ------------------------------------------------------------------
+
+    template<typename T>
+    concept has_tuple_size = requires {
+        typename std::tuple_size<T>::type;
+        requires std::derived_from<std::tuple_size<T>, std::integral_constant<std::size_t, std::tuple_size_v<T>>>;
+    };
+
+    template<typename T, std::size_t I>
+    concept has_tuple_element = requires(T& t) {
+        typename std::tuple_element_t<I, T>;
+    } && (requires(T& t) { t.template get<I>(); } || requires(T& t) { get<I>(t); });
+
+    template<typename T, std::size_t... Is>
+    consteval bool all_tuple_elements_gettable(std::index_sequence<Is...>)
+    {
+        return (has_tuple_element<T, Is> && ...);
+    }
+
+    template<typename T>
+    concept has_tuple_protocol =
+        !std::is_reference_v<T> &&
+        has_tuple_size<T> &&
+        all_tuple_elements_gettable<T>(std::make_index_sequence<std::tuple_size_v<T>>{});
+
 } // namespace fxt::impl
 
 namespace fxt
@@ -78,8 +112,11 @@ namespace fxt
     /**
      * @brief Concept to check if a type is a tuple-like type
      *
-     * A tuple-like type is either an fxt::tuple (std::tuple) or an fxt::flat_tuple.
-     * This concept can be used to constrain template parameters to only accept tuple types.
+     * A tuple-like type is either fxt::tuple (std::tuple) / fxt::flat_tuple, or any
+     * other type that participates in the standard tuple protocol — i.e. has
+     * std::tuple_size, std::tuple_element, and a working get<I>() (member or
+     * ADL-found free function) for every index. This covers std::pair, std::array,
+     * std::ranges::subrange, and other third-party "structured-bindable" types.
      *
      * @tparam T The type to check
      *
@@ -87,24 +124,23 @@ namespace fxt
      * @code
      * template<fxt::tuple_like T>
      * void process_tuple(T&& tpl) {
-     *     // Works with both fxt::tuple and fxt::flat_tuple
+     *     // Works with fxt::tuple, fxt::flat_tuple, std::pair, std::array, ...
      * }
      *
      * auto t = fxt::make_tuple(1, 2, 3);
      * auto ft = fxt::make_flat_tuple(1.0, 2.0);
+     * auto p  = std::pair{1, 2.0};
+     * auto a  = std::array{1, 2, 3};
      * process_tuple(t);  // OK
      * process_tuple(ft); // OK
+     * process_tuple(p);  // OK
+     * process_tuple(a);  // OK
      * process_tuple(42); // Error: 42 is not tuple_like
      * @endcode
      */
-    // TODO: NAMING/COMPLETENESS — `tuple_like` only matches fxt::tuple (std::tuple) and
-    //       fxt::flat_tuple, but the name suggests the broader C++23 tuple-like notion
-    //       (std::pair, std::array, std::ranges::subrange all have tuple_size/tuple_element
-    //       and would be rejected here). Either rename (e.g. fxt_tuple) or widen the concept
-    //       to anything with std::tuple_size — note `variant_like` (IsVariant.hpp) has the
-    //       same exact-match-only behavior behind a "-like" name.
     template<typename T>
-    concept tuple_like = impl::is_tuple_like_v<std::remove_cvref_t<T>>;
+    concept tuple_like = impl::is_tuple_like_v<std::remove_cvref_t<T>>
+                      || impl::has_tuple_protocol<std::remove_cvref_t<T>>;
 
 } // namespace fxt
 

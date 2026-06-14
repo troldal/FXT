@@ -42,19 +42,29 @@
 #pragma once
 
 #include "../variants/Variant.hpp"
+#include <concepts>
+#include <cstddef>
 #include <type_traits>
 
 namespace fxt::impl
 {
-    // Helper to detect if a type is fxt::variant (std::variant)
+    // Generic variant-protocol detection: a member .index() returning the
+    // active alternative's index, plus an ADL-discoverable get<0> — covers
+    // std::variant (and thus fxt::variant), mpark::variant,
+    // boost::variant2::variant, and other third-party sum types that follow
+    // the same protocol.
+    //
+    // Deliberately does NOT check visit(...): fxt::visit is itself constrained
+    // on fxt::variant_like, so an unqualified visit(f, t) here would consider
+    // fxt::visit as a candidate, making this concept's satisfaction depend on
+    // itself. get<0>(t) has no such problem — fxt::get (Get.hpp) is an
+    // unconstrained `using std::get` plus flat_tuple overloads, neither of
+    // which references variant_like.
     template<typename T>
-    struct is_fxt_variant : std::false_type {};
-
-    template<typename... Ts>
-    struct is_fxt_variant<fxt::variant<Ts...>> : std::true_type {};
-
-    template<typename T>
-    inline constexpr bool is_fxt_variant_v = is_fxt_variant<std::remove_cvref_t<T>>::value;
+    concept has_variant_protocol = !std::is_reference_v<T> && requires(T& t) {
+        { t.index() } -> std::convertible_to<std::size_t>;
+        get<0>(t);
+    };
 
 } // namespace fxt::impl
 
@@ -63,9 +73,10 @@ namespace fxt
     /**
      * @brief Concept to check if a type is a variant-like type
      *
-     * A variant-like type is currently defined as an fxt::variant (std::variant).
-     * This concept can be used to constrain template parameters to only accept variant types.
-     * Other variant implementations may be added at a later time.
+     * A variant-like type is any type that follows the standard variant protocol:
+     * a member `.index()` returning the active alternative's index, plus `get<I>`
+     * found via ADL. This covers fxt::variant (std::variant), as well as
+     * third-party sum types such as mpark::variant and boost::variant2::variant.
      *
      * @tparam T The type to check
      *
@@ -73,7 +84,7 @@ namespace fxt
      * @code
      * template<fxt::variant_like T>
      * void process_variant(T&& var) {
-     *     // Works with fxt::variant
+     *     // Works with fxt::variant, mpark::variant, ...
      * }
      *
      * auto v = fxt::variant<int, double, std::string>(42);
@@ -82,7 +93,7 @@ namespace fxt
      * @endcode
      */
     template<typename T>
-    concept variant_like = impl::is_fxt_variant_v<std::remove_cvref_t<T>>;
+    concept variant_like = impl::has_variant_protocol<std::remove_cvref_t<T>>;
 
 }    // namespace fxt
 
