@@ -78,8 +78,8 @@ namespace fxt
      * @endcode
      */
     inline constexpr auto transform = []<typename TFunction>(TFunction&& f) {
-    return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
-        requires requires(TContainer&& c, TFunction fn) { c.transform(fn); }
+    return [f = std::forward<TFunction>(f)]<typename TContainer, typename TFn = TFunction>(TContainer&& container)
+        requires requires(TContainer&& c, TFn fn) { c.transform(fn); }
     { return std::forward<TContainer>(container).transform(f); };
 };
 }    // namespace fxt

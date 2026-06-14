@@ -77,8 +77,8 @@ namespace fxt
      * @endcode
      */
     inline constexpr auto and_then = []<typename TFunction>(TFunction&& f) {
-    return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
-        requires requires(TContainer&& c, TFunction fn) { c.and_then(fn); }
+    return [f = std::forward<TFunction>(f)]<typename TContainer, typename TFn = TFunction>(TContainer&& container)
+        requires requires(TContainer&& c, TFn fn) { c.and_then(fn); }
     { return std::forward<TContainer>(container).and_then(f); };
 };
 }    // namespace fxt

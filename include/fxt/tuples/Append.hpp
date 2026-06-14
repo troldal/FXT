@@ -88,6 +88,7 @@ namespace fxt
             return [value = expectedValue]<template<typename, typename> class TExpectedOutput, typename TTuple, typename TErrorOutput>(
                        const TExpectedOutput<TTuple, TErrorOutput>& tupleExpected)
                 requires std::convertible_to<TError, TErrorOutput>
+                      && expected_constructible_like<TExpectedOutput<TTuple, TErrorOutput>>
             {
                 return value ? tupleExpected.transform([value](const TTuple& tuple) { return fxt::tuple_append(tuple, *value); })
                              : typename TExpectedOutput<TTuple, TErrorOutput>::unexpected_type(value.error());
@@ -123,6 +124,7 @@ namespace fxt
                      std::move(expectedValue)]<template<typename, typename> class TExpectedOutput, typename TTuple, typename TErrorOutput>(
                     const TExpectedOutput<TTuple, TErrorOutput>& tupleExpected) mutable
                 requires std::convertible_to<TError, TErrorOutput>
+                      && expected_constructible_like<TExpectedOutput<TTuple, TErrorOutput>>
             {
                 return value
                     ? tupleExpected.transform([value = std::move(value)](const TTuple& tuple) mutable {

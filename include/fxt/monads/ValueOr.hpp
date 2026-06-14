@@ -80,8 +80,8 @@ namespace fxt
      * @endcode
      */
     inline constexpr auto value_or = []<typename TFunction>(TFunction&& f) {
-    return [f = std::forward<TFunction>(f)]<typename TContainer>(TContainer&& container)
-        requires requires(TContainer&& c, TFunction fn) { c.value_or(fn); }
+    return [f = std::forward<TFunction>(f)]<typename TContainer, typename TFn = TFunction>(TContainer&& container)
+        requires requires(TContainer&& c, TFn fn) { c.value_or(fn); }
     { return std::forward<TContainer>(container).value_or(f); };
 };
 

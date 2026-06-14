@@ -41,9 +41,9 @@
 
 #pragma once
 
-//#include "../monads/Expected.hpp"
 #include <concepts>
 #include <type_traits>
+#include <utility>
 
 namespace fxt
 {
@@ -54,21 +54,19 @@ namespace fxt
      * behavioral requirements (core operations) of an expected-like type.
      * It ensures the type has the necessary members and operations to be
      * used in monadic contexts.
+     *
+     * Deliberately minimal: it does not require a `std::unexpected`-style
+     * `unexpected_type` alias, so expected-like result types from other
+     * libraries (e.g. boost::outcome, custom Result types) can satisfy it
+     * even if they lack that alias. Call sites that need to construct a new
+     * error result generically (e.g. `T::unexpected_type{error}`) should
+     * require expected_constructible_like instead.
      */
-    // TODO: DESIGN — requiring `typename T::unexpected_type` is stricter than the name
-    //       suggests; expected-like result types from other libraries (e.g. boost::outcome,
-    //       custom Result types) often lack that alias even though they model everything
-    //       else used by the library (has_value/value/error/transform/and_then). Consider
-    //       dropping it or splitting a minimal concept from the full one. Note also that
-    //       the concept rejects reference types (is_same_v<decay_t<T>, T>), which is why
-    //       call sites must remember remove_cvref_t — forgetting it has already caused the
-    //       Case-2b bug in tuples/Apply.hpp.
     template<typename T>
     concept expected_like = requires(T t) {
         // Required type aliases
         typename T::value_type;
         typename T::error_type;
-        typename T::unexpected_type;
 
         // Core expected-like operations
         { t.has_value() } -> std::convertible_to<bool>;
@@ -79,9 +77,54 @@ namespace fxt
         t.error();
         *t;
 
-        // Optional: Monadic operations (uncomment if you want to enforce these)
-        // { t.transform(std::declval<std::function<int(typename T::value_type)>>()) };
-        // { t.and_then(std::declval<std::function<T(typename T::value_type)>>()) };
+        // Monadic operations required for pipeline composition. and_then's return type
+        // must be a specialization of the same expected template with the same
+        // error_type, so T itself (never actually constructed, the body just throws)
+        // is the only portable probe. Probe the rvalue-qualified overloads via
+        // std::move(t): the lvalue overloads of transform/and_then build their error
+        // path from `E&`, requiring error_type to be copy-constructible, which would
+        // wrongly reject expected-likes with a move-only error_type.
+        std::move(t).transform([](auto&&) -> typename T::value_type { throw 0; });
+        std::move(t).and_then([](auto&&) -> T { throw 0; });
     } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
+
+    /**
+     * @brief Refinement of expected_like for types that can be constructed from their
+     *        own "unexpected" wrapper (the std::expected / tl::expected pattern).
+     *
+     * Required by adaptors that manufacture a brand-new error result generically,
+     * e.g. `typename T::unexpected_type(error)`. Most code only needs expected_like;
+     * this refinement is for the minority of call sites that build a new instance
+     * of T representing an error rather than just consuming an existing one.
+     */
+    template<typename T>
+    concept expected_constructible_like =
+        expected_like<T> &&
+        requires { typename T::unexpected_type; } &&
+        std::constructible_from<T, typename T::unexpected_type>;
+
+    namespace impl
+    {
+        template<typename T1, typename T2>
+        struct same_expected_kind_impl : std::false_type
+        {};
+
+        template<template<typename, typename> class TExpected, typename V1, typename E1, typename V2, typename E2>
+        struct same_expected_kind_impl<TExpected<V1, E1>, TExpected<V2, E2>> : std::true_type
+        {};
+    }    // namespace impl
+
+    /**
+     * @brief Concept to check that two expected-like types are instantiations of the
+     *        same underlying template (e.g. both std::expected, or both tl::expected).
+     *
+     * Two expected-like types can share a value_type, an error_type, or both, while
+     * still being incompatible "kinds" (e.g. std::expected<int, E> vs
+     * tl::expected<int, E>) — mixing them in a single monadic chain typically fails
+     * deep inside and_then's return-type constraints. This concept lets adaptors that
+     * combine multiple expected-like operands fail with a clear diagnostic instead.
+     */
+    template<typename T1, typename T2>
+    concept same_expected_kind = expected_like<T1> && expected_like<T2> && impl::same_expected_kind_impl<T1, T2>::value;
 
 }    // namespace fxt

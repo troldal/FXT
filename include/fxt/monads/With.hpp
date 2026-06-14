@@ -131,6 +131,9 @@ namespace fxt
             if constexpr (expected_like<std::remove_cvref_t<Left>>) {
                 static_assert(std::same_as<typename std::remove_cvref_t<Left>::error_type, E>,
                               "fxt::with(): all expected values in the pipeline must share the same error type E");
+                static_assert(same_expected_kind<std::remove_cvref_t<Left>, fxt::expected<T, E>>,
+                              "fxt::with(): all expected values in the pipeline must be the same expected type "
+                              "(e.g. all std::expected or all tl::expected)");
                 return std::forward<Left>(left).and_then([this](auto&& f) {
                     return arg_.transform([&f](auto&& t) {
                         return f(std::forward<decltype(t)>(t));
@@ -235,6 +238,9 @@ namespace fxt
             if constexpr (expected_like<std::remove_cvref_t<Left>>) {
                 static_assert(std::same_as<typename std::remove_cvref_t<Left>::error_type, E>,
                               "fxt::mwith(): all expected values in the pipeline must share the same error type E");
+                static_assert(same_expected_kind<std::remove_cvref_t<Left>, fxt::expected<T, E>>,
+                              "fxt::mwith(): all expected values in the pipeline must be the same expected type "
+                              "(e.g. all std::expected or all tl::expected)");
                 return std::forward<Left>(left).and_then([this](auto&& f) {
                     return arg_.and_then([&f](auto&& t) {
                         return f(std::forward<decltype(t)>(t));
@@ -247,6 +253,9 @@ namespace fxt
                               "fxt::mwith(): the callable must return an expected-like type — use fxt::with() for plain-value callables");
                 static_assert(std::same_as<typename std::remove_cvref_t<result_type>::error_type, E>,
                               "fxt::mwith(): the callable's expected error type must match the pipeline error type E");
+                static_assert(same_expected_kind<std::remove_cvref_t<result_type>, fxt::expected<T, E>>,
+                              "fxt::mwith(): the callable must return the same expected type as the pipeline "
+                              "(e.g. all std::expected or all tl::expected)");
                 return arg_.and_then([&left](auto&& t) {
                     return left(std::forward<decltype(t)>(t));
                 });
