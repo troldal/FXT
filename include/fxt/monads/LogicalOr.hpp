@@ -44,19 +44,6 @@
 #include "Expected.hpp"
 #include "Optional.hpp"
 
-// Operators are in global namespace so they can be found via ADL (Argument Dependent Lookup)
-// TODO: CORRECTNESS — the comment above is wrong: ADL for std::expected/std::optional looks
-//       in namespace std, never in the global namespace. These overloads are found only by
-//       ordinary unqualified lookup, which works for code at global/namespace scope but can
-//       be hidden by any other operator|| in an enclosing namespace. Consider moving them
-//       into namespace fxt and having users opt in (e.g. `using fxt::operator||;`), which
-//       also stops polluting the global namespace for every includer of fxt.hpp.
-// TODO: SAFETY/ERGONOMICS — unlike the built-in operator||, these overloads always evaluate
-//       BOTH operands (no short-circuit), so `opt || expensive_fallback()` runs the fallback
-//       even when opt has a value. The -Weffc++ suppression acknowledges this, but the
-//       behavioral difference deserves a prominent doc comment, or a named function
-//       (e.g. fxt::either / or_value) instead of operator overloading.
-
 // operator|| overloads intentionally evaluate both arguments (function call semantics).
 // -Weffc++ warns about this because the built-in || short-circuits; suppress for this file.
 #ifdef __GNUC__
@@ -64,93 +51,135 @@
 #  pragma GCC diagnostic ignored "-Weffc++"
 #endif
 
-// expected || expected: const lvalue references
-template<typename TV, typename TE>
-auto operator||(const fxt::expected<TV, TE>& v1, const fxt::expected<TV, TE>& v2) -> fxt::expected<TV, TE>
+namespace fxt
 {
-  return v1.has_value() ? v1 : v2;
-}
+    /**
+     * @brief Eager "first value present" combinator for fxt::expected and fxt::optional
+     *
+     * Returns the left-hand operand if it holds a value, otherwise the right-hand
+     * operand:
+     * @code
+     * using fxt::operator||;
+     *
+     * fxt::optional<int> a = std::nullopt;
+     * fxt::optional<int> b = 42;
+     * auto result = a || b;  // result == 42
+     * @endcode
+     *
+     * @warning **This operator does NOT short-circuit.** Both operands are fully
+     * evaluated/constructed before this function is ever called -- in C++, every
+     * argument to an overloaded operator must be evaluated before the operator's
+     * body runs, regardless of the operands' values. This means
+     * `a || expensive_fallback()` always evaluates `expensive_fallback()`, even
+     * when `a` already holds a value. (The `-Weffc++` suppression above
+     * acknowledges precisely this difference from the built-in, short-circuiting
+     * `||`.)
+     *
+     * If the right-hand side is expensive or has side effects, use the lazy,
+     * short-circuiting fxt::or_else adaptor instead, which only invokes its
+     * callable when the left-hand side has no value:
+     * @code
+     * auto result = a | fxt::or_else([] { return expensive_fallback(); });
+     * @endcode
+     *
+     * @note These overloads live in namespace `fxt` rather than the global
+     * namespace. ADL for std::expected/std::optional never looks outside
+     * namespace std, so these operators are never found implicitly -- bring
+     * them into scope explicitly where needed:
+     * @code
+     * using fxt::operator||;
+     * @endcode
+     */
 
-// expected || expected: rvalue references (move optimization)
-template<typename TV, typename TE>
-auto operator||(fxt::expected<TV, TE>&& v1, fxt::expected<TV, TE>&& v2) -> fxt::expected<TV, TE>
-{
-  return v1.has_value() ? std::move(v1) : std::move(v2);
-}
+    // expected || expected: const lvalue references
+    template<typename TV, typename TE>
+    auto operator||(const fxt::expected<TV, TE>& v1, const fxt::expected<TV, TE>& v2) -> fxt::expected<TV, TE>
+    {
+        return v1.has_value() ? v1 : v2;
+    }
 
-// expected || expected: mixed lvalue || rvalue
-template<typename TV, typename TE>
-auto operator||(const fxt::expected<TV, TE>& v1, fxt::expected<TV, TE>&& v2) -> fxt::expected<TV, TE>
-{
-  return v1.has_value() ? v1 : std::move(v2);
-}
+    // expected || expected: rvalue references (move optimization)
+    template<typename TV, typename TE>
+    auto operator||(fxt::expected<TV, TE>&& v1, fxt::expected<TV, TE>&& v2) -> fxt::expected<TV, TE>
+    {
+        return v1.has_value() ? std::move(v1) : std::move(v2);
+    }
 
-// expected || expected: mixed rvalue || lvalue
-template<typename TV, typename TE>
-auto operator||(fxt::expected<TV, TE>&& v1, const fxt::expected<TV, TE>& v2) -> fxt::expected<TV, TE>
-{
-  return v1.has_value() ? std::move(v1) : v2;
-}
+    // expected || expected: mixed lvalue || rvalue
+    template<typename TV, typename TE>
+    auto operator||(const fxt::expected<TV, TE>& v1, fxt::expected<TV, TE>&& v2) -> fxt::expected<TV, TE>
+    {
+        return v1.has_value() ? v1 : std::move(v2);
+    }
 
-// expected || value: const lvalue expected
-template<typename TV, typename TE, typename U>
-  requires std::convertible_to<std::decay_t<U>, TV>
-auto operator||(const fxt::expected<TV, TE>& v1, U&& v2) -> fxt::expected<TV, TE>
-{
-  return v1.has_value() ? v1 : fxt::expected<TV, TE>(std::forward<U>(v2));
-}
+    // expected || expected: mixed rvalue || lvalue
+    template<typename TV, typename TE>
+    auto operator||(fxt::expected<TV, TE>&& v1, const fxt::expected<TV, TE>& v2) -> fxt::expected<TV, TE>
+    {
+        return v1.has_value() ? std::move(v1) : v2;
+    }
 
-// expected || value: rvalue expected
-template<typename TV, typename TE, typename U>
-  requires std::convertible_to<std::decay_t<U>, TV>
-auto operator||(fxt::expected<TV, TE>&& v1, U&& v2) -> fxt::expected<TV, TE>
-{
-  return v1.has_value() ? std::move(v1) : fxt::expected<TV, TE>(std::forward<U>(v2));
-}
+    // expected || value: const lvalue expected
+    template<typename TV, typename TE, typename U>
+        requires std::convertible_to<std::decay_t<U>, TV>
+    auto operator||(const fxt::expected<TV, TE>& v1, U&& v2) -> fxt::expected<TV, TE>
+    {
+        return v1.has_value() ? v1 : fxt::expected<TV, TE>(std::forward<U>(v2));
+    }
 
-// optional || optional: const lvalue references
-template<typename T>
-auto operator||(const fxt::optional<T>& v1, const fxt::optional<T>& v2) -> fxt::optional<T>
-{
-  return v1.has_value() ? v1 : v2;
-}
+    // expected || value: rvalue expected
+    template<typename TV, typename TE, typename U>
+        requires std::convertible_to<std::decay_t<U>, TV>
+    auto operator||(fxt::expected<TV, TE>&& v1, U&& v2) -> fxt::expected<TV, TE>
+    {
+        return v1.has_value() ? std::move(v1) : fxt::expected<TV, TE>(std::forward<U>(v2));
+    }
 
-// optional || optional: rvalue references (move optimization)
-template<typename T>
-auto operator||(fxt::optional<T>&& v1, fxt::optional<T>&& v2) -> fxt::optional<T>
-{
-  return v1.has_value() ? std::move(v1) : std::move(v2);
-}
+    // optional || optional: const lvalue references
+    template<typename T>
+    auto operator||(const fxt::optional<T>& v1, const fxt::optional<T>& v2) -> fxt::optional<T>
+    {
+        return v1.has_value() ? v1 : v2;
+    }
 
-// optional || optional: mixed lvalue || rvalue
-template<typename T>
-auto operator||(const fxt::optional<T>& v1, fxt::optional<T>&& v2) -> fxt::optional<T>
-{
-  return v1.has_value() ? v1 : std::move(v2);
-}
+    // optional || optional: rvalue references (move optimization)
+    template<typename T>
+    auto operator||(fxt::optional<T>&& v1, fxt::optional<T>&& v2) -> fxt::optional<T>
+    {
+        return v1.has_value() ? std::move(v1) : std::move(v2);
+    }
 
-// optional || optional: mixed rvalue || lvalue
-template<typename T>
-auto operator||(fxt::optional<T>&& v1, const fxt::optional<T>& v2) -> fxt::optional<T>
-{
-  return v1.has_value() ? std::move(v1) : v2;
-}
+    // optional || optional: mixed lvalue || rvalue
+    template<typename T>
+    auto operator||(const fxt::optional<T>& v1, fxt::optional<T>&& v2) -> fxt::optional<T>
+    {
+        return v1.has_value() ? v1 : std::move(v2);
+    }
 
-// optional || value: const lvalue optional
-template<typename T, typename U>
-  requires std::convertible_to<std::decay_t<U>, T>
-auto operator||(const fxt::optional<T>& v1, U&& v2) -> fxt::optional<T>
-{
-  return v1.has_value() ? v1 : fxt::optional<T>(std::forward<U>(v2));
-}
+    // optional || optional: mixed rvalue || lvalue
+    template<typename T>
+    auto operator||(fxt::optional<T>&& v1, const fxt::optional<T>& v2) -> fxt::optional<T>
+    {
+        return v1.has_value() ? std::move(v1) : v2;
+    }
 
-// optional || value: rvalue optional
-template<typename T, typename U>
-  requires std::convertible_to<std::decay_t<U>, T>
-auto operator||(fxt::optional<T>&& v1, U&& v2) -> fxt::optional<T>
-{
-  return v1.has_value() ? std::move(v1) : fxt::optional<T>(std::forward<U>(v2));
-}
+    // optional || value: const lvalue optional
+    template<typename T, typename U>
+        requires std::convertible_to<std::decay_t<U>, T>
+    auto operator||(const fxt::optional<T>& v1, U&& v2) -> fxt::optional<T>
+    {
+        return v1.has_value() ? v1 : fxt::optional<T>(std::forward<U>(v2));
+    }
+
+    // optional || value: rvalue optional
+    template<typename T, typename U>
+        requires std::convertible_to<std::decay_t<U>, T>
+    auto operator||(fxt::optional<T>&& v1, U&& v2) -> fxt::optional<T>
+    {
+        return v1.has_value() ? std::move(v1) : fxt::optional<T>(std::forward<U>(v2));
+    }
+
+}    // namespace fxt
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
