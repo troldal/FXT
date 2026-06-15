@@ -59,39 +59,25 @@ namespace fxt
             OnValue on_value;
             OnError on_error;
 
-            // Rvalue reference overload for expected
-            template<template<typename, typename> class TExpected, typename T, typename E>
-                requires expected_like<TExpected<T, E>>
-            constexpr auto operator()(TExpected<T, E>&& exp) && -> decltype(auto)
+            // exp's value category decides both whether *exp/exp.error() are moved
+            // from, and whether on_value/on_error themselves are moved-from when
+            // invoked (consuming match vs. by-reference match).
+            template<typename TExp>
+                requires expected_like<std::remove_cvref_t<TExp>>
+            constexpr auto operator()(TExp&& exp) -> decltype(auto)
             {
-                if (exp.has_value()) {
-                    return std::move(on_value)(std::move(*exp));
+                if constexpr (std::is_rvalue_reference_v<TExp&&>) {
+                    if (exp.has_value()) {
+                        return std::move(on_value)(std::move(*exp));
+                    } else {
+                        return std::move(on_error)(std::move(exp.error()));
+                    }
                 } else {
-                    return std::move(on_error)(std::move(exp.error()));
-                }
-            }
-
-            // Const lvalue reference overload for expected
-            template<template<typename, typename> class TExpected, typename T, typename E>
-                requires expected_like<TExpected<T, E>>
-            constexpr auto operator()(const TExpected<T, E>& exp) const& -> decltype(auto)
-            {
-                if (exp.has_value()) {
-                    return on_value(*exp);
-                } else {
-                    return on_error(exp.error());
-                }
-            }
-
-            // Non-const lvalue reference overload for expected
-            template<template<typename, typename> class TExpected, typename T, typename E>
-                requires expected_like<TExpected<T, E>>
-            constexpr auto operator()(TExpected<T, E>& exp) & -> decltype(auto)
-            {
-                if (exp.has_value()) {
-                    return on_value(*exp);
-                } else {
-                    return on_error(exp.error());
+                    if (exp.has_value()) {
+                        return on_value(*exp);
+                    } else {
+                        return on_error(exp.error());
+                    }
                 }
             }
         };
@@ -105,43 +91,96 @@ namespace fxt
             OnValue on_value;
             OnNone on_none;
 
-            // Rvalue reference overload for optional
-            template<template<typename> class TOptional, typename T>
-                requires optional_like<TOptional<T>>
-            constexpr auto operator()(TOptional<T>&& opt) && -> decltype(auto)
+            // opt's value category decides both whether *opt is moved from, and
+            // whether on_value/on_none themselves are moved-from when invoked
+            // (consuming match vs. by-reference match).
+            template<typename TOpt>
+                requires optional_like<std::remove_cvref_t<TOpt>>
+            constexpr auto operator()(TOpt&& opt) -> decltype(auto)
             {
-                if (opt.has_value()) {
-                    return std::move(on_value)(std::move(*opt));
+                if constexpr (std::is_rvalue_reference_v<TOpt&&>) {
+                    if (opt.has_value()) {
+                        return std::move(on_value)(std::move(*opt));
+                    } else {
+                        return std::move(on_none)();
+                    }
                 } else {
-                    return std::move(on_none)();
-                }
-            }
-
-            // Const lvalue reference overload for optional
-            template<template<typename> class TOptional, typename T>
-                requires optional_like<TOptional<T>>
-            constexpr auto operator()(const TOptional<T>& opt) const& -> decltype(auto)
-            {
-                if (opt.has_value()) {
-                    return on_value(*opt);
-                } else {
-                    return on_none();
-                }
-            }
-
-            // Non-const lvalue reference overload for optional
-            template<template<typename> class TOptional, typename T>
-                requires optional_like<TOptional<T>>
-            constexpr auto operator()(TOptional<T>& opt) & -> decltype(auto)
-            {
-                if (opt.has_value()) {
-                    return on_value(*opt);
-                } else {
-                    return on_none();
+                    if (opt.has_value()) {
+                        return on_value(*opt);
+                    } else {
+                        return on_none();
+                    }
                 }
             }
         };
     }
+
+    /**
+     * @brief Matcher returned by fxt::match
+     *
+     * Dispatches on the *monad's* value category via detail::match_expected_t /
+     * detail::match_optional_t, and on its OWN value category to decide whether
+     * the handlers are moved or copied:
+     * - Invoking an rvalue matcher (e.g. the temporary returned directly by
+     *   fxt::match(...), or one explicitly std::move'd) moves the handlers,
+     *   so move-only handlers work for one-shot use.
+     * - Invoking a stored matcher (lvalue, const or not) copies the handlers,
+     *   so the matcher remains valid for repeated use.
+     *
+     * @note Deliberately declared in namespace `fxt` (not `fxt::detail`): this is
+     * the type returned to callers and piped via `operator|`, and ADL for
+     * `fxt::operator|` (Expected.hpp/Optional.hpp) needs `fxt` among this type's
+     * associated namespaces to find it.
+     */
+    template<typename OnValue, typename OnError>
+    struct matcher_t
+    {
+        OnValue on_value;
+        OnError on_error;
+
+        // Forwards on_value/on_error with *this's value category via forward_like:
+        // an rvalue matcher moves the handlers, an lvalue (const or not) copies them.
+        template<typename Self, typename TMonad>
+        constexpr auto operator()(this Self&& self, TMonad&& monad) -> decltype(auto)
+        {
+            return dispatch(std::forward<TMonad>(monad),
+                             std::forward_like<Self>(self.on_value),
+                             std::forward_like<Self>(self.on_error));
+        }
+
+    private:
+        template<typename TMonad, typename OV, typename OE>
+        static constexpr auto dispatch(TMonad&& monad, OV&& value_handler, OE&& error_handler) -> decltype(auto)
+        {
+            using TDecayed = std::remove_cvref_t<TMonad>;
+
+            // Check if it's an expected-like type
+            if constexpr (requires {
+                typename TDecayed::value_type;
+                typename TDecayed::error_type;
+                monad.has_value();
+                monad.error();
+            })
+            {
+                using match_t = detail::match_expected_t<std::decay_t<OV>, std::decay_t<OE>>;
+                return match_t{std::forward<OV>(value_handler), std::forward<OE>(error_handler)}(std::forward<TMonad>(monad));
+            }
+            // Check if it's an optional-like type
+            else if constexpr (requires {
+                typename TDecayed::value_type;
+                monad.has_value();
+            })
+            {
+                // Handle optional (on_error acts as on_none)
+                using match_t = detail::match_optional_t<std::decay_t<OV>, std::decay_t<OE>>;
+                return match_t{std::forward<OV>(value_handler), std::forward<OE>(error_handler)}(std::forward<TMonad>(monad));
+            }
+            else
+            {
+                static_assert(sizeof(TMonad) == 0, "match requires an expected-like or optional-like type");
+            }
+        }
+    };
 
     /**
      * @brief Pattern matching for expected and optional types
@@ -178,60 +217,10 @@ namespace fxt
      *     );
      * @endcode
      */
-    // TODO: SAFETY — the returned matcher is a `mutable` lambda that does
-    //       `std::move(on_value)` / `std::move(on_error)` on EVERY invocation. Storing the
-    //       matcher in a variable and applying it to two monads silently uses moved-from
-    //       handlers the second time (UB for handlers owning resources). Either copy the
-    //       handlers into the match_*_t struct (drop the moves and `mutable`), or take the
-    //       monad's value category into account and only move for rvalue invocations.
     inline constexpr auto match = []<typename OnValue, typename OnError>(OnValue&& on_value, OnError&& on_error)
     {
-        // Return a callable that can work with both expected and optional
-        return [on_value = std::forward<OnValue>(on_value),
-                on_error = std::forward<OnError>(on_error)]<typename TMonad>(TMonad&& monad) mutable
-        {
-            using TDecayed = std::remove_cvref_t<TMonad>;
-
-            // Check if it's an expected-like type
-            if constexpr (requires {
-                typename TDecayed::value_type;
-                typename TDecayed::error_type;
-                monad.has_value();
-                monad.error();
-            })
-            {
-                // Handle expected
-                using match_t = detail::match_expected_t<
-                    std::decay_t<decltype(on_value)>,
-                    std::decay_t<decltype(on_error)>
-                >;
-
-                return std::move(match_t{
-                    std::move(on_value),
-                    std::move(on_error)
-                })(std::forward<TMonad>(monad));
-            }
-            // Check if it's an optional-like type
-            else if constexpr (requires {
-                typename TDecayed::value_type;
-                monad.has_value();
-            })
-            {
-                // Handle optional (on_error acts as on_none)
-                using match_t = detail::match_optional_t<
-                    std::decay_t<decltype(on_value)>,
-                    std::decay_t<decltype(on_error)>
-                >;
-
-                return std::move(match_t{
-                    std::move(on_value),
-                    std::move(on_error)
-                })(std::forward<TMonad>(monad));
-            }
-            else
-            {
-                static_assert(sizeof(TMonad) == 0, "match requires an expected-like or optional-like type");
-            }
+        return matcher_t<std::decay_t<OnValue>, std::decay_t<OnError>>{
+            std::forward<OnValue>(on_value), std::forward<OnError>(on_error)
         };
     };
 
