@@ -79,26 +79,20 @@ namespace fxt::detail
         [[nodiscard]] constexpr bool is_valid() const { return is_valid_index(); }
 
         /**
-         * @brief Conversion operator to std::size_t for use in switch statements
+         * @brief Explicit conversion operator to std::size_t
          * @return The current index
          *
-         * @details This allows enum objects to be used directly in switch statements:
+         * @details For switch statements, prefer calling `index()` directly:
          * @code
          * MyEnum e;
-         * switch (e) {
-         *     case MyEnum::Index<SomeType>():
+         * switch (e.index()) {
+         *     case MyEnum::IndexOf<SomeType>():
          *         // handle SomeType
          *         break;
          * }
          * @endcode
          */
-        // TODO: SAFETY — an IMPLICIT conversion to std::size_t lets unrelated enum types
-        //       compare and mix arithmetically (`string_enum_a == type_enum_b`, `e + 1`,
-        //       accidental use as an array index) without any diagnostic, defeating the
-        //       type safety these classes exist to provide. Make the conversion explicit
-        //       and let switch statements use e.index() — or keep it implicit but document
-        //       the trade-off prominently.
-        constexpr operator std::size_t() const
+        explicit constexpr operator std::size_t() const
         {    // NOLINT
             return current_index();
         }

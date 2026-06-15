@@ -70,11 +70,11 @@ namespace fxt
      * MyEnum e = TypeA{42};
      *
      * // Switch statement
-     * switch (e) {
-     *     case MyEnum::Index<TypeA>():
+     * switch (e.index()) {
+     *     case MyEnum::IndexOf<TypeA>():
      *         // Handle TypeA
      *         break;
-     *     case MyEnum::Index<TypeB>():
+     *     case MyEnum::IndexOf<TypeB>():
      *         // Handle TypeB
      *         break;
      * }
@@ -160,15 +160,9 @@ namespace fxt
          * @details Example:
          * @code
          * using MyEnum = TypeEnum<TypeA, TypeB, TypeC>;
-         * constexpr auto idx = MyEnum::Index<TypeB>();  // Returns 1
+         * constexpr auto idx = MyEnum::IndexOf<TypeB>();  // Returns 1
          * @endcode
          */
-        // TODO: DOCS/CONSISTENCY — the class doc above and the EnumBase docs show
-        //       `MyEnum::Index<TypeA>()` in switch examples, but the method is named
-        //       IndexOf(). Also, the helpers in this header (TypeIndex, TypeIndex_v,
-        //       IndexOf) use PascalCase while the rest of the library is snake_case
-        //       (tuple_size_v, is_fxt_tuple_v, ...) — same applies to StringIndex /
-        //       StringInPack / IndexOf in StringEnum.hpp.
         template<typename T>
         static constexpr std::size_t IndexOf()
         {
