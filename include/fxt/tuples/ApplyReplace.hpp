@@ -280,6 +280,10 @@ namespace fxt
         }
     };
 
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
+    //       fxt-original ops to carry the `tuple_` prefix: apply_replace ->
+    //       tuple_apply_replace and mapply_replace -> mtuple_apply_replace (keep
+    //       old names as [[deprecated]] aliases for one release).
     /**
      * @brief Create a curried apply_replace function for pipe operator usage
      */

@@ -257,6 +257,11 @@ namespace fxt
     //       monad. Two names for one operation is confusing — fold mappend's
     //       error-type-conversion behavior into mtuple_append and remove this file, or
     //       document the intended distinction.
+    // TODO: NAMING — this resolves cleanly under the fxt/tuples convention in
+    //       Tuple.hpp: the canonical monadic-append name is `mtuple_append` (matching
+    //       non-monadic `tuple_append`). `mappend` is a non-conforming duplicate —
+    //       fold it into `mtuple_append` and drop this file, or keep `mappend` only as
+    //       a [[deprecated]] alias of `mtuple_append` for one release.
     // TODO: DOCS — every example in this file (and the doc block above) writes
     //       `fxt::append(...)`, but the instance is named `mappend`; `fxt::append` does not
     //       exist. Fix the examples or provide the documented name.

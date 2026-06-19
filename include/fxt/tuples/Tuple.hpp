@@ -111,6 +111,58 @@
 
 namespace fxt
 {
+    // ========================================================================
+    // TODO: NAMING CONVENTION (proposed) — applies to all of fxt/tuples/*
+    // ========================================================================
+    // The tuple operations currently use two spellings for the same idea: some
+    // carry a `tuple_` prefix (tuple_cat, tuple_reverse, tuple_transform,
+    // tuple_append, tuple_prepend, tuple_foreach) and some do not (apply,
+    // as_array, take, drop, select, apply_append, apply_replace). This reproduces
+    // the std inconsistency (std::tuple_cat is prefixed, std::apply is not) that
+    // this library set out to smooth over, so it should be unified under one rule.
+    //
+    // PROPOSED RULE (one sentence): every fxt-original tuple operation is spelled
+    // `tuple_<verb>`; its monadic lift (one that operates on a tuple held inside
+    // an expected/optional) is the same name with an `m` prepended, `mtuple_<verb>`;
+    // and the only bare names are the literal std re-exports kept for drop-in use.
+    //
+    //   1. std re-exports keep std's exact spelling (so ADL / drop-in still works):
+    //        bare     : get, apply, make_tuple        (std spells these bare)
+    //        prefixed : tuple_cat, tuple_size, tuple_element,
+    //                   tuple_size_v, tuple_element_t  (std spells these prefixed)
+    //        make_tuple / make_flat_tuple keep the `make_` factory convention.
+    //   2. fxt-original, non-monadic   ->  tuple_<verb>
+    //   3. fxt-original, monadic lift  ->  mtuple_<verb>   (just prepend `m`)
+    //
+    // WHY prefix the originals rather than strip the prefix everywhere:
+    //   - It harmonizes with the std structural mirrors fxt already reimplements
+    //     and cannot rename: tuple_cat / tuple_size / tuple_element are prefixed.
+    //   - It disambiguates verbs fxt also defines in OTHER namespaces:
+    //     fxt::transform (monads) vs tuple_transform, fxt::for_each (ranges) vs
+    //     tuple_for_each, plus the natural range verbs take / drop / select.
+    //   - The monadic-lift rule collapses to a mechanical "prepend m".
+    //
+    // RENAMES implied by the rule (each tracked as a per-file TODO):
+    //     as_array      -> tuple_as_array         mas_array      -> mtuple_as_array
+    //     apply_append  -> tuple_apply_append     mapply_append  -> mtuple_apply_append
+    //     apply_replace -> tuple_apply_replace    mapply_replace -> mtuple_apply_replace
+    //     select        -> tuple_select           mselect        -> mtuple_select
+    //     take          -> tuple_take             mtake          -> mtuple_take
+    //     take_last     -> tuple_take_last        mtake_last     -> mtuple_take_last
+    //     drop          -> tuple_drop             mdrop          -> mtuple_drop
+    //     drop_last     -> tuple_drop_last        mdrop_last     -> mtuple_drop_last
+    //     (apply: std, stays bare)                mapply         -> mtuple_apply
+    //     (no non-monadic zip)                    mzip           -> mtuple_zip
+    //     mappend (duplicate of mtuple_append)    -> remove / fold in, see Append.hpp
+    //   Already conforming (no change): tuple_append/mtuple_append,
+    //     tuple_prepend/mtuple_prepend, tuple_cat/mtuple_cat,
+    //     tuple_reverse/mtuple_reverse, tuple_transform/mtuple_transform,
+    //     tuple_foreach (consider tuple_for_each for word-form parity, minor).
+    //
+    // MIGRATION: add the new names, keep the old ones as [[deprecated]] inline
+    // aliases for one release, then remove. This is a public-API change.
+    // ========================================================================
+
     /**
      * @brief Alias for std::tuple
      *

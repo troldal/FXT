@@ -96,6 +96,10 @@ namespace fxt
      * // containing (1, 2.5, "three")
      * @endcode
      */
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, monadic lifts use
+    //       the `mtuple_` form: rename mzip -> mtuple_zip (keep mzip as a
+    //       [[deprecated]] alias for one release). There is no non-monadic zip; if
+    //       one is added later it should be named tuple_zip.
     template<typename First, typename... Rest>
         requires fxt::monad_like<std::remove_cvref_t<First>>
               && (fxt::monad_like<std::remove_cvref_t<Rest>> && ...)

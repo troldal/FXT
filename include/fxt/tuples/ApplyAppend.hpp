@@ -306,6 +306,10 @@ namespace fxt
         }
     };
 
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
+    //       fxt-original ops to carry the `tuple_` prefix: apply_append ->
+    //       tuple_apply_append and mapply_append -> mtuple_apply_append (keep old
+    //       names as [[deprecated]] aliases for one release).
     /**
      * @brief Create a curried apply_append function for pipe operator usage
      */

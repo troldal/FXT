@@ -536,6 +536,10 @@ namespace fxt
         }
     };
 
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, the non-monadic
+    //       `apply` stays bare (it is a std re-export extended for flat_tuple), but
+    //       its monadic lift should normalize to the `mtuple_` form: rename mapply
+    //       -> mtuple_apply (keep mapply as a [[deprecated]] alias for one release).
     inline constexpr apply_fn mapply{};
 
 }    // namespace fxt

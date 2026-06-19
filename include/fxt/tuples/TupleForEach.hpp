@@ -182,6 +182,11 @@ namespace fxt
      * // 10
      * @endcode
      */
+    // TODO: NAMING — `tuple_foreach` already conforms to the `tuple_` prefix rule
+    //       (see the convention in Tuple.hpp), but its word form differs from
+    //       `fxt::for_each` in ranges/ForEach.hpp. For parity, consider renaming to
+    //       `tuple_for_each` (keep `tuple_foreach` as a [[deprecated]] alias for one
+    //       release). A monadic lift, if added, would be `mtuple_for_each`.
     template<typename Fn>
     constexpr auto tuple_foreach(Fn&& fn)
     {

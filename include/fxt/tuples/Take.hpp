@@ -107,6 +107,10 @@ namespace fxt
      * // result2 is fxt::flat_tuple<double, double>{1.0, 2.0}
      * @endcode
      */
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
+    //       fxt-original ops to carry the `tuple_` prefix: take -> tuple_take,
+    //       take_last -> tuple_take_last, mtake -> mtuple_take, mtake_last ->
+    //       mtuple_take_last (keep old names as [[deprecated]] aliases for one release).
     template<std::size_t X, typename Tuple>
         requires impl::is_tuple_like_v<std::remove_cvref_t<Tuple>>
     constexpr auto take(Tuple&& tpl)

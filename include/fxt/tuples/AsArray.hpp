@@ -124,6 +124,10 @@ namespace fxt
         return impl::as_array_impl<T>(std::move(t), std::index_sequence_for<Ts...>{});
     }
 
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
+    //       fxt-original ops to carry the `tuple_` prefix: as_array -> tuple_as_array
+    //       and mas_array -> mtuple_as_array (keep old names as [[deprecated]]
+    //       aliases for one release).
     /**
      * @brief Curried version of as_array
      *

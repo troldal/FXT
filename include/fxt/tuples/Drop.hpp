@@ -105,6 +105,10 @@ namespace fxt
      * // result2 is fxt::flat_tuple<double, double>{3.0, 4.0}
      * @endcode
      */
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
+    //       fxt-original ops to carry the `tuple_` prefix: drop -> tuple_drop,
+    //       drop_last -> tuple_drop_last, mdrop -> mtuple_drop, mdrop_last ->
+    //       mtuple_drop_last (keep old names as [[deprecated]] aliases for one release).
     template<std::size_t X, typename Tuple>
         requires tuple_like<std::remove_cvref_t<Tuple>>
     constexpr auto drop(Tuple&& tpl)

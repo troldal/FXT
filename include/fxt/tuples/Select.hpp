@@ -99,6 +99,10 @@ namespace fxt
     // TODO: CONSISTENCY — mselect bundles monadic AND plain-tuple handling in one adaptor,
     //       whereas the rest of the library separates them (select vs mselect, take vs
     //       mtake). The plain-tuple overloads here duplicate fxt::select below.
+    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
+    //       fxt-original ops to carry the `tuple_` prefix: select -> tuple_select
+    //       and mselect -> mtuple_select (keep old names as [[deprecated]] aliases
+    //       for one release).
     template<size_t... Is>
     auto mselect()
     {
