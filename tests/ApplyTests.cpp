@@ -1083,3 +1083,153 @@ TEST_CASE("apply - advanced integration tests", "[apply][advanced]")
         REQUIRE(final_result == 20);
     }
 }
+
+// ============================================================================
+// Tests for fxt::mapply (REPLACE semantics — tuple is replaced by result)
+// ============================================================================
+
+TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
+{
+    SECTION("lvalue expected")
+    {
+        auto exp = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)};
+        auto result = exp | fxt::mapply([](int a, int b) { return a + b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 7);
+        STATIC_REQUIRE(std::is_same_v<decltype(result), fxt::expected<int, std::string>>);
+    }
+
+    SECTION("rvalue expected")
+    {
+        auto result = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(5, 6)}
+                    | fxt::mapply([](int a, int b) { return a * b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 30);
+    }
+
+    SECTION("error propagates without calling the function")
+    {
+        bool called = false;
+        auto result = fxt::expected<std::tuple<int, int>, std::string>{fxt::unexpected("err")}
+                    | fxt::mapply([&called](int, int) { called = true; return 0; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "err");
+        REQUIRE_FALSE(called);
+    }
+}
+
+TEST_CASE("mapply — expected: monadic return is flattened (and_then)", "[apply][mapply]")
+{
+    SECTION("success case")
+    {
+        auto result = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 2.0)}
+                    | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
+                          if (b == 0.0) return fxt::unexpected(std::string{"div by zero"});
+                          return a / b;
+                      });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 5.0);
+    }
+
+    SECTION("function returns error — propagated")
+    {
+        auto result = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 0.0)}
+                    | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
+                          if (b == 0.0) return fxt::unexpected(std::string{"div by zero"});
+                          return a / b;
+                      });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "div by zero");
+    }
+}
+
+TEST_CASE("mapply — expected (lvalue): void return — Case 2b regression", "[apply][mapply]")
+{
+    // This case was broken: expected_like<TArg> rejected the lvalue reference type,
+    // so `lvalue_exp | mapply(void_fn)` failed to compile. Fixed by using
+    // expected_like<std::remove_cvref_t<TArg>>.
+    SECTION("void function called on lvalue expected")
+    {
+        int side_effect = 0;
+        auto exp = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)};
+
+        auto result = exp | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(side_effect == 7);
+    }
+
+    SECTION("void function not called on lvalue expected holding error")
+    {
+        int side_effect = 0;
+        auto exp = fxt::expected<std::tuple<int, int>, std::string>{fxt::unexpected("bad")};
+
+        auto result = exp | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(side_effect == 0);
+        REQUIRE(result.error() == "bad");
+    }
+
+    SECTION("void function called on rvalue expected (pre-existing)")
+    {
+        int side_effect = 0;
+        auto result = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(10, 20)}
+                    | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(side_effect == 30);
+    }
+}
+
+TEST_CASE("mapply — optional: plain return replaces tuple", "[apply][mapply]")
+{
+    SECTION("has value")
+    {
+        auto result = fxt::optional<std::tuple<int, int>>{std::make_tuple(5, 6)}
+                    | fxt::mapply([](int a, int b) { return a * b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 30);
+        STATIC_REQUIRE(std::is_same_v<decltype(result), fxt::optional<int>>);
+    }
+
+    SECTION("empty propagates without calling the function")
+    {
+        bool called = false;
+        auto result = fxt::optional<std::tuple<int, int>>{}
+                    | fxt::mapply([&called](int, int) { called = true; return 0; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE_FALSE(called);
+    }
+}
+
+TEST_CASE("mapply — optional: void return", "[apply][mapply]")
+{
+    SECTION("has value — side effect runs")
+    {
+        int side_effect = 0;
+        auto opt = fxt::optional<std::tuple<int, int>>{std::make_tuple(7, 8)};
+
+        auto result = opt | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(side_effect == 15);
+    }
+
+    SECTION("empty — side effect does not run")
+    {
+        int side_effect = 0;
+        auto result = fxt::optional<std::tuple<int, int>>{}
+                    | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(side_effect == 0);
+    }
+}

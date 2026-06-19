@@ -432,16 +432,10 @@ namespace fxt
         // ========================================================================
         // Case 2b: Expected-like container + fxt::tuple + Function returning void
         // ========================================================================
-        // TODO: BUG — this overload constrains `expected_like<TArg>` on the DEDUCED forwarding
-        //       reference type instead of `expected_like<std::remove_cvref_t<TArg>>` like every
-        //       other case in this struct. expected_like rejects reference types (it requires
-        //       std::is_same_v<std::decay_t<T>, T>), so Case 2b never matches an lvalue
-        //       expected — `lvalue_exp | mapply(void_fn)` fails to compile while the optional
-        //       counterpart (Case 2a) works. Add the remove_cvref_t.
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires expected_like<TArg>
+            requires expected_like<std::remove_cvref_t<TArg>>
                 && tuple_like<std::remove_cvref_t<TTuple>>
-                && std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>
+                && std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>
         auto operator()(TArg&& tupleExpected) const
         {
             return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
@@ -487,45 +481,52 @@ namespace fxt
     };
 
     /**
-     * @brief Monadic apply operation for applying functions to tuple values in monadic containers
+     * @brief Monadic apply — applies a function to tuple elements inside a monadic container,
+     *        replacing the tuple with the function's result.
      *
-     * This function object provides a uniform interface for applying a function to the contents of a tuple
-     * that is wrapped in a monadic container (expected-like or optional-like). It handles three distinct cases:
-     * 1. Functions returning monadic types (expected-like or optional-like) - monadic bind
-     * 2. Functions with void return type
-     * 3. Functions returning any other type
+     * `fxt::mapply(f)` unpacks the tuple held by an `expected`- or `optional`-like container
+     * and invokes `f` with its elements. The container is then updated to hold only the
+     * function's return value — the original tuple is **replaced**, not extended.
+     * To extend the tuple by appending the result, use `fxt::mapply_append(f)` instead.
      *
-     * @tparam TFunction Type of the function to apply
-     * @param f Function to apply to tuple elements
-     * @return A callable that accepts a monadic container with a tuple and applies the function
+     * Three dispatch cases are handled automatically:
+     *   1. **Monadic return** (`expected`/`optional`): uses `.and_then()` — the function's
+     *      monad is flattened into the outer container (early-exit on error/nullopt).
+     *   2. **`void` return**: uses `.transform()` returning `fxt::unit` — side effects only.
+     *   3. **Plain return**: uses `.transform()` — the tuple is replaced by the return value.
+     *
+     * @tparam TFunction Type of the function to apply to the tuple elements
+     * @param  f         Callable accepting the unpacked tuple elements
+     * @return A pipe adaptor that, when applied to a monad-of-tuple, returns a monad of
+     *         the function's result type (or monad-of-unit for void functions).
      *
      * @section Usage
      * @code
-     * // With expected
-     * auto result = fxt::expected<std::tuple<int, int>, Error>{std::tuple{3, 4}}
-     *             | fxt::apply([](int a, int b) { return a + b; });
-     * // result is fxt::expected<std::tuple<int, int, int>, Error>{std::tuple{3, 4, 7}}
+     * // Case 3 — plain return: tuple is replaced by function result
+     * auto r1 = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)}
+     *         | fxt::mapply([](int a, int b) { return a + b; });
+     * // r1 is fxt::expected<int, std::string>{7}
      *
-     * // With optional
-     * auto result2 = fxt::optional<std::tuple<int, int>>{std::tuple{5, 6}}
-     *              | fxt::apply([](int a, int b) { return a * b; });
-     * // result2 is fxt::optional<std::tuple<int, int, int>>{std::tuple{5, 6, 30}}
+     * // Case 3 — optional variant
+     * auto r2 = fxt::optional<std::tuple<int, int>>{std::make_tuple(5, 6)}
+     *         | fxt::mapply([](int a, int b) { return a * b; });
+     * // r2 is fxt::optional<int>{30}
      *
-     * // Chain multiple applications
-     * auto result3 = fxt::expected<std::tuple<>, Error>{std::tuple{}}
-     *              | fxt::append(5)
-     *              | fxt::append(10)
-     *              | fxt::apply([](int a, int b) { return a + b; })
-     *              | fxt::apply([](int a, int b, int sum) { return sum * 2; });
+     * // Case 2 — void return: side effects only, result holds fxt::unit
+     * int logged = 0;
+     * auto r3 = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)}
+     *         | fxt::mapply([&logged](int a, int b) { logged = a + b; });
+     * // logged == 7; r3 is fxt::expected<fxt::unit, std::string>{}
+     *
+     * // Case 1 — monadic return: flattened via and_then
+     * auto r4 = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 2.0)}
+     *         | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
+     *               if (b == 0.0) return fxt::unexpected(std::string{"division by zero"});
+     *               return a / b;
+     *           });
+     * // r4 is fxt::expected<double, std::string>{5.0}
      * @endcode
      */
-    // TODO: DOCS — the doc block above is stale on two counts: (1) the examples invoke
-    //       `fxt::apply(...)` on monadic containers, but this entity is named `mapply`
-    //       (fxt::apply on a monad resolves to the non-monadic apply_curried and fails);
-    //       (2) the examples claim append semantics (`expected<tuple<int,int,int>>{3,4,7}`),
-    //       but the implementation REPLACES the tuple with the function result (the
-    //       tuple_append calls are commented out) — that behavior now lives in
-    //       fxt::mapply_append. Rewrite the examples to match mapply's actual semantics.
     struct apply_fn
     {
         template<typename TFunction>
