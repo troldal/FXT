@@ -517,9 +517,9 @@ namespace fxt
             // Phase 1: scan left-to-right, stop at the first error.
             // The || fold evaluates left to right and short-circuits on true.
             E* first_error = nullptr;
-            (... || (std::get<Is>(t).has_value()
-                     ? false
-                     : (first_error = &std::get<Is>(t).error(), true)));
+            (void)(... || (std::get<Is>(t).has_value()
+                           ? false
+                           : (first_error = &std::get<Is>(t).error(), true)));
 
             if (first_error) {
                 return fxt::unexpected(std::move(*first_error));
@@ -585,10 +585,7 @@ namespace fxt
             using Result = sequence_optional_result_t<std::remove_cvref_t<Tuple>>;
 
             // Phase 1: scan left-to-right, stop at the first absent optional.
-            bool has_empty = false;
-            (... || (!std::get<Is>(t).has_value() ? (has_empty = true, true) : false));
-
-            if (has_empty) {
+            if ((... || !std::get<Is>(t).has_value())) {
                 return Result{};    // default-constructed = empty optional
             }
 
