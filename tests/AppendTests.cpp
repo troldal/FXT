@@ -15,7 +15,7 @@ TEST_CASE("append - fxt::expected with plain values", "[append]")
     SECTION("append int to tuple")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
-        auto result = exp | fxt::mappend(100);
+        auto result = exp | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -25,7 +25,7 @@ TEST_CASE("append - fxt::expected with plain values", "[append]")
     SECTION("append string to tuple")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
-        auto result = exp | fxt::mappend(std::string{"hello"});
+        auto result = exp | fxt::mtuple_append(std::string{"hello"});
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -35,7 +35,7 @@ TEST_CASE("append - fxt::expected with plain values", "[append]")
     SECTION("append double to tuple")
     {
         auto exp = fxt::expected<std::tuple<int, std::string>, std::string>{std::tuple{42, "test"}};
-        auto result = exp | fxt::mappend(3.14);
+        auto result = exp | fxt::mtuple_append(3.14);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -47,9 +47,9 @@ TEST_CASE("append - fxt::expected with plain values", "[append]")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{1}};
         auto result = exp
-            | fxt::mappend(2)
-            | fxt::mappend(3)
-            | fxt::mappend(4);
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(3)
+            | fxt::mtuple_append(4);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -62,9 +62,9 @@ TEST_CASE("append - fxt::expected with plain values", "[append]")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         auto result = exp
-            | fxt::mappend(std::string{"hello"})
-            | fxt::mappend(3.14)
-            | fxt::mappend(true);
+            | fxt::mtuple_append(std::string{"hello"})
+            | fxt::mtuple_append(3.14)
+            | fxt::mtuple_append(true);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -79,7 +79,7 @@ TEST_CASE("append - fxt::expected with error propagation", "[append]")
     SECTION("error in initial expected")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{fxt::unexpected("error")};
-        auto result = exp | fxt::mappend(100);
+        auto result = exp | fxt::mtuple_append(100);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error");
@@ -89,9 +89,9 @@ TEST_CASE("append - fxt::expected with error propagation", "[append]")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{fxt::unexpected("initial error")};
         auto result = exp
-            | fxt::mappend(1)
-            | fxt::mappend(2)
-            | fxt::mappend(3);
+            | fxt::mtuple_append(1)
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(3);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "initial error");
@@ -104,7 +104,7 @@ TEST_CASE("append - fxt::expected with expected values", "[append]")
     {
         auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         auto exp_value = fxt::expected<std::string, std::string>{"hello"};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -115,7 +115,7 @@ TEST_CASE("append - fxt::expected with expected values", "[append]")
     {
         auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         auto exp_value = fxt::expected<std::string, std::string>{fxt::unexpected("value error")};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "value error");
@@ -125,7 +125,7 @@ TEST_CASE("append - fxt::expected with expected values", "[append]")
     {
         auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{fxt::unexpected("tuple error")};
         auto exp_value = fxt::expected<std::string, std::string>{fxt::unexpected("value error")};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "value error");
@@ -139,9 +139,9 @@ TEST_CASE("append - fxt::expected with expected values", "[append]")
         auto exp_val3 = fxt::expected<int, std::string>{4};
 
         auto result = exp_tuple
-            | fxt::mappend(exp_val1)
-            | fxt::mappend(exp_val2)
-            | fxt::mappend(exp_val3);
+            | fxt::mtuple_append(exp_val1)
+            | fxt::mtuple_append(exp_val2)
+            | fxt::mtuple_append(exp_val3);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -156,7 +156,7 @@ TEST_CASE("append - fxt::optional with plain values", "[append]")
     SECTION("append int to tuple")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
-        auto result = opt | fxt::mappend(100);
+        auto result = opt | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -166,7 +166,7 @@ TEST_CASE("append - fxt::optional with plain values", "[append]")
     SECTION("append string to tuple")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
-        auto result = opt | fxt::mappend(std::string{"world"});
+        auto result = opt | fxt::mtuple_append(std::string{"world"});
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -176,7 +176,7 @@ TEST_CASE("append - fxt::optional with plain values", "[append]")
     SECTION("append double to tuple")
     {
         auto opt = fxt::optional<std::tuple<int, std::string>>{std::tuple{42, "test"}};
-        auto result = opt | fxt::mappend(2.71);
+        auto result = opt | fxt::mtuple_append(2.71);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -188,9 +188,9 @@ TEST_CASE("append - fxt::optional with plain values", "[append]")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{10}};
         auto result = opt
-            | fxt::mappend(20)
-            | fxt::mappend(30)
-            | fxt::mappend(40);
+            | fxt::mtuple_append(20)
+            | fxt::mtuple_append(30)
+            | fxt::mtuple_append(40);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 10);
@@ -203,9 +203,9 @@ TEST_CASE("append - fxt::optional with plain values", "[append]")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{100}};
         auto result = opt
-            | fxt::mappend(std::string{"optional"})
-            | fxt::mappend(1.41)
-            | fxt::mappend(false);
+            | fxt::mtuple_append(std::string{"optional"})
+            | fxt::mtuple_append(1.41)
+            | fxt::mtuple_append(false);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 100);
@@ -220,7 +220,7 @@ TEST_CASE("append - fxt::optional with empty propagation", "[append]")
     SECTION("empty initial optional")
     {
         auto opt = fxt::optional<std::tuple<int>>{};
-        auto result = opt | fxt::mappend(100);
+        auto result = opt | fxt::mtuple_append(100);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -229,9 +229,9 @@ TEST_CASE("append - fxt::optional with empty propagation", "[append]")
     {
         auto opt = fxt::optional<std::tuple<int>>{};
         auto result = opt
-            | fxt::mappend(1)
-            | fxt::mappend(2)
-            | fxt::mappend(3);
+            | fxt::mtuple_append(1)
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(3);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -243,7 +243,7 @@ TEST_CASE("append - fxt::optional with optional values", "[append]")
     {
         auto opt_tuple = fxt::optional<std::tuple<int>>{std::tuple{42}};
         auto opt_value = fxt::optional<std::string>{"hello"};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -254,7 +254,7 @@ TEST_CASE("append - fxt::optional with optional values", "[append]")
     {
         auto opt_tuple = fxt::optional<std::tuple<int>>{std::tuple{42}};
         auto opt_value = fxt::optional<std::string>{};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -263,7 +263,7 @@ TEST_CASE("append - fxt::optional with optional values", "[append]")
     {
         auto opt_tuple = fxt::optional<std::tuple<int>>{};
         auto opt_value = fxt::optional<std::string>{};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -276,9 +276,9 @@ TEST_CASE("append - fxt::optional with optional values", "[append]")
         auto opt_val3 = fxt::optional<int>{4};
 
         auto result = opt_tuple
-            | fxt::mappend(opt_val1)
-            | fxt::mappend(opt_val2)
-            | fxt::mappend(opt_val3);
+            | fxt::mtuple_append(opt_val1)
+            | fxt::mtuple_append(opt_val2)
+            | fxt::mtuple_append(opt_val3);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -295,9 +295,9 @@ TEST_CASE("append - fxt::optional with optional values", "[append]")
         auto opt_val3 = fxt::optional<int>{4};
 
         auto result = opt_tuple
-            | fxt::mappend(opt_val1)
-            | fxt::mappend(opt_val2)
-            | fxt::mappend(opt_val3);
+            | fxt::mtuple_append(opt_val1)
+            | fxt::mtuple_append(opt_val2)
+            | fxt::mtuple_append(opt_val3);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -311,8 +311,8 @@ TEST_CASE("append - mixed plain and monadic values (expected)", "[append]")
         auto exp_value = fxt::expected<int, std::string>{2};
 
         auto result = exp
-            | fxt::mappend(100)
-            | fxt::mappend(exp_value);
+            | fxt::mtuple_append(100)
+            | fxt::mtuple_append(exp_value);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -326,8 +326,8 @@ TEST_CASE("append - mixed plain and monadic values (expected)", "[append]")
         auto exp_value = fxt::expected<int, std::string>{2};
 
         auto result = exp
-            | fxt::mappend(exp_value)
-            | fxt::mappend(100);
+            | fxt::mtuple_append(exp_value)
+            | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -342,10 +342,10 @@ TEST_CASE("append - mixed plain and monadic values (expected)", "[append]")
         auto exp_val2 = fxt::expected<int, std::string>{4};
 
         auto result = exp
-            | fxt::mappend(exp_val1)
-            | fxt::mappend(3)
-            | fxt::mappend(exp_val2)
-            | fxt::mappend(5);
+            | fxt::mtuple_append(exp_val1)
+            | fxt::mtuple_append(3)
+            | fxt::mtuple_append(exp_val2)
+            | fxt::mtuple_append(5);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -364,8 +364,8 @@ TEST_CASE("append - mixed plain and monadic values (optional)", "[append]")
         auto opt_value = fxt::optional<int>{2};
 
         auto result = opt
-            | fxt::mappend(100)
-            | fxt::mappend(opt_value);
+            | fxt::mtuple_append(100)
+            | fxt::mtuple_append(opt_value);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -379,8 +379,8 @@ TEST_CASE("append - mixed plain and monadic values (optional)", "[append]")
         auto opt_value = fxt::optional<int>{2};
 
         auto result = opt
-            | fxt::mappend(opt_value)
-            | fxt::mappend(100);
+            | fxt::mtuple_append(opt_value)
+            | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -395,10 +395,10 @@ TEST_CASE("append - mixed plain and monadic values (optional)", "[append]")
         auto opt_val2 = fxt::optional<int>{4};
 
         auto result = opt
-            | fxt::mappend(opt_val1)
-            | fxt::mappend(3)
-            | fxt::mappend(opt_val2)
-            | fxt::mappend(5);
+            | fxt::mtuple_append(opt_val1)
+            | fxt::mtuple_append(3)
+            | fxt::mtuple_append(opt_val2)
+            | fxt::mtuple_append(5);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -414,7 +414,7 @@ TEST_CASE("append - rvalue references (expected)", "[append]")
     SECTION("append with rvalue expected")
     {
         auto result = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}}
-            | fxt::mappend(fxt::expected<int, std::string>{100});
+            | fxt::mtuple_append(fxt::expected<int, std::string>{100});
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -424,9 +424,9 @@ TEST_CASE("append - rvalue references (expected)", "[append]")
     SECTION("chain with rvalue temporaries")
     {
         auto result = fxt::expected<std::tuple<int>, std::string>{std::tuple{1}}
-            | fxt::mappend(2)
-            | fxt::mappend(fxt::expected<int, std::string>{3})
-            | fxt::mappend(4);
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(fxt::expected<int, std::string>{3})
+            | fxt::mtuple_append(4);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -441,7 +441,7 @@ TEST_CASE("append - rvalue references (optional)", "[append]")
     SECTION("append with rvalue optional")
     {
         auto result = fxt::optional<std::tuple<int>>{std::tuple{42}}
-            | fxt::mappend(fxt::optional<int>{100});
+            | fxt::mtuple_append(fxt::optional<int>{100});
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -451,9 +451,9 @@ TEST_CASE("append - rvalue references (optional)", "[append]")
     SECTION("chain with rvalue temporaries")
     {
         auto result = fxt::optional<std::tuple<int>>{std::tuple{1}}
-            | fxt::mappend(2)
-            | fxt::mappend(fxt::optional<int>{3})
-            | fxt::mappend(4);
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(fxt::optional<int>{3})
+            | fxt::mtuple_append(4);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 1);
@@ -468,7 +468,7 @@ TEST_CASE("append - move-only types (expected)", "[append]")
     SECTION("append unique_ptr to tuple")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
-        auto result = std::move(exp) | fxt::mappend(std::make_unique<int>(100));
+        auto result = std::move(exp) | fxt::mtuple_append(std::make_unique<int>(100));
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -480,7 +480,7 @@ TEST_CASE("append - move-only types (expected)", "[append]")
         auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         auto exp_ptr = fxt::expected<std::unique_ptr<int>, std::string>{std::make_unique<int>(100)};
 
-        auto result = std::move(exp_tuple) | fxt::mappend(std::move(exp_ptr));
+        auto result = std::move(exp_tuple) | fxt::mtuple_append(std::move(exp_ptr));
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -493,7 +493,7 @@ TEST_CASE("append - move-only types (optional)", "[append]")
     SECTION("append unique_ptr to tuple")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
-        auto result = std::move(opt) | fxt::mappend(std::make_unique<int>(100));
+        auto result = std::move(opt) | fxt::mtuple_append(std::make_unique<int>(100));
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -505,7 +505,7 @@ TEST_CASE("append - move-only types (optional)", "[append]")
         auto opt_tuple = fxt::optional<std::tuple<int>>{std::tuple{42}};
         auto opt_ptr = fxt::optional<std::unique_ptr<int>>{std::make_unique<int>(100)};
 
-        auto result = std::move(opt_tuple) | fxt::mappend(std::move(opt_ptr));
+        auto result = std::move(opt_tuple) | fxt::mtuple_append(std::move(opt_ptr));
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -519,7 +519,7 @@ TEST_CASE("append - complex types (expected)", "[append]")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         std::vector<int> vec{1, 2, 3};
-        auto result = exp | fxt::mappend(vec);
+        auto result = exp | fxt::mtuple_append(vec);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -531,7 +531,7 @@ TEST_CASE("append - complex types (expected)", "[append]")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         auto pair = std::make_pair(10, "test");
-        auto result = exp | fxt::mappend(pair);
+        auto result = exp | fxt::mtuple_append(pair);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -546,7 +546,7 @@ TEST_CASE("append - complex types (optional)", "[append]")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
         std::vector<int> vec{1, 2, 3};
-        auto result = opt | fxt::mappend(vec);
+        auto result = opt | fxt::mtuple_append(vec);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -558,7 +558,7 @@ TEST_CASE("append - complex types (optional)", "[append]")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
         auto pair = std::make_pair(10, "test");
-        auto result = opt | fxt::mappend(pair);
+        auto result = opt | fxt::mtuple_append(pair);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -572,7 +572,7 @@ TEST_CASE("append - const correctness (expected)", "[append]")
     SECTION("append to const expected")
     {
         const auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
-        auto result = exp | fxt::mappend(100);
+        auto result = exp | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -583,7 +583,7 @@ TEST_CASE("append - const correctness (expected)", "[append]")
     {
         auto exp_tuple = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
         const auto exp_value = fxt::expected<int, std::string>{100};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -596,7 +596,7 @@ TEST_CASE("append - const correctness (optional)", "[append]")
     SECTION("append to const optional")
     {
         const auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
-        auto result = opt | fxt::mappend(100);
+        auto result = opt | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -607,7 +607,7 @@ TEST_CASE("append - const correctness (optional)", "[append]")
     {
         auto opt_tuple = fxt::optional<std::tuple<int>>{std::tuple{42}};
         const auto opt_value = fxt::optional<int>{100};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -620,7 +620,7 @@ TEST_CASE("append - type deduction", "[append]")
     SECTION("auto deduction with expected")
     {
         auto exp = fxt::expected<std::tuple<int>, std::string>{std::tuple{42}};
-        auto result = exp | fxt::mappend(100) | fxt::mappend(std::string{"test"});
+        auto result = exp | fxt::mtuple_append(100) | fxt::mtuple_append(std::string{"test"});
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::expected<std::tuple<int, int, std::string>, std::string>>);
@@ -629,7 +629,7 @@ TEST_CASE("append - type deduction", "[append]")
     SECTION("auto deduction with optional")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{42}};
-        auto result = opt | fxt::mappend(100) | fxt::mappend(std::string{"test"});
+        auto result = opt | fxt::mtuple_append(100) | fxt::mtuple_append(std::string{"test"});
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::optional<std::tuple<int, int, std::string>>>);
@@ -641,7 +641,7 @@ TEST_CASE("append - edge cases", "[append]")
     SECTION("append to empty tuple (expected)")
     {
         auto exp = fxt::expected<std::tuple<>, std::string>{std::tuple{}};
-        auto result = exp | fxt::mappend(42);
+        auto result = exp | fxt::mtuple_append(42);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -650,7 +650,7 @@ TEST_CASE("append - edge cases", "[append]")
     SECTION("append to empty tuple (optional)")
     {
         auto opt = fxt::optional<std::tuple<>>{std::tuple{}};
-        auto result = opt | fxt::mappend(42);
+        auto result = opt | fxt::mtuple_append(42);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<0>(*result) == 42);
@@ -659,7 +659,7 @@ TEST_CASE("append - edge cases", "[append]")
     SECTION("append zero value")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{1}};
-        auto result = opt | fxt::mappend(0);
+        auto result = opt | fxt::mtuple_append(0);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<1>(*result) == 0);
@@ -668,7 +668,7 @@ TEST_CASE("append - edge cases", "[append]")
     SECTION("append empty string")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{1}};
-        auto result = opt | fxt::mappend(std::string{});
+        auto result = opt | fxt::mtuple_append(std::string{});
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<1>(*result) == "");
@@ -677,7 +677,7 @@ TEST_CASE("append - edge cases", "[append]")
     SECTION("append false")
     {
         auto opt = fxt::optional<std::tuple<int>>{std::tuple{1}};
-        auto result = opt | fxt::mappend(false);
+        auto result = opt | fxt::mtuple_append(false);
 
         REQUIRE(result.has_value());
         REQUIRE(std::get<1>(*result) == false);
@@ -689,7 +689,7 @@ TEST_CASE("append - fxt::expected with plain values (flat_tuple)", "[append][fla
     SECTION("append int to flat_tuple")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
-        auto result = exp | fxt::mappend(100);
+        auto result = exp | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -699,7 +699,7 @@ TEST_CASE("append - fxt::expected with plain values (flat_tuple)", "[append][fla
     SECTION("append string to flat_tuple")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
-        auto result = exp | fxt::mappend(std::string{"hello"});
+        auto result = exp | fxt::mtuple_append(std::string{"hello"});
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -709,7 +709,7 @@ TEST_CASE("append - fxt::expected with plain values (flat_tuple)", "[append][fla
     SECTION("append double to flat_tuple")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int, std::string>, std::string>{fxt::flat_tuple<int, std::string>{42, "test"}};
-        auto result = exp | fxt::mappend(3.14);
+        auto result = exp | fxt::mtuple_append(3.14);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -721,9 +721,9 @@ TEST_CASE("append - fxt::expected with plain values (flat_tuple)", "[append][fla
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{1}};
         auto result = exp
-            | fxt::mappend(2)
-            | fxt::mappend(3)
-            | fxt::mappend(4);
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(3)
+            | fxt::mtuple_append(4);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -736,9 +736,9 @@ TEST_CASE("append - fxt::expected with plain values (flat_tuple)", "[append][fla
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         auto result = exp
-            | fxt::mappend(std::string{"hello"})
-            | fxt::mappend(3.14)
-            | fxt::mappend(true);
+            | fxt::mtuple_append(std::string{"hello"})
+            | fxt::mtuple_append(3.14)
+            | fxt::mtuple_append(true);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -753,7 +753,7 @@ TEST_CASE("append - fxt::expected with error propagation (flat_tuple)", "[append
     SECTION("error in initial expected")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::unexpected("error")};
-        auto result = exp | fxt::mappend(100);
+        auto result = exp | fxt::mtuple_append(100);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error");
@@ -763,9 +763,9 @@ TEST_CASE("append - fxt::expected with error propagation (flat_tuple)", "[append
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::unexpected("initial error")};
         auto result = exp
-            | fxt::mappend(1)
-            | fxt::mappend(2)
-            | fxt::mappend(3);
+            | fxt::mtuple_append(1)
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(3);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "initial error");
@@ -778,7 +778,7 @@ TEST_CASE("append - fxt::expected with expected values (flat_tuple)", "[append][
     {
         auto exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         auto exp_value = fxt::expected<std::string, std::string>{"hello"};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -789,7 +789,7 @@ TEST_CASE("append - fxt::expected with expected values (flat_tuple)", "[append][
     {
         auto exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         auto exp_value = fxt::expected<std::string, std::string>{fxt::unexpected("value error")};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "value error");
@@ -799,7 +799,7 @@ TEST_CASE("append - fxt::expected with expected values (flat_tuple)", "[append][
     {
         auto exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::unexpected("tuple error")};
         auto exp_value = fxt::expected<std::string, std::string>{fxt::unexpected("value error")};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "value error");
@@ -813,9 +813,9 @@ TEST_CASE("append - fxt::expected with expected values (flat_tuple)", "[append][
         auto exp_val3 = fxt::expected<int, std::string>{4};
 
         auto result = exp_tuple
-            | fxt::mappend(exp_val1)
-            | fxt::mappend(exp_val2)
-            | fxt::mappend(exp_val3);
+            | fxt::mtuple_append(exp_val1)
+            | fxt::mtuple_append(exp_val2)
+            | fxt::mtuple_append(exp_val3);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -830,7 +830,7 @@ TEST_CASE("append - fxt::optional with plain values (flat_tuple)", "[append][fla
     SECTION("append int to flat_tuple")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
-        auto result = opt | fxt::mappend(100);
+        auto result = opt | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -840,7 +840,7 @@ TEST_CASE("append - fxt::optional with plain values (flat_tuple)", "[append][fla
     SECTION("append string to flat_tuple")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
-        auto result = opt | fxt::mappend(std::string{"world"});
+        auto result = opt | fxt::mtuple_append(std::string{"world"});
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -850,7 +850,7 @@ TEST_CASE("append - fxt::optional with plain values (flat_tuple)", "[append][fla
     SECTION("append double to flat_tuple")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int, std::string>>{fxt::flat_tuple<int, std::string>{42, "test"}};
-        auto result = opt | fxt::mappend(2.71);
+        auto result = opt | fxt::mtuple_append(2.71);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -862,9 +862,9 @@ TEST_CASE("append - fxt::optional with plain values (flat_tuple)", "[append][fla
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{10}};
         auto result = opt
-            | fxt::mappend(20)
-            | fxt::mappend(30)
-            | fxt::mappend(40);
+            | fxt::mtuple_append(20)
+            | fxt::mtuple_append(30)
+            | fxt::mtuple_append(40);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 10);
@@ -877,9 +877,9 @@ TEST_CASE("append - fxt::optional with plain values (flat_tuple)", "[append][fla
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{100}};
         auto result = opt
-            | fxt::mappend(std::string{"optional"})
-            | fxt::mappend(1.41)
-            | fxt::mappend(false);
+            | fxt::mtuple_append(std::string{"optional"})
+            | fxt::mtuple_append(1.41)
+            | fxt::mtuple_append(false);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 100);
@@ -894,7 +894,7 @@ TEST_CASE("append - fxt::optional with empty propagation (flat_tuple)", "[append
     SECTION("empty initial optional")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{};
-        auto result = opt | fxt::mappend(100);
+        auto result = opt | fxt::mtuple_append(100);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -903,9 +903,9 @@ TEST_CASE("append - fxt::optional with empty propagation (flat_tuple)", "[append
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{};
         auto result = opt
-            | fxt::mappend(1)
-            | fxt::mappend(2)
-            | fxt::mappend(3);
+            | fxt::mtuple_append(1)
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(3);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -917,7 +917,7 @@ TEST_CASE("append - fxt::optional with optional values (flat_tuple)", "[append][
     {
         auto opt_tuple = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
         auto opt_value = fxt::optional<std::string>{"hello"};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -928,7 +928,7 @@ TEST_CASE("append - fxt::optional with optional values (flat_tuple)", "[append][
     {
         auto opt_tuple = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
         auto opt_value = fxt::optional<std::string>{};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -937,7 +937,7 @@ TEST_CASE("append - fxt::optional with optional values (flat_tuple)", "[append][
     {
         auto opt_tuple = fxt::optional<fxt::flat_tuple<int>>{};
         auto opt_value = fxt::optional<std::string>{};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -950,9 +950,9 @@ TEST_CASE("append - fxt::optional with optional values (flat_tuple)", "[append][
         auto opt_val3 = fxt::optional<int>{4};
 
         auto result = opt_tuple
-            | fxt::mappend(opt_val1)
-            | fxt::mappend(opt_val2)
-            | fxt::mappend(opt_val3);
+            | fxt::mtuple_append(opt_val1)
+            | fxt::mtuple_append(opt_val2)
+            | fxt::mtuple_append(opt_val3);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -969,9 +969,9 @@ TEST_CASE("append - fxt::optional with optional values (flat_tuple)", "[append][
         auto opt_val3 = fxt::optional<int>{4};
 
         auto result = opt_tuple
-            | fxt::mappend(opt_val1)
-            | fxt::mappend(opt_val2)
-            | fxt::mappend(opt_val3);
+            | fxt::mtuple_append(opt_val1)
+            | fxt::mtuple_append(opt_val2)
+            | fxt::mtuple_append(opt_val3);
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -985,8 +985,8 @@ TEST_CASE("append - mixed plain and monadic values (expected, flat_tuple)", "[ap
         auto exp_value = fxt::expected<int, std::string>{2};
 
         auto result = exp
-            | fxt::mappend(100)
-            | fxt::mappend(exp_value);
+            | fxt::mtuple_append(100)
+            | fxt::mtuple_append(exp_value);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1000,8 +1000,8 @@ TEST_CASE("append - mixed plain and monadic values (expected, flat_tuple)", "[ap
         auto exp_value = fxt::expected<int, std::string>{2};
 
         auto result = exp
-            | fxt::mappend(exp_value)
-            | fxt::mappend(100);
+            | fxt::mtuple_append(exp_value)
+            | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1016,10 +1016,10 @@ TEST_CASE("append - mixed plain and monadic values (expected, flat_tuple)", "[ap
         auto exp_val2 = fxt::expected<int, std::string>{4};
 
         auto result = exp
-            | fxt::mappend(exp_val1)
-            | fxt::mappend(3)
-            | fxt::mappend(exp_val2)
-            | fxt::mappend(5);
+            | fxt::mtuple_append(exp_val1)
+            | fxt::mtuple_append(3)
+            | fxt::mtuple_append(exp_val2)
+            | fxt::mtuple_append(5);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1038,8 +1038,8 @@ TEST_CASE("append - mixed plain and monadic values (optional, flat_tuple)", "[ap
         auto opt_value = fxt::optional<int>{2};
 
         auto result = opt
-            | fxt::mappend(100)
-            | fxt::mappend(opt_value);
+            | fxt::mtuple_append(100)
+            | fxt::mtuple_append(opt_value);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1053,8 +1053,8 @@ TEST_CASE("append - mixed plain and monadic values (optional, flat_tuple)", "[ap
         auto opt_value = fxt::optional<int>{2};
 
         auto result = opt
-            | fxt::mappend(opt_value)
-            | fxt::mappend(100);
+            | fxt::mtuple_append(opt_value)
+            | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1069,10 +1069,10 @@ TEST_CASE("append - mixed plain and monadic values (optional, flat_tuple)", "[ap
         auto opt_val2 = fxt::optional<int>{4};
 
         auto result = opt
-            | fxt::mappend(opt_val1)
-            | fxt::mappend(3)
-            | fxt::mappend(opt_val2)
-            | fxt::mappend(5);
+            | fxt::mtuple_append(opt_val1)
+            | fxt::mtuple_append(3)
+            | fxt::mtuple_append(opt_val2)
+            | fxt::mtuple_append(5);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1088,7 +1088,7 @@ TEST_CASE("append - rvalue references (expected, flat_tuple)", "[append][flat_tu
     SECTION("append with rvalue expected")
     {
         auto result = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}}
-            | fxt::mappend(fxt::expected<int, std::string>{100});
+            | fxt::mtuple_append(fxt::expected<int, std::string>{100});
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1098,9 +1098,9 @@ TEST_CASE("append - rvalue references (expected, flat_tuple)", "[append][flat_tu
     SECTION("chain with rvalue temporaries")
     {
         auto result = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{1}}
-            | fxt::mappend(2)
-            | fxt::mappend(fxt::expected<int, std::string>{3})
-            | fxt::mappend(4);
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(fxt::expected<int, std::string>{3})
+            | fxt::mtuple_append(4);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1115,7 +1115,7 @@ TEST_CASE("append - rvalue references (optional, flat_tuple)", "[append][flat_tu
     SECTION("append with rvalue optional")
     {
         auto result = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}}
-            | fxt::mappend(fxt::optional<int>{100});
+            | fxt::mtuple_append(fxt::optional<int>{100});
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1125,9 +1125,9 @@ TEST_CASE("append - rvalue references (optional, flat_tuple)", "[append][flat_tu
     SECTION("chain with rvalue temporaries")
     {
         auto result = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{1}}
-            | fxt::mappend(2)
-            | fxt::mappend(fxt::optional<int>{3})
-            | fxt::mappend(4);
+            | fxt::mtuple_append(2)
+            | fxt::mtuple_append(fxt::optional<int>{3})
+            | fxt::mtuple_append(4);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 1);
@@ -1142,7 +1142,7 @@ TEST_CASE("append - move-only types (expected, flat_tuple)", "[append][flat_tupl
     SECTION("append unique_ptr to flat_tuple")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
-        auto result = std::move(exp) | fxt::mappend(std::make_unique<int>(100));
+        auto result = std::move(exp) | fxt::mtuple_append(std::make_unique<int>(100));
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1154,7 +1154,7 @@ TEST_CASE("append - move-only types (expected, flat_tuple)", "[append][flat_tupl
         auto exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         auto exp_ptr = fxt::expected<std::unique_ptr<int>, std::string>{std::make_unique<int>(100)};
 
-        auto result = std::move(exp_tuple) | fxt::mappend(std::move(exp_ptr));
+        auto result = std::move(exp_tuple) | fxt::mtuple_append(std::move(exp_ptr));
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1167,7 +1167,7 @@ TEST_CASE("append - move-only types (optional, flat_tuple)", "[append][flat_tupl
     SECTION("append unique_ptr to flat_tuple")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
-        auto result = std::move(opt) | fxt::mappend(std::make_unique<int>(100));
+        auto result = std::move(opt) | fxt::mtuple_append(std::make_unique<int>(100));
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1179,7 +1179,7 @@ TEST_CASE("append - move-only types (optional, flat_tuple)", "[append][flat_tupl
         auto opt_tuple = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
         auto opt_ptr = fxt::optional<std::unique_ptr<int>>{std::make_unique<int>(100)};
 
-        auto result = std::move(opt_tuple) | fxt::mappend(std::move(opt_ptr));
+        auto result = std::move(opt_tuple) | fxt::mtuple_append(std::move(opt_ptr));
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1193,7 +1193,7 @@ TEST_CASE("append - complex types (expected, flat_tuple)", "[append][flat_tuple]
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         std::vector<int> vec{1, 2, 3};
-        auto result = exp | fxt::mappend(vec);
+        auto result = exp | fxt::mtuple_append(vec);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1205,7 +1205,7 @@ TEST_CASE("append - complex types (expected, flat_tuple)", "[append][flat_tuple]
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         auto pair = std::make_pair(10, std::string{"test"});
-        auto result = exp | fxt::mappend(pair);
+        auto result = exp | fxt::mtuple_append(pair);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1220,7 +1220,7 @@ TEST_CASE("append - complex types (optional, flat_tuple)", "[append][flat_tuple]
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
         std::vector<int> vec{1, 2, 3};
-        auto result = opt | fxt::mappend(vec);
+        auto result = opt | fxt::mtuple_append(vec);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1232,7 +1232,7 @@ TEST_CASE("append - complex types (optional, flat_tuple)", "[append][flat_tuple]
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
         auto pair = std::make_pair(10, std::string{"test"});
-        auto result = opt | fxt::mappend(pair);
+        auto result = opt | fxt::mtuple_append(pair);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1246,7 +1246,7 @@ TEST_CASE("append - const correctness (expected, flat_tuple)", "[append][flat_tu
     SECTION("append to const expected")
     {
         const auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
-        auto result = exp | fxt::mappend(100);
+        auto result = exp | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1257,7 +1257,7 @@ TEST_CASE("append - const correctness (expected, flat_tuple)", "[append][flat_tu
     {
         auto exp_tuple = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
         const auto exp_value = fxt::expected<int, std::string>{100};
-        auto result = exp_tuple | fxt::mappend(exp_value);
+        auto result = exp_tuple | fxt::mtuple_append(exp_value);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1270,7 +1270,7 @@ TEST_CASE("append - const correctness (optional, flat_tuple)", "[append][flat_tu
     SECTION("append to const optional")
     {
         const auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
-        auto result = opt | fxt::mappend(100);
+        auto result = opt | fxt::mtuple_append(100);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1281,7 +1281,7 @@ TEST_CASE("append - const correctness (optional, flat_tuple)", "[append][flat_tu
     {
         auto opt_tuple = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
         const auto opt_value = fxt::optional<int>{100};
-        auto result = opt_tuple | fxt::mappend(opt_value);
+        auto result = opt_tuple | fxt::mtuple_append(opt_value);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1294,7 +1294,7 @@ TEST_CASE("append - type deduction (flat_tuple)", "[append][flat_tuple]")
     SECTION("auto deduction with expected")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{42}};
-        auto result = exp | fxt::mappend(100) | fxt::mappend(std::string{"test"});
+        auto result = exp | fxt::mtuple_append(100) | fxt::mtuple_append(std::string{"test"});
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::expected<fxt::flat_tuple<int, int, std::string>, std::string>>);
@@ -1303,7 +1303,7 @@ TEST_CASE("append - type deduction (flat_tuple)", "[append][flat_tuple]")
     SECTION("auto deduction with optional")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{42}};
-        auto result = opt | fxt::mappend(100) | fxt::mappend(std::string{"test"});
+        auto result = opt | fxt::mtuple_append(100) | fxt::mtuple_append(std::string{"test"});
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::optional<fxt::flat_tuple<int, int, std::string>>>);
@@ -1315,7 +1315,7 @@ TEST_CASE("append - edge cases (flat_tuple)", "[append][flat_tuple]")
     SECTION("append to empty flat_tuple (expected)")
     {
         auto exp = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}};
-        auto result = exp | fxt::mappend(42);
+        auto result = exp | fxt::mtuple_append(42);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1324,7 +1324,7 @@ TEST_CASE("append - edge cases (flat_tuple)", "[append][flat_tuple]")
     SECTION("append to empty flat_tuple (optional)")
     {
         auto opt = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}};
-        auto result = opt | fxt::mappend(42);
+        auto result = opt | fxt::mtuple_append(42);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 42);
@@ -1333,7 +1333,7 @@ TEST_CASE("append - edge cases (flat_tuple)", "[append][flat_tuple]")
     SECTION("append zero value")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{1}};
-        auto result = opt | fxt::mappend(0);
+        auto result = opt | fxt::mtuple_append(0);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<1>(*result) == 0);
@@ -1342,7 +1342,7 @@ TEST_CASE("append - edge cases (flat_tuple)", "[append][flat_tuple]")
     SECTION("append empty string")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{1}};
-        auto result = opt | fxt::mappend(std::string{});
+        auto result = opt | fxt::mtuple_append(std::string{});
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<1>(*result) == "");
@@ -1351,7 +1351,7 @@ TEST_CASE("append - edge cases (flat_tuple)", "[append][flat_tuple]")
     SECTION("append false")
     {
         auto opt = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{1}};
-        auto result = opt | fxt::mappend(false);
+        auto result = opt | fxt::mtuple_append(false);
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<1>(*result) == false);
@@ -1363,10 +1363,10 @@ TEST_CASE("append - comparison std::tuple vs flat_tuple", "[append][flat_tuple]"
     SECTION("behavior equivalence with expected")
     {
         auto std_result = fxt::expected<std::tuple<int>, std::string>{std::tuple{10}}
-            | fxt::mappend(20) | fxt::mappend(30);
+            | fxt::mtuple_append(20) | fxt::mtuple_append(30);
 
         auto flat_result = fxt::expected<fxt::flat_tuple<int>, std::string>{fxt::flat_tuple<int>{10}}
-            | fxt::mappend(20) | fxt::mappend(30);
+            | fxt::mtuple_append(20) | fxt::mtuple_append(30);
 
         REQUIRE(std_result.has_value());
         REQUIRE(flat_result.has_value());
@@ -1379,10 +1379,10 @@ TEST_CASE("append - comparison std::tuple vs flat_tuple", "[append][flat_tuple]"
     SECTION("behavior equivalence with optional")
     {
         auto std_result = fxt::optional<std::tuple<int>>{std::tuple{5}}
-            | fxt::mappend(15) | fxt::mappend(25);
+            | fxt::mtuple_append(15) | fxt::mtuple_append(25);
 
         auto flat_result = fxt::optional<fxt::flat_tuple<int>>{fxt::flat_tuple<int>{5}}
-            | fxt::mappend(15) | fxt::mappend(25);
+            | fxt::mtuple_append(15) | fxt::mtuple_append(25);
 
         REQUIRE(std_result.has_value());
         REQUIRE(flat_result.has_value());

@@ -1,4 +1,4 @@
-//
+﻿//
 // Test suite for fxt::get
 //
 
@@ -45,9 +45,9 @@ TEST_CASE("get - fxt::expected by index", "[get]")
     SECTION("get from tuple built with append")
     {
         auto exp = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-            | fxt::mappend(100)
-            | fxt::mappend(200)
-            | fxt::mappend(300);
+            | fxt::mtuple_append(100)
+            | fxt::mtuple_append(200)
+            | fxt::mtuple_append(300);
 
         auto first = exp | fxt::mget<0>();
         auto second = exp | fxt::mget<1>();
@@ -207,9 +207,9 @@ TEST_CASE("get - fxt::optional by index", "[get]")
     SECTION("get from tuple built with append")
     {
         auto opt = fxt::optional<std::tuple<>>{std::tuple{}}
-            | fxt::mappend(10)
-            | fxt::mappend(20)
-            | fxt::mappend(30);
+            | fxt::mtuple_append(10)
+            | fxt::mtuple_append(20)
+            | fxt::mtuple_append(30);
 
         auto first = opt | fxt::mget<0>();
         auto second = opt | fxt::mget<1>();
@@ -603,3 +603,4 @@ TEST_CASE("get - large tuples", "[get]")
         REQUIRE(*( exp | fxt::mget<9>()) == 9);
     }
 }
+

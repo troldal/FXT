@@ -391,15 +391,100 @@ namespace fxt
     }
 
     /**
-     * @brief Curried version of mtuple_append for pipelining
+     * @brief Curried overload: append from an expected-like container (lvalue)
+     *
+     * Returns a pipeline adaptor that appends the value held by @p value to a tuple
+     * inside another expected-like container. Supports error-type coercion: @c TError
+     * need only be convertible to the container's error type @c TError2, enabling
+     * composition across differently-typed expected chains.
+     *
+     * The appended @p value is checked first. When @p value holds an error its error
+     * (converted to @c TError2) propagates immediately, before the container is
+     * inspected. This is the preferred behaviour for monadic append pipelines.
+     *
+     * @tparam TExpected  The expected-like template (e.g. @c std::expected).
+     * @tparam TValue     The value type held by @p value.
+     * @tparam TError     The error type of @p value.
+     * @param  value      The expected-like container holding the value to append (copied).
+     * @return A pipeline adaptor that appends @c *value to the tuple inside its argument.
+     *
+     * @code
+     * // Same-error-type append
+     * auto exp_tuple = fxt::expected<fxt::tuple<int>, std::string>{fxt::make_tuple(1)};
+     * auto exp_val   = fxt::expected<int, std::string>{2};
+     * auto result    = exp_tuple | fxt::mtuple_append(exp_val);
+     * // result: fxt::expected<fxt::tuple<int, int>, std::string> containing {1, 2}
+     *
+     * // Different-error-type (MyError convertible to std::string)
+     * auto exp_val2  = fxt::expected<int, MyError>{3};
+     * auto result2   = exp_tuple | fxt::mtuple_append(exp_val2);
+     * // result2: fxt::expected<fxt::tuple<int, int>, std::string> containing {1, 3}
+     * @endcode
+     */
+    template<template<typename, typename> class TExpected, typename TValue, typename TError>
+        requires expected_like<TExpected<TValue, TError>>
+    constexpr auto mtuple_append(const TExpected<TValue, TError>& value)
+    {
+        return [value]<template<typename, typename> class TExp2, typename TTuple, typename TError2>(
+                   const TExp2<TTuple, TError2>& tupleContainer)
+            requires expected_constructible_like<TExp2<TTuple, TError2>>
+                  && std::convertible_to<TError, TError2>
+        {
+            return value
+                ? tupleContainer.transform([&value](const TTuple& t) { return fxt::tuple_append(t, *value); })
+                : typename TExp2<TTuple, TError2>::unexpected_type(value.error());
+        };
+    }
+
+    /**
+     * @brief Curried overload: append from an expected-like container (rvalue, move-optimised)
+     *
+     * Move-optimised version for use with temporary expected values or move-only wrapped
+     * types (e.g. @c std::unique_ptr). Behaves identically to the lvalue overload but
+     * moves instead of copying.
+     *
+     * @tparam TExpected  The expected-like template.
+     * @tparam TValue     The value type (may be move-only).
+     * @tparam TError     The error type of @p value.
+     * @param  value      The expected-like container to move from.
+     * @return A pipeline adaptor (mutable lambda) that appends @c std::move(*value).
+     *
+     * @code
+     * auto exp_tuple = fxt::expected<fxt::tuple<int>, std::string>{fxt::make_tuple(1)};
+     * auto result = std::move(exp_tuple)
+     *     | fxt::mtuple_append(fxt::expected<std::unique_ptr<int>, std::string>{
+     *                               std::make_unique<int>(42)});
+     * // result: fxt::expected<fxt::tuple<int, std::unique_ptr<int>>, std::string>
+     * @endcode
+     */
+    template<template<typename, typename> class TExpected, typename TValue, typename TError>
+        requires expected_like<TExpected<TValue, TError>>
+    constexpr auto mtuple_append(TExpected<TValue, TError>&& value)
+    {
+        return [value = std::move(value)]<template<typename, typename> class TExp2, typename TTuple, typename TError2>(
+                   const TExp2<TTuple, TError2>& tupleContainer) mutable
+            requires expected_constructible_like<TExp2<TTuple, TError2>>
+                  && std::convertible_to<TError, TError2>
+        {
+            return value
+                ? tupleContainer.transform([value = std::move(value)](const TTuple& t) mutable {
+                    return fxt::tuple_append(t, std::move(*value)); })
+                : typename TExp2<TTuple, TError2>::unexpected_type(std::move(value.error()));
+        };
+    }
+
+    /**
+     * @brief Curried version of mtuple_append for pipelining (plain values and optional-like)
      *
      * Returns a lambda that appends values to a tuple inside a monad.
      * This enables usage with the pipe operator for monadic tuple append operations.
+     * For expected-like arguments prefer the overloads above, which support error-type
+     * coercion and have cleaner value-first error semantics.
      *
      * Works with both fxt::tuple and fxt::flat_tuple, preserving the tuple type.
-     * The values to append can be plain values or values inside monads.
+     * The values to append can be plain values or optional-like monadic values.
      *
-     * @tparam U The type of the first element to append
+     * @tparam U The type of the first element to append (plain value or optional-like)
      * @tparam Us The types of additional elements to append
      * @param u The first element to append
      * @param us Additional elements to append
@@ -415,10 +500,11 @@ namespace fxt
      * auto result2 = exp | fxt::mtuple_append(3, 4, 5);
      * // result2 is fxt::expected<fxt::tuple<int, int, int, int, int>, Error> containing {1, 2, 3, 4, 5}
      *
-     * // Pipe operator with monad<value>
-     * auto exp_val = fxt::expected<int, Error>{3};
-     * auto result3 = exp | fxt::mtuple_append(exp_val);
-     * // result3 is fxt::expected<fxt::tuple<int, int, int>, Error> containing {1, 2, 3}
+     * // Pipe operator with optional<value>
+     * auto opt_tuple = fxt::optional<fxt::tuple<int>>{fxt::make_tuple(1)};
+     * auto opt_val = fxt::optional<int>{2};
+     * auto result3 = opt_tuple | fxt::mtuple_append(opt_val);
+     * // result3 is fxt::optional<fxt::tuple<int, int>> containing {1, 2}
      *
      * // Chaining with other monadic operations
      * auto result4 = exp
@@ -433,6 +519,7 @@ namespace fxt
      * @endcode
      */
     template<typename U, typename... Us>
+        requires (!expected_like<std::remove_cvref_t<U>>)
     constexpr auto mtuple_append(U&& u, Us&&... us)
     {
         return [u = std::forward<U>(u), ... us = std::forward<Us>(us)]<typename TMonad>(TMonad&& container) mutable {

@@ -1,4 +1,4 @@
-//
+﻿//
 // Demo: fxt::apply
 //
 // This demo shows how to use fxt::apply to apply functions to tuple values
@@ -23,8 +23,8 @@ int main()
 
     // Apply a function to compute the sum (using temporary directly)
     auto exp2 = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(5)
-        | fxt::mappend(10)
+        | fxt::mtuple_append(5)
+        | fxt::mtuple_append(10)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "Computing: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
@@ -38,8 +38,8 @@ int main()
     // Chain multiple apply operations
     std::cout << "\nChaining multiple apply operations:" << std::endl;
     auto exp3 = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(3)
-        | fxt::mappend(4)
+        | fxt::mtuple_append(3)
+        | fxt::mtuple_append(4)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "  Step 1: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
@@ -62,8 +62,8 @@ int main()
 
     // Start with an error
     auto result_with_error = fxt::expected<std::tuple<>, std::string>{fxt::unexpected("Initial error")}
-        | fxt::mappend(1)
-        | fxt::mappend(2)
+        | fxt::mtuple_append(1)
+        | fxt::mtuple_append(2)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "This won't be called" << std::endl;
             return a + b;
@@ -83,8 +83,8 @@ int main()
 
     // Apply a function that can fail
     auto exp_monadic = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(10.0)
-        | fxt::mappend(2.0)
+        | fxt::mtuple_append(10.0)
+        | fxt::mtuple_append(2.0)
         | fxt::mapply_append([](double a, double b) -> fxt::expected<double, std::string> {
             std::cout << "Dividing: " << a << " / " << b << std::endl;
             if (b == 0.0) {
@@ -103,8 +103,8 @@ int main()
     // Example with error in the applied function
     std::cout << "\nWith division by zero:" << std::endl;
     auto exp_error = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(10.0)
-        | fxt::mappend(0.0)
+        | fxt::mtuple_append(10.0)
+        | fxt::mtuple_append(0.0)
         | fxt::mapply_append([](double a, double b) -> fxt::expected<double, std::string> {
             std::cout << "Attempting: " << a << " / " << b << std::endl;
             if (b == 0.0) {
@@ -126,8 +126,8 @@ int main()
     std::cout << "------------------------------------------------------------" << std::endl;
 
     auto exp_void = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(42)
-        | fxt::mappend(std::string{"hello"})
+        | fxt::mtuple_append(42)
+        | fxt::mtuple_append(std::string{"hello"})
         | fxt::mapply_append([](int x, const std::string& s) {
             std::cout << "Side effect: logging " << x << " and '" << s << "'" << std::endl;
         });
@@ -145,8 +145,8 @@ int main()
 
     // Apply a function to compute the product (using temporary directly)
     auto opt2 = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(7)
-        | fxt::mappend(8)
+        | fxt::mtuple_append(7)
+        | fxt::mtuple_append(8)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "Computing: " << a << " * " << b << " = " << (a * b) << std::endl;
             return a * b;
@@ -160,8 +160,8 @@ int main()
     // Chain multiple apply operations
     std::cout << "\nChaining multiple apply operations:" << std::endl;
     auto opt3 = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(2)
-        | fxt::mappend(3)
+        | fxt::mtuple_append(2)
+        | fxt::mtuple_append(3)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "  Step 1: " << a << " * " << b << " = " << (a * b) << std::endl;
             return a * b;
@@ -184,8 +184,8 @@ int main()
 
     // Start with an empty optional
     auto result_with_empty = fxt::optional<std::tuple<>>{}
-        | fxt::mappend(1)
-        | fxt::mappend(2)
+        | fxt::mtuple_append(1)
+        | fxt::mtuple_append(2)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "This won't be called" << std::endl;
             return a + b;
@@ -205,7 +205,7 @@ int main()
 
     // Apply a function that returns optional
     auto opt_monadic = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(16.0)
+        | fxt::mtuple_append(16.0)
         | fxt::mapply_append([](double x) -> fxt::optional<double> {
             std::cout << "Computing sqrt of " << x << std::endl;
             if (x < 0.0) {
@@ -224,7 +224,7 @@ int main()
     // Example with failure
     std::cout << "\nWith negative number:" << std::endl;
     auto opt_fail = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(-16.0)
+        | fxt::mtuple_append(-16.0)
         | fxt::mapply_append([](double x) -> fxt::optional<double> {
             std::cout << "Attempting sqrt of " << x << std::endl;
             if (x < 0.0) {
@@ -246,8 +246,8 @@ int main()
     std::cout << "------------------------------------------------------------" << std::endl;
 
     auto opt_void = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(99)
-        | fxt::mappend(std::string{"world"})
+        | fxt::mtuple_append(99)
+        | fxt::mtuple_append(std::string{"world"})
         | fxt::mapply_append([](int x, const std::string& s) {
             std::cout << "Side effect: processing " << x << " and '" << s << "'" << std::endl;
         });
@@ -265,8 +265,8 @@ int main()
 
     std::cout << "Building a calculation pipeline..." << std::endl;
     auto complex = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(5)
-        | fxt::mappend(3)
+        | fxt::mtuple_append(5)
+        | fxt::mtuple_append(3)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "  Computing sum: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
@@ -297,9 +297,9 @@ int main()
     std::cout << "----------------------------" << std::endl;
 
     auto mixed = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(std::string{"Hello"})
-        | fxt::mappend(42)
-        | fxt::mappend(3.14)
+        | fxt::mtuple_append(std::string{"Hello"})
+        | fxt::mtuple_append(42)
+        | fxt::mtuple_append(3.14)
         | fxt::mapply_append([](const std::string& s, int i, double d) {
             std::cout << "Building message from: \"" << s << "\", " << i << ", " << d << std::endl;
             return s + " " + std::to_string(i) + " " + std::to_string(d);
@@ -318,8 +318,8 @@ int main()
 
     std::cout << "Creating expected with flat_tuple..." << std::endl;
     auto exp_flat = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
-        | fxt::mappend(2)
-        | fxt::mappend(3)
+        | fxt::mtuple_append(2)
+        | fxt::mtuple_append(3)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "  Computing: " << a << " * " << b << " = " << (a * b) << std::endl;
             return a * b;
@@ -333,8 +333,8 @@ int main()
     // Chain multiple operations on flat_tuple
     std::cout << "\nChaining operations on flat_tuple:" << std::endl;
     auto exp_flat_chain = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
-        | fxt::mappend(10.0)
-        | fxt::mappend(5.0)
+        | fxt::mtuple_append(10.0)
+        | fxt::mtuple_append(5.0)
         | fxt::mapply_append([](double a, double b) {
             std::cout << "  Step 1: " << a << " / " << b << " = " << (a / b) << std::endl;
             return a / b;
@@ -360,8 +360,8 @@ int main()
 
     std::cout << "Creating optional with flat_tuple..." << std::endl;
     auto opt_flat = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
-        | fxt::mappend(7)
-        | fxt::mappend(8)
+        | fxt::mtuple_append(7)
+        | fxt::mtuple_append(8)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "  Computing: " << a << " + " << b << " = " << (a + b) << std::endl;
             return a + b;
@@ -375,8 +375,8 @@ int main()
     // With void-returning function
     std::cout << "\nVoid-returning function with flat_tuple:" << std::endl;
     auto opt_flat_void = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
-        | fxt::mappend(42)
-        | fxt::mappend(std::string{"test"})
+        | fxt::mtuple_append(42)
+        | fxt::mtuple_append(std::string{"test"})
         | fxt::mapply_append([](int x, const std::string& s) {
             std::cout << "  Side effect: " << x << " and \"" << s << "\"" << std::endl;
         });
@@ -566,8 +566,8 @@ int main()
     std::cout << "Using mapply on monadic container, then apply on extracted value:" << std::endl;
 
     auto monadic_result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
-        | fxt::mappend(3)
-        | fxt::mappend(4)
+        | fxt::mtuple_append(3)
+        | fxt::mtuple_append(4)
         | fxt::mapply_append([](int a, int b) {
             std::cout << "  In monadic context: Computing " << a << " * " << b << std::endl;
             return a * b;
@@ -633,4 +633,5 @@ int main()
 
     return 0;
 }
+
 

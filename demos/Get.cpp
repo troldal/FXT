@@ -1,4 +1,4 @@
-//
+﻿//
 // Demo: fxt::get
 //
 // This demo shows how to use fxt::get to extract elements from tuples
@@ -39,9 +39,9 @@ int main()
     // Build a tuple incrementally and extract elements
     std::cout << "\nBuilding a tuple with append and extracting elements:" << std::endl;
     auto exp2 = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(100)
-        | fxt::mappend(200)
-        | fxt::mappend(300);
+        | fxt::mtuple_append(100)
+        | fxt::mtuple_append(200)
+        | fxt::mtuple_append(300);
 
     auto first = exp2 | fxt::mget<0>();
     auto second = exp2 | fxt::mget<1>();
@@ -115,9 +115,9 @@ int main()
     // Build a tuple incrementally with optional and extract elements
     std::cout << "\nBuilding a tuple with append and extracting elements:" << std::endl;
     auto opt2 = fxt::optional<std::tuple<>>{std::tuple{}}
-        | fxt::mappend(10)
-        | fxt::mappend(20)
-        | fxt::mappend(30);
+        | fxt::mtuple_append(10)
+        | fxt::mtuple_append(20)
+        | fxt::mtuple_append(30);
 
     auto opt_first = opt2 | fxt::mget<0>();
     auto opt_second = opt2 | fxt::mget<1>();
@@ -172,8 +172,8 @@ int main()
 
     // Build a tuple with computations, then extract specific elements
     auto computed = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(5)
-        | fxt::mappend(10)
+        | fxt::mtuple_append(5)
+        | fxt::mtuple_append(10)
         | fxt::mapply([](int a, int b) { return a + b; })
         | fxt::mapply([](int a, int b, int sum) { return a * b; });
 
@@ -291,4 +291,5 @@ int main()
 
     return 0;
 }
+
 

@@ -1,4 +1,4 @@
-//
+﻿//
 // Demo: fxt::select
 //
 // This demo shows how to use fxt::select to extract multiple elements from tuples
@@ -178,11 +178,11 @@ int main()
     std::cout << "---------------------------------------------------------" << std::endl;
 
     auto built = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(100)
-        | fxt::mappend(200)
-        | fxt::mappend(300)
-        | fxt::mappend(400)
-        | fxt::mappend(500);
+        | fxt::mtuple_append(100)
+        | fxt::mtuple_append(200)
+        | fxt::mtuple_append(300)
+        | fxt::mtuple_append(400)
+        | fxt::mtuple_append(500);
 
     std::cout << "Built tuple: (100, 200, 300, 400, 500)" << std::endl;
 
@@ -200,9 +200,9 @@ int main()
     std::cout << "-----------------------------------" << std::endl;
 
     auto computed = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-        | fxt::mappend(5)
-        | fxt::mappend(10)
-        | fxt::mappend(15)
+        | fxt::mtuple_append(5)
+        | fxt::mtuple_append(10)
+        | fxt::mtuple_append(15)
         | fxt::mapply([](int a, int b, int c) { return a + b + c; })
         | fxt::mapply([](int a, int b, int c, int sum) { return a * b * c; });
 
@@ -710,4 +710,5 @@ int main()
 
     return 0;
 }
+
 

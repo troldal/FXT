@@ -1,4 +1,4 @@
-//
+﻿//
 // Test suite for fxt::select
 //
 
@@ -423,10 +423,10 @@ TEST_CASE("select - with append", "[select]")
     SECTION("build tuple with append and select (expected)")
     {
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-            | fxt::mappend(100)
-            | fxt::mappend(200)
-            | fxt::mappend(300)
-            | fxt::mappend(400)
+            | fxt::mtuple_append(100)
+            | fxt::mtuple_append(200)
+            | fxt::mtuple_append(300)
+            | fxt::mtuple_append(400)
             | fxt::mselect<0, 2>();
 
         REQUIRE(result.has_value());
@@ -438,9 +438,9 @@ TEST_CASE("select - with append", "[select]")
     SECTION("build tuple with append and select (optional)")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
-            | fxt::mappend(10)
-            | fxt::mappend(20)
-            | fxt::mappend(30)
+            | fxt::mtuple_append(10)
+            | fxt::mtuple_append(20)
+            | fxt::mtuple_append(30)
             | fxt::mselect<1, 2>();
 
         REQUIRE(result.has_value());
@@ -1159,3 +1159,4 @@ TEST_CASE("select - type preservation", "[select][types]")
         static_assert(std::is_same_v<decltype(result), fxt::tuple<int, double>>);
     }
 }
+
