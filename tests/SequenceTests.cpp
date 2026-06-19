@@ -2,6 +2,7 @@
 #include <fxt.hpp>
 #include <deque>
 #include <list>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -373,4 +374,159 @@ TEST_CASE("traverse and sequence are equivalent", "[traverse][sequence][expected
     REQUIRE(via_sequence.has_value());
     REQUIRE(via_traverse.has_value());
     REQUIRE(*via_sequence == *via_traverse);
+}
+
+// ============================================================================
+// fxt::sequence — optional overloads (container)
+// ============================================================================
+
+TEST_CASE("fxt::sequence — optional, all elements present", "[sequence][optional]")
+{
+    SECTION("vector: all values present")
+    {
+        std::vector<fxt::optional<int>> input = {1, 2, 3};
+        auto result = fxt::sequence(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == std::vector<int>{1, 2, 3});
+    }
+
+    SECTION("list: all values present")
+    {
+        std::list<fxt::optional<int>> input = {10, 20};
+        auto result = fxt::sequence(input);
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == std::list<int>{10, 20});
+    }
+}
+
+TEST_CASE("fxt::sequence — optional, empty container", "[sequence][optional]")
+{
+    std::vector<fxt::optional<int>> input;
+    auto result = fxt::sequence(input);
+
+    REQUIRE(result.has_value());
+    REQUIRE(result->empty());
+}
+
+TEST_CASE("fxt::sequence — optional, absent element short-circuits", "[sequence][optional]")
+{
+    SECTION("first element absent")
+    {
+        std::vector<fxt::optional<int>> input = {fxt::nullopt, 2, 3};
+        auto result = fxt::sequence(input);
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("middle element absent")
+    {
+        std::vector<fxt::optional<int>> input = {1, fxt::nullopt, 3};
+        auto result = fxt::sequence(input);
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("last element absent")
+    {
+        std::vector<fxt::optional<int>> input = {1, 2, fxt::nullopt};
+        auto result = fxt::sequence(input);
+        REQUIRE_FALSE(result.has_value());
+    }
+}
+
+TEST_CASE("fxt::sequence — optional, result type matches input container", "[sequence][optional]")
+{
+    std::vector<fxt::optional<int>> input = {1, 2};
+    auto result = fxt::sequence(input);
+    STATIC_REQUIRE(std::is_same_v<decltype(result), fxt::optional<std::vector<int>>>);
+}
+
+TEST_CASE("fxt::sequence — optional, set container (insert-based)", "[sequence][optional]")
+{
+    std::set<fxt::optional<int>> input = {1, 2, 3};
+    auto result = fxt::sequence(input);
+
+    REQUIRE(result.has_value());
+    REQUIRE(*result == std::set<int>{1, 2, 3});
+}
+
+// ============================================================================
+// fxt::traverse — optional overloads (container)
+// ============================================================================
+
+static fxt::optional<int> maybe_positive(int v)
+{
+    if (v <= 0) return fxt::nullopt;
+    return v;
+}
+
+TEST_CASE("fxt::traverse — optional, free function, all succeed", "[traverse][optional]")
+{
+    std::vector<int> input = {1, 2, 3};
+    auto result = fxt::traverse(input, maybe_positive);
+
+    REQUIRE(result.has_value());
+    REQUIRE(*result == std::vector<int>{1, 2, 3});
+}
+
+TEST_CASE("fxt::traverse — optional, free function, absent short-circuits", "[traverse][optional]")
+{
+    SECTION("first element fails")
+    {
+        std::vector<int> input = {-1, 2, 3};
+        REQUIRE_FALSE(fxt::traverse(input, maybe_positive).has_value());
+    }
+
+    SECTION("middle element fails")
+    {
+        std::vector<int> input = {1, 0, 3};
+        REQUIRE_FALSE(fxt::traverse(input, maybe_positive).has_value());
+    }
+}
+
+TEST_CASE("fxt::traverse — optional, pipe adaptor", "[traverse][optional][pipe]")
+{
+    std::vector<int> input = {1, 2, 3};
+    auto result = input | fxt::traverse(maybe_positive);
+
+    REQUIRE(result.has_value());
+    REQUIRE(*result == std::vector<int>{1, 2, 3});
+}
+
+TEST_CASE("fxt::traverse — optional, pipe adaptor, empty container", "[traverse][optional][pipe]")
+{
+    std::vector<int> input;
+    auto result = input | fxt::traverse(maybe_positive);
+
+    REQUIRE(result.has_value());
+    REQUIRE(result->empty());
+}
+
+TEST_CASE("fxt::traverse — optional, set container (insert-based)", "[traverse][optional]")
+{
+    std::set<int> input = {1, 2, 3};
+    auto result = fxt::traverse(input, maybe_positive);
+
+    REQUIRE(result.has_value());
+    REQUIRE(*result == std::set<int>{1, 2, 3});
+}
+
+// ============================================================================
+// fxt::traverse — expected with set (insert-based container)
+// ============================================================================
+
+TEST_CASE("fxt::traverse — expected, set container (insert-based)", "[traverse][expected]")
+{
+    std::set<int> input = {1, 2, 3};
+    auto result = fxt::traverse(input, parse_positive);
+
+    REQUIRE(result.has_value());
+    REQUIRE(*result == std::set<int>{1, 2, 3});
+}
+
+TEST_CASE("fxt::traverse — expected, set container, error short-circuits", "[traverse][expected]")
+{
+    std::set<int> input = {-1, 2, 3};
+    auto result = fxt::traverse(input, parse_positive);
+    REQUIRE_FALSE(result.has_value());
 }

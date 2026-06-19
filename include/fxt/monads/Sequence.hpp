@@ -40,51 +40,67 @@
 
 /**
  * @file Sequence.hpp
- * @brief sequence() and traverse() — applicatives over containers and tuples for fxt::expected
+ * @brief sequence() and traverse() — applicatives over containers and tuples
+ *        for both fxt::expected and fxt::optional
  *
  * ## Overview
  *
- * Two overload families, both with the same short-circuit-on-first-error semantics:
+ * Two overload families, both with short-circuit-on-first-absent semantics:
  *
- * ### Homogeneous container overloads (vector, list, deque, …)
+ * ### Homogeneous container overloads (vector, list, deque, set, …)
  *
  *     sequence(Container<expected<T,E>>) -> expected<Container<T>, E>
- *     traverse(Container<T>, F)          -> expected<Container<U>, E>
+ *     sequence(Container<optional<T>>)   -> optional<Container<T>>
+ *
+ *     traverse(Container<T>, F)          -> expected<Container<U>, E>   when F returns expected
+ *     traverse(Container<T>, F)          -> optional<Container<U>>      when F returns optional
  *     container | traverse(f)
  *
- * Container must have begin/end and push_back; must not be a tuple.
- * reserve() is called automatically for sized ranges.
+ * Container must have begin/end and either push_back or insert; must not be a
+ * tuple. reserve() is called automatically for sized ranges.
  *
  * ### fxt::tuple overloads (heterogeneous, compile-time)
  *
  *     sequence(tuple<expected<T0,E>, expected<T1,E>, …>)
  *         -> expected<tuple<T0, T1, …>, E>
  *
+ *     sequence(tuple<optional<T0>, optional<T1>, …>)
+ *         -> optional<tuple<T0, T1, …>>
+ *
  *     traverse(tuple<T0, T1, …>, F)
- *         -> expected<tuple<U0, U1, …>, E>   where F(Ti) -> expected<Ui, E>
+ *         -> expected<tuple<U0, U1, …>, E>   when F returns expected
+ *         -> optional<tuple<U0, U1, …>>      when F returns optional
  *
  *     tuple_value | traverse(f)
  *
  * All expected elements in a tuple sequence must share the same error type E —
- * enforced at compile time via pattern matching on the function signature.
- * Unlike the container version, the result type is fully known at compile time
- * with no type erasure.
+ * enforced at compile time. All optional elements must use the same optional
+ * template (e.g. all std::optional or all tl::optional). Unlike the container
+ * version, result types are fully known at compile time with no type erasure.
  *
- * Note: fxt::traverse(F) is the single pipe-adaptor factory for both overload
+ * Note: fxt::traverse(F) is the single pipe-adaptor factory for all overload
  * families. Dispatch is performed at the call site by the type of the left-hand
- * side of |.
+ * side of | and the return type of F.
  *
  * ## Usage
  *
  * @code{.cpp}
- * // Container sequence
+ * // Container sequence — expected
  * std::vector<fxt::expected<int, std::string>> v = {1, 2, fxt::unexpected("bad")};
  * auto r = fxt::sequence(v);   // expected<vector<int>, string>{"bad"}
+ *
+ * // Container sequence — optional
+ * std::vector<fxt::optional<int>> v2 = {1, 2, fxt::nullopt};
+ * auto r2 = fxt::sequence(v2); // optional<vector<int>>{nullopt}
  *
  * // Container traverse (pipe)
  * auto validated = raw_doubles | fxt::traverse(validate_pressure);
  *
- * // Tuple sequence (heterogeneous)
+ * // std::set traverse (insert-based container)
+ * std::set<int> s = {1, 2, 3};
+ * auto rs = fxt::traverse(s, [](int x) -> fxt::expected<int, std::string> { return x * 2; });
+ *
+ * // Tuple sequence — expected (heterogeneous)
  * auto args = fxt::make_tuple(
  *     validate_pressure(raw_p),     // expected<double, XLError>
  *     validate_temperature(raw_t),  // expected<double, XLError>
@@ -93,7 +109,15 @@
  * auto result = fxt::sequence(std::move(args));
  * // result : expected<tuple<double, double, double>, XLError>
  *
- * // Tuple traverse (pipe, homogeneous function over heterogeneous elements)
+ * // Tuple sequence — optional (heterogeneous)
+ * auto opts = fxt::make_tuple(
+ *     maybe_pressure(raw_p),        // optional<double>
+ *     maybe_temperature(raw_t)      // optional<double>
+ * );
+ * auto result2 = fxt::sequence(std::move(opts));
+ * // result2 : optional<tuple<double, double>>
+ *
+ * // Tuple traverse (pipe, function over heterogeneous elements)
  * auto pressures = fxt::make_tuple(10.0, 20.0, 30.0);
  * auto validated_p = pressures | fxt::traverse(validate_pressure);
  * // validated_p : expected<tuple<double, double, double>, XLError>
@@ -108,8 +132,10 @@
 #include <tuple>
 #include <utility>
 #include "../concepts/IsExpected.hpp"
+#include "../concepts/IsOptional.hpp"
 #include "../concepts/IsTuple.hpp"
 #include "Expected.hpp"
+#include "Optional.hpp"
 
 namespace fxt
 {
@@ -120,22 +146,19 @@ namespace fxt
     /**
      * @brief Concept for homogeneous containers that can hold sequenced results.
      *
-     * Satisfied by any type with begin/end iterators and push_back, excluding
-     * tuple-like types (handled by separate overloads below).
+     * Satisfied by any type with begin/end iterators and either push_back or insert,
+     * excluding tuple-like types (handled by separate overloads below).
+     * Covers std::vector, std::list, std::deque (push_back) as well as
+     * std::set, std::unordered_set, std::multiset (insert).
      */
-    // TODO: COMPLETENESS — sequence()/traverse() only support fxt::expected. The classic
-    //       optional counterparts (Container<optional<T>> -> optional<Container<T>>, and the
-    //       tuple equivalents) are missing; other m-prefixed operations in the library
-    //       uniformly support both monads.
-    // TODO: COMPLETENESS — sequenceable_container requires push_back, which excludes
-    //       std::array, std::set, std::map and other non-push_back ranges; consider building
-    //       results via std::ranges::to or an output-iterator strategy.
     template<typename C>
     concept sequenceable_container = requires(C& c) {
         std::begin(c);
         std::end(c);
-        c.push_back(std::declval<typename C::value_type>());
-    } && !tuple_like<std::remove_cvref_t<C>>;
+        typename C::value_type;
+    } && (requires(C& c) { c.push_back(std::declval<typename C::value_type>()); }
+       || requires(C& c) { c.insert(std::declval<typename C::value_type>()); })
+      && !tuple_like<std::remove_cvref_t<C>>;
 
     // =========================================================================
     // rebind_container_t — Container<Old> -> Container<New>
@@ -152,7 +175,66 @@ namespace fxt
         struct rebind_container<Container<OldValue, Extra...>, NewValue> {
             using type = Container<NewValue>;
         };
-    }
+
+        // =========================================================================
+        // container_push — dispatch between push_back and insert
+        // =========================================================================
+
+        template<typename Container, typename V>
+        void container_push(Container& c, V&& v)
+        {
+            if constexpr (requires { c.push_back(std::forward<V>(v)); }) {
+                c.push_back(std::forward<V>(v));
+            } else {
+                c.insert(std::forward<V>(v));
+            }
+        }
+
+        // =========================================================================
+        // rebind_optional — Opt<Old> -> Opt<New>
+        // =========================================================================
+
+        template<typename OptT, typename NewValue>
+        struct rebind_optional;
+
+        template<template<typename> class Opt, typename T, typename NewValue>
+        struct rebind_optional<Opt<T>, NewValue> {
+            using type = Opt<NewValue>;
+        };
+
+        // =========================================================================
+        // sequence_result — type machinery for tuple sequence (expected)
+        //
+        // Maps tuple<expected<T0,E>, expected<T1,E>, …> to expected<tuple<T0,T1,…>,E>.
+        // The pattern match on a single E enforces that all error types are identical;
+        // mismatched error types produce a substitution failure at the call site.
+        // =========================================================================
+
+        template<typename Tuple>
+        struct sequence_result;
+
+        template<typename... Ts, typename E>
+        struct sequence_result<fxt::tuple<fxt::expected<Ts, E>...>> {
+            using type = fxt::expected<fxt::tuple<Ts...>, E>;
+        };
+
+        // =========================================================================
+        // sequence_optional_result — type machinery for tuple sequence (optional)
+        //
+        // Maps tuple<Opt<T0>, Opt<T1>, …> to Opt<tuple<T0,T1,…>>.
+        // The pattern match on a single Opt template enforces that all optional
+        // types use the same wrapper (e.g. all std::optional or all tl::optional).
+        // =========================================================================
+
+        template<typename Tuple>
+        struct sequence_optional_result;
+
+        template<template<typename> class Opt, typename... Ts>
+        struct sequence_optional_result<fxt::tuple<Opt<Ts>...>> {
+            using type = Opt<fxt::tuple<Ts...>>;
+        };
+
+    }    // namespace impl
 
     /**
      * @brief Rebinds a container template to a different element type.
@@ -162,24 +244,13 @@ namespace fxt
     template<typename Container, typename NewValue>
     using rebind_container_t = typename impl::rebind_container<Container, NewValue>::type;
 
-    // =========================================================================
-    // sequence_result — type machinery for tuple sequence
-    //
-    // Maps tuple<expected<T0,E>, expected<T1,E>, …> to expected<tuple<T0,T1,…>,E>.
-    // The pattern match on a single E enforces that all error types are identical;
-    // mismatched error types produce a substitution failure at the call site.
-    // =========================================================================
-
-    namespace impl
-    {
-        template<typename Tuple>
-        struct sequence_result;
-
-        template<typename... Ts, typename E>
-        struct sequence_result<fxt::tuple<fxt::expected<Ts, E>...>> {
-            using type = fxt::expected<fxt::tuple<Ts...>, E>;
-        };
-    }
+    /**
+     * @brief Rebinds an optional template to a different value type.
+     *
+     * rebind_optional_t<std::optional<int>, std::vector<double>> == std::optional<std::vector<double>>
+     */
+    template<typename OptT, typename NewValue>
+    using rebind_optional_t = typename impl::rebind_optional<OptT, NewValue>::type;
 
     /**
      * @brief Computes the result type of sequencing a tuple of expected values.
@@ -193,6 +264,18 @@ namespace fxt
     template<typename Tuple>
     using sequence_result_t = typename impl::sequence_result<std::remove_cvref_t<Tuple>>::type;
 
+    /**
+     * @brief Computes the result type of sequencing a tuple of optional values.
+     *
+     * sequence_optional_result_t<tuple<optional<int>, optional<string>>>
+     *     == optional<tuple<int, string>>
+     *
+     * Fails to compile if element optional types differ (e.g. std::optional vs
+     * tl::optional mixed) — the pattern match on a single Opt enforces uniformity.
+     */
+    template<typename Tuple>
+    using sequence_optional_result_t = typename impl::sequence_optional_result<std::remove_cvref_t<Tuple>>::type;
+
     // =========================================================================
     // traverse_adaptor — enables Container | traverse(f) and tuple | traverse(f)
     // =========================================================================
@@ -200,8 +283,8 @@ namespace fxt
     /**
      * @brief Pipe adaptor returned by the single-argument traverse(f) overload.
      *
-     * Handles both homogeneous containers (via the container operator()) and
-     * fxt::tuple values (via the tuple operator(), dispatched through TuplePipe).
+     * Handles both homogeneous containers and fxt::tuple values. Dispatches to
+     * the expected or optional variant based on the return type of F.
      * Not intended for direct construction — use fxt::traverse(f) instead.
      */
     template<typename F>
@@ -209,7 +292,7 @@ namespace fxt
     {
         F f;
 
-        // Container overload — for vector, list, deque, …
+        // Container overload — for vector, list, deque, set, …
         template<typename Container>
             requires sequenceable_container<std::remove_cvref_t<Container>>
         auto operator()(Container&& container) const;
@@ -258,20 +341,60 @@ namespace fxt
                     fxt::unexpected(std::move(mapped).error())
                 };
             }
-            result.push_back(std::move(*mapped));
+            impl::container_push(result, std::move(*mapped));
         }
 
         return fxt::expected<ResultContainer, E>{std::move(result)};
     }
 
     /**
+     * @brief Maps F over every element of a container and collects the results.
+     *
+     * F must return optional<U>. Short-circuits on the first absent element.
+     * If all elements are present, returns optional<Container<U>>.
+     * Elements are moved out of the container when it is passed as an rvalue.
+     */
+    template<typename Container, typename F>
+        requires sequenceable_container<std::remove_cvref_t<Container>>
+              && optional_like<std::remove_cvref_t<
+                     std::invoke_result_t<F&, typename std::remove_cvref_t<Container>::value_type&>
+                 >>
+    auto traverse(Container&& container, F&& f)
+    {
+        using ContainerDecayed = std::remove_cvref_t<Container>;
+        using T = typename ContainerDecayed::value_type;
+        using OptionalU = std::remove_cvref_t<std::invoke_result_t<F&, T&>>;
+        using U = typename OptionalU::value_type;
+        using ResultContainer = rebind_container_t<ContainerDecayed, U>;
+        using ResultOptional  = rebind_optional_t<OptionalU, ResultContainer>;
+
+        ResultContainer result;
+        if constexpr (std::ranges::sized_range<ContainerDecayed> &&
+                      requires { result.reserve(std::size_t{}); }) {
+            result.reserve(std::ranges::size(container));
+        }
+
+        for (auto& elem : container) {
+            auto mapped = std::invoke(f, std::forward_like<Container>(elem));
+            if (!mapped.has_value()) {
+                return ResultOptional{};
+            }
+            impl::container_push(result, std::move(*mapped));
+        }
+
+        return ResultOptional{std::move(result)};
+    }
+
+    /**
      * @brief Returns a pipe adaptor for use with operator|.
      *
-     * Works with both homogeneous containers and fxt::tuple values.
+     * Works with both homogeneous containers and fxt::tuple values, and with
+     * both expected-returning and optional-returning functions.
      *
      * @code
      * auto r1 = raw_vector | fxt::traverse(validate);
      * auto r2 = fxt::make_tuple(a, b, c) | fxt::traverse(validate);
+     * auto r3 = raw_set | fxt::traverse(maybe_parse);
      * @endcode
      */
     template<typename F>
@@ -326,10 +449,43 @@ namespace fxt
                     fxt::unexpected(std::forward_like<Container>(elem).error())
                 };
             }
-            result.push_back(*std::forward_like<Container>(elem));
+            impl::container_push(result, *std::forward_like<Container>(elem));
         }
 
         return fxt::expected<ResultContainer, E>{std::move(result)};
+    }
+
+    /**
+     * @brief Converts a container of optional values into an optional container.
+     *
+     * Short-circuits on the first absent element. Values are moved when the
+     * container is passed as an rvalue.
+     */
+    template<typename Container>
+        requires sequenceable_container<std::remove_cvref_t<Container>>
+              && optional_like<typename std::remove_cvref_t<Container>::value_type>
+    auto sequence(Container&& container)
+    {
+        using ContainerDecayed = std::remove_cvref_t<Container>;
+        using OptionalT = typename ContainerDecayed::value_type;
+        using T = typename OptionalT::value_type;
+        using ResultContainer = rebind_container_t<ContainerDecayed, T>;
+        using ResultOptional  = rebind_optional_t<OptionalT, ResultContainer>;
+
+        ResultContainer result;
+        if constexpr (std::ranges::sized_range<ContainerDecayed> &&
+                      requires { result.reserve(std::size_t{}); }) {
+            result.reserve(std::ranges::size(container));
+        }
+
+        for (auto& elem : container) {
+            if (!elem.has_value()) {
+                return ResultOptional{};
+            }
+            impl::container_push(result, *std::forward_like<Container>(elem));
+        }
+
+        return ResultOptional{std::move(result)};
     }
 
     // =========================================================================
@@ -375,7 +531,7 @@ namespace fxt
         }
 
         /**
-         * @brief Core implementation of traverse for a tuple.
+         * @brief Core implementation of traverse for a tuple, expected-returning F.
          *
          * Applies F to each element, producing a tuple of expected values,
          * then delegates to sequence_tuple_impl.
@@ -411,6 +567,62 @@ namespace fxt
                 std::index_sequence<Is...>{}
             );
         }
+
+        /**
+         * @brief Core implementation of sequence for a tuple of optional values.
+         *
+         * Two-phase approach:
+         *   Phase 1 — short-circuit OR fold to detect the first absent optional
+         *   Phase 2 — pack expansion to extract all values (only reached if all present)
+         *
+         * @tparam Tuple  The tuple type (fxt::tuple<Opt<Ts>...>)
+         * @tparam Is     Index sequence matching the tuple arity
+         */
+        template<typename Tuple, std::size_t... Is>
+        auto sequence_optional_tuple_impl(Tuple&& t, std::index_sequence<Is...>)
+            -> sequence_optional_result_t<std::remove_cvref_t<Tuple>>
+        {
+            using Result = sequence_optional_result_t<std::remove_cvref_t<Tuple>>;
+
+            // Phase 1: scan left-to-right, stop at the first absent optional.
+            bool has_empty = false;
+            (... || (!std::get<Is>(t).has_value() ? (has_empty = true, true) : false));
+
+            if (has_empty) {
+                return Result{};    // default-constructed = empty optional
+            }
+
+            // Phase 2: all elements are present — extract them into a result tuple.
+            return Result{fxt::make_tuple(*std::get<Is>(std::forward<Tuple>(t))...)};
+        }
+
+        /**
+         * @brief Core implementation of traverse for a tuple, optional-returning F.
+         *
+         * Applies F to each element, producing a tuple of optional values,
+         * then delegates to sequence_optional_tuple_impl.
+         *
+         * Note: argument evaluation order of make_tuple is unspecified in C++.
+         * For stateless validators this is not observable; for stateful F the
+         * invocation order is implementation-defined.
+         */
+        template<typename Tuple, typename F, std::size_t... Is>
+        auto traverse_optional_tuple_impl(Tuple&& t, F&& f, std::index_sequence<Is...>)
+        {
+            static_assert(sizeof...(Is) > 0,
+                "fxt::traverse for tuple does not support empty tuples: "
+                "cannot determine the optional type from zero invocation results");
+
+            auto mapped = fxt::make_tuple(
+                std::invoke(std::forward<F>(f), std::get<Is>(std::forward<Tuple>(t)))...
+            );
+
+            return sequence_optional_tuple_impl(
+                std::move(mapped),
+                std::index_sequence<Is...>{}
+            );
+        }
+
     }    // namespace impl
 
     /**
@@ -442,14 +654,11 @@ namespace fxt
     }
 
     /**
-     * @brief traverse() for a fxt::tuple — maps F over each element and sequences.
+     * @brief traverse() for a fxt::tuple — maps expected-returning F over each element.
      *
      * F is applied to each element Ti producing expected<Ui, E>. The result is
      * expected<tuple<U0, U1, …>, E>. All invocations of F must return the same
      * error type E; type mismatches are caught at compile time.
-     *
-     * Equivalent to sequence(make_tuple(f(get<0>(t)), f(get<1>(t)), …)) but
-     * without a named intermediate variable.
      *
      * @code
      * auto pressures = fxt::make_tuple(10.0, 20.0, 30.0);
@@ -458,6 +667,10 @@ namespace fxt
      * @endcode
      */
     template<typename... Ts, typename F>
+        requires (sizeof...(Ts) > 0)
+              && expected_like<std::remove_cvref_t<
+                     std::invoke_result_t<F&, std::tuple_element_t<0, fxt::tuple<Ts...>>&>
+                 >>
     auto traverse(fxt::tuple<Ts...> t, F&& f)
     {
         return impl::traverse_tuple_impl(
@@ -467,9 +680,60 @@ namespace fxt
         );
     }
 
+    /**
+     * @brief sequence() for a fxt::tuple of optional values.
+     *
+     * All elements must use the same optional template Opt (e.g. all std::optional).
+     * Short-circuits on the first absent element (left-to-right scan).
+     *
+     * @code
+     * auto args = fxt::make_tuple(
+     *     maybe_pressure(p),     // optional<double>
+     *     maybe_temperature(t)   // optional<double>
+     * );
+     * auto result = fxt::sequence(std::move(args));
+     * // result : optional<tuple<double, double>>
+     * @endcode
+     */
+    template<template<typename> class Opt, typename... Ts>
+        requires ((optional_like<Opt<Ts>>) && ...)
+    auto sequence(fxt::tuple<Opt<Ts>...> t) -> Opt<fxt::tuple<Ts...>>
+    {
+        return impl::sequence_optional_tuple_impl(
+            std::move(t),
+            std::index_sequence_for<Ts...>{}
+        );
+    }
+
+    /**
+     * @brief traverse() for a fxt::tuple — maps optional-returning F over each element.
+     *
+     * F is applied to each element Ti producing optional<Ui>. The result is
+     * optional<tuple<U0, U1, …>>. Short-circuits on the first absent result.
+     *
+     * @code
+     * auto inputs = fxt::make_tuple(10.0, 20.0, 30.0);
+     * auto result = fxt::traverse(inputs, maybe_parse_pressure);
+     * // result : optional<tuple<double, double, double>>
+     * @endcode
+     */
+    template<typename... Ts, typename F>
+        requires (sizeof...(Ts) > 0)
+              && optional_like<std::remove_cvref_t<
+                     std::invoke_result_t<F&, std::tuple_element_t<0, fxt::tuple<Ts...>>&>
+                 >>
+    auto traverse(fxt::tuple<Ts...> t, F&& f)
+    {
+        return impl::traverse_optional_tuple_impl(
+            std::move(t),
+            std::forward<F>(f),
+            std::index_sequence_for<Ts...>{}
+        );
+    }
+
     // Out-of-class: tuple operator() — defined after traverse(tuple<Ts...>, F)
-    // The existing TuplePipe operator| handles "tuple | traverse(f)" dispatch by
-    // checking std::invocable<traverse_adaptor<F>, Tuple&&>, which calls this overload.
+    // The TuplePipe operator| handles "tuple | traverse(f)" dispatch by checking
+    // std::invocable<traverse_adaptor<F>, Tuple&&>, which calls this overload.
     template<typename F>
     template<typename Tuple>
         requires impl::is_fxt_tuple_v<std::remove_cvref_t<Tuple>>

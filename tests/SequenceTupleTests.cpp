@@ -355,3 +355,220 @@ TEST_CASE("fxt::traverse for tuple — pipe, heterogeneous polymorphic lambda", 
 // sequence(fxt::tuple<fxt::expected<Ts, E>...>) uses a single E for all elements.
 // If error types differ, template argument deduction fails and there is no match.
 // ============================================================================
+
+// ============================================================================
+// fxt::sequence for fxt::tuple — optional overloads
+// ============================================================================
+
+TEST_CASE("fxt::sequence for tuple — optional, all elements present", "[sequence][tuple][optional]")
+{
+    SECTION("homogeneous: tuple<optional<int>, optional<int>>")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{1},
+            fxt::optional<int>{2},
+            fxt::optional<int>{3}
+        );
+        auto result = fxt::sequence(std::move(t));
+
+        REQUIRE(result.has_value());
+        REQUIRE(std::get<0>(*result) == 1);
+        REQUIRE(std::get<1>(*result) == 2);
+        REQUIRE(std::get<2>(*result) == 3);
+    }
+
+    SECTION("heterogeneous: tuple<optional<int>, optional<string>, optional<double>>")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{42},
+            fxt::optional<std::string>{"hello"},
+            fxt::optional<double>{3.14}
+        );
+        auto result = fxt::sequence(std::move(t));
+
+        REQUIRE(result.has_value());
+        REQUIRE(std::get<0>(*result) == 42);
+        REQUIRE(std::get<1>(*result) == "hello");
+        REQUIRE(std::get<2>(*result) == Catch::Approx(3.14));
+    }
+
+    SECTION("result type is exactly optional<tuple<int, string, double>>")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{1},
+            fxt::optional<std::string>{"x"},
+            fxt::optional<double>{1.0}
+        );
+        auto result = fxt::sequence(std::move(t));
+        STATIC_REQUIRE(std::is_same_v<
+            decltype(result),
+            fxt::optional<fxt::tuple<int, std::string, double>>
+        >);
+    }
+}
+
+TEST_CASE("fxt::sequence for tuple — optional, absent element short-circuits", "[sequence][tuple][optional]")
+{
+    SECTION("first element absent")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{fxt::nullopt},
+            fxt::optional<int>{2},
+            fxt::optional<int>{3}
+        );
+        auto result = fxt::sequence(std::move(t));
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("middle element absent")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{1},
+            fxt::optional<int>{fxt::nullopt},
+            fxt::optional<int>{3}
+        );
+        auto result = fxt::sequence(std::move(t));
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("last element absent")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{1},
+            fxt::optional<int>{2},
+            fxt::optional<int>{fxt::nullopt}
+        );
+        auto result = fxt::sequence(std::move(t));
+        REQUIRE_FALSE(result.has_value());
+    }
+
+    SECTION("first absent wins when multiple elements are absent")
+    {
+        auto t = fxt::make_tuple(
+            fxt::optional<int>{fxt::nullopt},
+            fxt::optional<int>{fxt::nullopt},
+            fxt::optional<int>{fxt::nullopt}
+        );
+        auto result = fxt::sequence(std::move(t));
+        REQUIRE_FALSE(result.has_value());
+    }
+}
+
+TEST_CASE("fxt::sequence for tuple — optional, single element", "[sequence][tuple][optional]")
+{
+    SECTION("single present element")
+    {
+        auto t = fxt::make_tuple(fxt::optional<int>{99});
+        auto result = fxt::sequence(std::move(t));
+        REQUIRE(result.has_value());
+        REQUIRE(std::get<0>(*result) == 99);
+    }
+
+    SECTION("single absent element")
+    {
+        auto t = fxt::make_tuple(fxt::optional<int>{fxt::nullopt});
+        auto result = fxt::sequence(std::move(t));
+        REQUIRE_FALSE(result.has_value());
+    }
+}
+
+// ============================================================================
+// fxt::traverse for fxt::tuple — optional overloads
+// ============================================================================
+
+static fxt::optional<int> maybe_positive(int v)
+{
+    if (v <= 0) return fxt::nullopt;
+    return v;
+}
+
+static fxt::optional<double> maybe_positive_d(double v)
+{
+    if (v <= 0.0) return fxt::nullopt;
+    return v;
+}
+
+TEST_CASE("fxt::traverse for tuple — optional, free function, all succeed", "[traverse][tuple][optional]")
+{
+    SECTION("homogeneous tuple")
+    {
+        auto t = fxt::make_tuple(1, 2, 3);
+        auto result = fxt::traverse(t, maybe_positive);
+
+        REQUIRE(result.has_value());
+        REQUIRE(std::get<0>(*result) == 1);
+        REQUIRE(std::get<1>(*result) == 2);
+        REQUIRE(std::get<2>(*result) == 3);
+    }
+
+    SECTION("result type correctly deduced")
+    {
+        auto t = fxt::make_tuple(1, 2, 3);
+        auto result = fxt::traverse(t, maybe_positive);
+        STATIC_REQUIRE(std::is_same_v<
+            decltype(result),
+            fxt::optional<fxt::tuple<int, int, int>>
+        >);
+    }
+}
+
+TEST_CASE("fxt::traverse for tuple — optional, absent short-circuits", "[traverse][tuple][optional]")
+{
+    SECTION("first element fails")
+    {
+        auto t = fxt::make_tuple(-1, 2, 3);
+        REQUIRE_FALSE(fxt::traverse(t, maybe_positive).has_value());
+    }
+
+    SECTION("middle element fails")
+    {
+        auto t = fxt::make_tuple(1, 0, 3);
+        REQUIRE_FALSE(fxt::traverse(t, maybe_positive).has_value());
+    }
+
+    SECTION("last element fails")
+    {
+        auto t = fxt::make_tuple(1, 2, -1);
+        REQUIRE_FALSE(fxt::traverse(t, maybe_positive).has_value());
+    }
+}
+
+TEST_CASE("fxt::traverse for tuple — optional, pipe adaptor", "[traverse][tuple][optional][pipe]")
+{
+    auto t = fxt::make_tuple(1, 2, 3);
+    auto result = t | fxt::traverse(maybe_positive);
+
+    REQUIRE(result.has_value());
+    REQUIRE(std::get<0>(*result) == 1);
+    REQUIRE(std::get<1>(*result) == 2);
+    REQUIRE(std::get<2>(*result) == 3);
+}
+
+TEST_CASE("fxt::traverse for tuple — optional, pipe adaptor, absent", "[traverse][tuple][optional][pipe]")
+{
+    auto t = fxt::make_tuple(1, -2, 3);
+    REQUIRE_FALSE((t | fxt::traverse(maybe_positive)).has_value());
+}
+
+TEST_CASE("fxt::traverse for tuple — optional, heterogeneous polymorphic lambda", "[traverse][tuple][optional]")
+{
+    auto maybe_pos = [](auto v) -> fxt::optional<std::decay_t<decltype(v)>> {
+        if (v <= 0) return fxt::nullopt;
+        return v;
+    };
+
+    SECTION("all succeed")
+    {
+        auto t = fxt::make_tuple(5, 3.14);
+        auto result = fxt::traverse(t, maybe_pos);
+        REQUIRE(result.has_value());
+        REQUIRE(std::get<0>(*result) == 5);
+        REQUIRE(std::get<1>(*result) == Catch::Approx(3.14));
+    }
+
+    SECTION("one fails")
+    {
+        auto t = fxt::make_tuple(5, -3.14);
+        REQUIRE_FALSE(fxt::traverse(t, maybe_pos).has_value());
+    }
+}
