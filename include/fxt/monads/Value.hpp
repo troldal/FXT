@@ -46,48 +46,47 @@
 namespace fxt
 {
     /**
-     * @brief Monadic value extraction operation for types that provide a value() member function
+     * @brief Nullary adaptor factory for value extraction from monadic types.
      *
-     * This is a generic function object that works with any type that has a value() member
-     * function, such as fxt::expected and fxt::optional. It extracts the contained value
-     * from the container, enabling a functional approach to unwrapping monadic types.
+     * `fxt::value` is a factory: calling it with no arguments returns an adaptor
+     * that extracts the contained value from any type that has a `.value()` member
+     * function (such as fxt::expected and fxt::optional). The extra `()` is required
+     * to obtain the adaptor — write `fxt::value()`, not `fxt::value`, in expressions.
      *
-     * @return A callable that accepts any container with a value() member function
+     * Note: `fxt::value` follows the same nullary-factory convention as `fxt::join()`,
+     * `fxt::to_optional()`, `fxt::take<N>()`, and `fxt::drop<N>()`. These all differ
+     * from adaptors such as `fxt::and_then(f)` and `fxt::transform(f)`, which accept
+     * a function argument and immediately return the adaptor without a trailing `()`.
+     *
+     * @return A callable (the adaptor) that accepts any type with a `.value()` member
+     *         function and returns the contained value.
      *
      * @section Concepts
-     * The returned callable accepts any type that satisfies:
+     * The returned adaptor accepts any type that satisfies:
      * - Has a member function named value() that returns the contained value
-     * - Supports both lvalue and rvalue references
+     * - Supports both lvalue and rvalue references (rvalue containers move the value out)
      *
      * @section Usage
      * @code
-     * // Pipe operator usage with expected
-     * auto result1 = divide(10, 2) | fxt::value;
+     * // Pipe operator usage — note the required ()
+     * auto result1 = divide(10, 2) | fxt::value();
      *
      * // Pipe operator usage with optional
-     * auto result2 = parse_int("42") | fxt::value;
+     * auto result2 = parse_int("42") | fxt::value();
      *
-     * // Function call syntax
-     * auto result3 = fxt::value(maybe_value);
+     * // Direct call syntax — value() returns the adaptor, which is then called
+     * auto result3 = fxt::value()(maybe_value);
      *
      * // Chaining operations
      * auto result4 = parse_int("123")
      *              | fxt::transform([](int x) { return x * 2; })
-     *              | fxt::value;
+     *              | fxt::value();
      * @endcode
      *
-     * @note This function will throw an exception if called on an expected object
-     *       that contains an error, or an optional that is empty.
-     * @note Only works with types that have a .value() member function.
+     * @note Throws if called on an expected that holds an error, or an optional that
+     *       is empty — the same preconditions as calling .value() directly.
+     * @note Only works with types that expose a .value() member function.
      */
-    // TODO: ERGONOMICS/DOCS — `value` is a nullary adaptor factory, so pipelines must write
-    //       `| fxt::value()`, but every example above shows `| fxt::value` (which does not
-    //       compile: the pipe operators require the callable to be invocable with the
-    //       container). Either fix the docs, or make `value` itself the adaptor (like
-    //       fxt::and_then(f) returns one directly) so `| fxt::value` works. The same
-    //       factory-vs-adaptor inconsistency exists across the API: and_then/transform/...
-    //       take the function and return the adaptor, while value()/to_optional()/join()/
-    //       index()/mindex()/take<N>()/drop<N>() need an extra `()` — consider one convention.
     inline constexpr auto value = []() {
         return []<typename TContainer>(TContainer&& container)
             requires requires(TContainer&& c) { c.value(); }
