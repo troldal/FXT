@@ -149,3 +149,6 @@ target_link_libraries(fxt_sequence_tuple_demo PRIVATE fxt::fxt)
 add_executable(fxt_join_demo Join.cpp)
 target_link_libraries(fxt_join_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_for_each_demo ForEach.cpp)
+target_link_libraries(fxt_for_each_demo PRIVATE fxt::fxt)
+
