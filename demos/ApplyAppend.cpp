@@ -1,5 +1,5 @@
-//
-// Demo: fxt::apply_append and fxt::mapply_append
+﻿//
+// Demo: fxt::apply_append and fxt::mtuple_apply_append
 //
 // This demo shows how to use fxt::apply_append to apply functions to tuple values
 // and append the result to the original tuple.
@@ -11,7 +11,7 @@
 
 int main()
 {
-    std::cout << "=== fxt::apply_append and fxt::mapply_append Demo ===" << std::endl;
+    std::cout << "=== fxt::apply_append and fxt::mtuple_apply_append Demo ===" << std::endl;
     std::cout << std::endl;
 
     // =========================================================================
@@ -96,7 +96,7 @@ int main()
     auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{10, 5}};
     std::cout << "Expected with tuple: (" << fxt::get<0>(*exp) << ", " << fxt::get<1>(*exp) << ")" << std::endl;
 
-    auto result5 = exp | fxt::mapply_append([](int a, int b) {
+    auto result5 = exp | fxt::mtuple_apply_append([](int a, int b) {
         std::cout << "Computing: " << a << " / " << b << " = " << (a / b) << std::endl;
         return a / b;
     });
@@ -113,7 +113,7 @@ int main()
     auto exp_err = fxt::expected<fxt::tuple<int, int>, std::string>{
         fxt::unexpected("computation error")
     };
-    auto result6 = exp_err | fxt::mapply_append([](int a, int b) {
+    auto result6 = exp_err | fxt::mtuple_apply_append([](int a, int b) {
         std::cout << "This won't be called" << std::endl;
         return a + b;
     });
@@ -128,15 +128,15 @@ int main()
     std::cout << "---------------------------------------------------" << std::endl;
 
     auto result7 = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{2, 3}}
-        | fxt::mapply_append([](int a, int b) {
+        | fxt::mtuple_apply_append([](int a, int b) {
             std::cout << "  Step 1: Appending sum " << (a + b) << std::endl;
             return a + b;
         })
-        | fxt::mapply_append([](int a, int b, int sum) {
+        | fxt::mtuple_apply_append([](int a, int b, int sum) {
             std::cout << "  Step 2: Appending product " << (a * b) << std::endl;
             return a * b;
         })
-        | fxt::mapply_append([](int a, int b, int sum, int product) {
+        | fxt::mtuple_apply_append([](int a, int b, int sum, int product) {
             std::cout << "  Step 3: Appending total " << (sum + product) << std::endl;
             return sum + product;
         });
@@ -161,7 +161,7 @@ int main()
     auto opt = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{7, 8}};
     std::cout << "Optional with tuple: (" << fxt::get<0>(*opt) << ", " << fxt::get<1>(*opt) << ")" << std::endl;
 
-    auto result8 = opt | fxt::mapply_append([](int a, int b) {
+    auto result8 = opt | fxt::mtuple_apply_append([](int a, int b) {
         std::cout << "Computing: " << a << " - " << b << " = " << (a - b) << std::endl;
         return a - b;
     });
@@ -176,7 +176,7 @@ int main()
     // Nullopt case propagation
     std::cout << "\nNullopt propagation:" << std::endl;
     auto opt_null = fxt::optional<fxt::tuple<int, int>>{std::nullopt};
-    auto result9 = opt_null | fxt::mapply_append([](int a, int b) {
+    auto result9 = opt_null | fxt::mtuple_apply_append([](int a, int b) {
         std::cout << "This won't be called" << std::endl;
         return a * b;
     });
@@ -191,7 +191,7 @@ int main()
     std::cout << "------------------------------------------" << std::endl;
 
     auto exp2 = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{10, 2}};
-    auto result10 = exp2 | fxt::mapply_append([](int a, int b) -> fxt::expected<int, std::string> {
+    auto result10 = exp2 | fxt::mtuple_apply_append([](int a, int b) -> fxt::expected<int, std::string> {
         std::cout << "Checking if b is zero..." << std::endl;
         if (b == 0) {
             std::cout << "Error: Division by zero!" << std::endl;
@@ -212,7 +212,7 @@ int main()
     // Test with division by zero
     std::cout << "\nTesting with division by zero:" << std::endl;
     auto exp3 = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{10, 0}};
-    auto result11 = exp3 | fxt::mapply_append([](int a, int b) -> fxt::expected<int, std::string> {
+    auto result11 = exp3 | fxt::mtuple_apply_append([](int a, int b) -> fxt::expected<int, std::string> {
         std::cout << "Checking if b is zero..." << std::endl;
         if (b == 0) {
             std::cout << "Error: Division by zero!" << std::endl;
@@ -233,7 +233,7 @@ int main()
 
     int side_effect = 0;
     auto opt2 = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{5, 10}};
-    auto result12 = opt2 | fxt::mapply_append([&](int a, int b) {
+    auto result12 = opt2 | fxt::mtuple_apply_append([&](int a, int b) {
         side_effect = a + b;
         std::cout << "Side effect: setting variable to " << side_effect << std::endl;
     });
@@ -250,17 +250,17 @@ int main()
     std::cout << "------------------------------------------------" << std::endl;
 
     auto computation = fxt::expected<fxt::tuple<double, double>, std::string>{fxt::tuple{3.0, 4.0}}
-        | fxt::mapply_append([](double x, double y) {
+        | fxt::mtuple_apply_append([](double x, double y) {
             auto hypotenuse = std::sqrt(x * x + y * y);
             std::cout << "  Hypotenuse: sqrt(" << x << "² + " << y << "²) = " << hypotenuse << std::endl;
             return hypotenuse;
         })
-        | fxt::mapply_append([](double x, double y, double h) {
+        | fxt::mtuple_apply_append([](double x, double y, double h) {
             auto area = (x * y) / 2.0;
             std::cout << "  Triangle area: (" << x << " * " << y << ") / 2 = " << area << std::endl;
             return area;
         })
-        | fxt::mapply_append([](double x, double y, double h, double area) {
+        | fxt::mtuple_apply_append([](double x, double y, double h, double area) {
             auto perimeter = x + y + h;
             std::cout << "  Perimeter: " << x << " + " << y << " + " << h << " = " << perimeter << std::endl;
             return perimeter;
@@ -279,4 +279,5 @@ int main()
 
     return 0;
 }
+
 

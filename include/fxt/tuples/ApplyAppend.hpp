@@ -468,6 +468,9 @@ namespace fxt
         }
     };
 
+    inline constexpr mapply_append_fn mtuple_apply_append{};
+
+    [[deprecated("Use fxt::mtuple_apply_append")]]
     inline constexpr mapply_append_fn mapply_append{};
 
 }    // namespace fxt

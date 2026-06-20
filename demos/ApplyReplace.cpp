@@ -1,5 +1,5 @@
-//
-// Demo: fxt::apply_replace and fxt::mapply_replace
+﻿//
+// Demo: fxt::apply_replace and fxt::mtuple_apply_replace
 //
 // This demo shows how to use fxt::apply_replace to apply functions to tuple values
 // and replace all elements with the result.
@@ -11,7 +11,7 @@
 
 int main()
 {
-    std::cout << "=== fxt::apply_replace and fxt::mapply_replace Demo ===" << std::endl;
+    std::cout << "=== fxt::apply_replace and fxt::mtuple_apply_replace Demo ===" << std::endl;
     std::cout << std::endl;
 
     // =========================================================================
@@ -84,7 +84,7 @@ int main()
     };
     std::cout << "Expected with tuple: (" << fxt::get<0>(*exp) << ", " << fxt::get<1>(*exp) << ")" << std::endl;
 
-    auto result5 = exp | fxt::mapply_replace([](int a, int b) {
+    auto result5 = exp | fxt::mtuple_apply_replace([](int a, int b) {
         std::cout << "Computing: " << a << " / " << b << " = " << (a / b) << std::endl;
         return a / b;
     });
@@ -98,7 +98,7 @@ int main()
     auto exp_err = fxt::expected<fxt::tuple<int, int>, std::string>{
         std::unexpected("division error")
     };
-    auto result6 = exp_err | fxt::mapply_replace([](int a, int b) {
+    auto result6 = exp_err | fxt::mtuple_apply_replace([](int a, int b) {
         std::cout << "This won't be called" << std::endl;
         return a + b;
     });
@@ -117,7 +117,7 @@ int main()
     };
     std::cout << "Optional with tuple: (" << fxt::get<0>(*opt) << ", " << fxt::get<1>(*opt) << ")" << std::endl;
 
-    auto result7 = opt | fxt::mapply_replace([](int a, int b) {
+    auto result7 = opt | fxt::mtuple_apply_replace([](int a, int b) {
         std::cout << "Computing: " << a << " - " << b << " = " << (a - b) << std::endl;
         return a - b;
     });
@@ -129,7 +129,7 @@ int main()
     // Nullopt case propagation
     std::cout << "\nNullopt propagation:" << std::endl;
     auto opt_null = fxt::optional<fxt::tuple<int, int>>{std::nullopt};
-    auto result8 = opt_null | fxt::mapply_replace([](int a, int b) {
+    auto result8 = opt_null | fxt::mtuple_apply_replace([](int a, int b) {
         std::cout << "This won't be called" << std::endl;
         return a * b;
     });
@@ -146,11 +146,11 @@ int main()
     auto result9 = fxt::expected<fxt::tuple<int, int>, std::string>{
         fxt::tuple{2, 3}
     }
-        | fxt::mapply_replace([](int a, int b) {
+        | fxt::mtuple_apply_replace([](int a, int b) {
             std::cout << "  Step 1: Creating tuple(" << a << "+" << b << ", " << a << "*" << b << ")" << std::endl;
             return fxt::tuple{a + b, a * b};
         })
-        | fxt::mapply_replace([](fxt::tuple<int, int> t) {
+        | fxt::mtuple_apply_replace([](fxt::tuple<int, int> t) {
             auto sum = fxt::get<0>(t);
             auto product = fxt::get<1>(t);
             std::cout << "  Step 2: " << sum << " + " << product << " = " << (sum + product) << std::endl;
@@ -169,7 +169,7 @@ int main()
 
     int side_effect = 0;
     auto result10 = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{5, 10}}
-        | fxt::mapply_replace([&](int a, int b) {
+        | fxt::mtuple_apply_replace([&](int a, int b) {
             side_effect = a + b;
             std::cout << "Side effect: setting variable to " << side_effect << std::endl;
         });
@@ -214,4 +214,5 @@ int main()
 
     return 0;
 }
+
 

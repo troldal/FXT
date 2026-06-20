@@ -174,8 +174,8 @@ int main()
     auto computed = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
         | fxt::mtuple_append(5)
         | fxt::mtuple_append(10)
-        | fxt::mapply([](int a, int b) { return a + b; })
-        | fxt::mapply([](int a, int b, int sum) { return a * b; });
+        | fxt::mtuple_apply([](int a, int b) { return a + b; })
+        | fxt::mtuple_apply([](int a, int b, int sum) { return a * b; });
 
     std::cout << "Computed tuple contains: (5, 10, 15, 50)" << std::endl;
 
@@ -291,5 +291,6 @@ int main()
 
     return 0;
 }
+
 
 

@@ -15,7 +15,7 @@ TEST_CASE("apply - fxt::expected with regular return values", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(5)
             | fxt::mtuple_append(10)
-            | fxt::mapply_append([](int a, int b) { return a + b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         auto [a, b, sum] = *result;
@@ -28,7 +28,7 @@ TEST_CASE("apply - fxt::expected with regular return values", "[apply]")
     {
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(42)
-            | fxt::mapply_append([](int x) { return std::to_string(x); });
+            | fxt::mtuple_apply_append([](int x) { return std::to_string(x); });
 
         REQUIRE(result.has_value());
         auto [x, str] = *result;
@@ -41,8 +41,8 @@ TEST_CASE("apply - fxt::expected with regular return values", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(3)
             | fxt::mtuple_append(4)
-            | fxt::mapply_append([](int a, int b) { return a + b; })
-            | fxt::mapply_append([](int a, int b, int sum) { return sum * 2; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; })
+            | fxt::mtuple_apply_append([](int a, int b, int sum) { return sum * 2; });
 
         REQUIRE(result.has_value());
         auto [a, b, sum, doubled] = *result;
@@ -57,7 +57,7 @@ TEST_CASE("apply - fxt::expected with regular return values", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(42)
             | fxt::mtuple_append(std::string{"hello"})
-            | fxt::mapply_append([](int x, const std::string& s) {
+            | fxt::mtuple_apply_append([](int x, const std::string& s) {
                 return s + " " + std::to_string(x);
             });
 
@@ -76,7 +76,7 @@ TEST_CASE("apply - fxt::expected with error propagation", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{fxt::unexpected("error")}
             | fxt::mtuple_append(1)
             | fxt::mtuple_append(2)
-            | fxt::mapply_append([](int a, int b) { return a + b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error");
@@ -86,8 +86,8 @@ TEST_CASE("apply - fxt::expected with error propagation", "[apply]")
     {
         auto result = fxt::expected<std::tuple<>, std::string>{fxt::unexpected("initial error")}
             | fxt::mtuple_append(1)
-            | fxt::mapply_append([](int x) { return x * 2; })
-            | fxt::mapply_append([](int x, int y) { return x + y; });
+            | fxt::mtuple_apply_append([](int x) { return x * 2; })
+            | fxt::mtuple_apply_append([](int x, int y) { return x + y; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "initial error");
@@ -101,7 +101,7 @@ TEST_CASE("apply - fxt::expected with monadic return values", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(10.0)
             | fxt::mtuple_append(2.0)
-            | fxt::mapply_append([](double a, double b) -> fxt::expected<double, std::string> {
+            | fxt::mtuple_apply_append([](double a, double b) -> fxt::expected<double, std::string> {
                 if (b == 0.0) {
                     return fxt::unexpected("Division by zero");
                 }
@@ -120,7 +120,7 @@ TEST_CASE("apply - fxt::expected with monadic return values", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(10.0)
             | fxt::mtuple_append(0.0)
-            | fxt::mapply_append([](double a, double b) -> fxt::expected<double, std::string> {
+            | fxt::mtuple_apply_append([](double a, double b) -> fxt::expected<double, std::string> {
                 if (b == 0.0) {
                     return fxt::unexpected("Division by zero");
                 }
@@ -136,11 +136,11 @@ TEST_CASE("apply - fxt::expected with monadic return values", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(100.0)
             | fxt::mtuple_append(4.0)
-            | fxt::mapply_append([](double a, double b) -> fxt::expected<double, std::string> {
+            | fxt::mtuple_apply_append([](double a, double b) -> fxt::expected<double, std::string> {
                 if (b == 0.0) return fxt::unexpected("Division by zero");
                 return a / b;
             })
-            | fxt::mapply_append([](double a, double b, double quotient) -> fxt::expected<double, std::string> {
+            | fxt::mtuple_apply_append([](double a, double b, double quotient) -> fxt::expected<double, std::string> {
                 if (quotient < 0.0) return fxt::unexpected("Negative number");
                 return std::sqrt(quotient);
             });
@@ -163,7 +163,7 @@ TEST_CASE("apply - fxt::expected with void return", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(42)
             | fxt::mtuple_append(100)
-            | fxt::mapply_append([&side_effect](int a, int b) {
+            | fxt::mtuple_apply_append([&side_effect](int a, int b) {
                 side_effect = a + b;
             });
 
@@ -180,7 +180,7 @@ TEST_CASE("apply - fxt::expected with void return", "[apply]")
 
         auto result = fxt::expected<std::tuple<>, std::string>{fxt::unexpected("error")}
             | fxt::mtuple_append(1)
-            | fxt::mapply_append([&side_effect](int x) {
+            | fxt::mtuple_apply_append([&side_effect](int x) {
                 side_effect = x * 2;
             });
 
@@ -195,11 +195,11 @@ TEST_CASE("apply - fxt::expected with void return", "[apply]")
 
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(5)
-            | fxt::mapply_append([](int x) { return x * 2; })
-            | fxt::mapply_append([&side_effect](int x, int y) {
+            | fxt::mtuple_apply_append([](int x) { return x * 2; })
+            | fxt::mtuple_apply_append([&side_effect](int x, int y) {
                 side_effect = x + y;
             })
-            | fxt::mapply_append([](int x, int y) { return x + y; });
+            | fxt::mtuple_apply_append([](int x, int y) { return x + y; });
 
         REQUIRE(result.has_value());
         auto [x, y, sum] = *result;
@@ -217,7 +217,7 @@ TEST_CASE("apply - fxt::optional with regular return values", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(7)
             | fxt::mtuple_append(8)
-            | fxt::mapply_append([](int a, int b) { return a * b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a * b; });
 
         REQUIRE(result.has_value());
         auto [a, b, product] = *result;
@@ -230,7 +230,7 @@ TEST_CASE("apply - fxt::optional with regular return values", "[apply]")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(99)
-            | fxt::mapply_append([](int x) { return std::to_string(x); });
+            | fxt::mtuple_apply_append([](int x) { return std::to_string(x); });
 
         REQUIRE(result.has_value());
         auto [x, str] = *result;
@@ -243,8 +243,8 @@ TEST_CASE("apply - fxt::optional with regular return values", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(2)
             | fxt::mtuple_append(3)
-            | fxt::mapply_append([](int a, int b) { return a * b; })
-            | fxt::mapply_append([](int a, int b, int product) { return product + 10; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a * b; })
+            | fxt::mtuple_apply_append([](int a, int b, int product) { return product + 10; });
 
         REQUIRE(result.has_value());
         auto [a, b, product, sum] = *result;
@@ -259,7 +259,7 @@ TEST_CASE("apply - fxt::optional with regular return values", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(100)
             | fxt::mtuple_append(std::string{"test"})
-            | fxt::mapply_append([](int x, const std::string& s) {
+            | fxt::mtuple_apply_append([](int x, const std::string& s) {
                 return s + ":" + std::to_string(x);
             });
 
@@ -278,7 +278,7 @@ TEST_CASE("apply - fxt::optional with empty propagation", "[apply]")
         auto result = fxt::optional<std::tuple<>>{}
             | fxt::mtuple_append(1)
             | fxt::mtuple_append(2)
-            | fxt::mapply_append([](int a, int b) { return a + b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -287,8 +287,8 @@ TEST_CASE("apply - fxt::optional with empty propagation", "[apply]")
     {
         auto result = fxt::optional<std::tuple<>>{}
             | fxt::mtuple_append(1)
-            | fxt::mapply_append([](int x) { return x * 2; })
-            | fxt::mapply_append([](int x, int y) { return x + y; });
+            | fxt::mtuple_apply_append([](int x) { return x * 2; })
+            | fxt::mtuple_apply_append([](int x, int y) { return x + y; });
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -300,7 +300,7 @@ TEST_CASE("apply - fxt::optional with monadic return values", "[apply]")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(16.0)
-            | fxt::mapply_append([](double x) -> fxt::optional<double> {
+            | fxt::mtuple_apply_append([](double x) -> fxt::optional<double> {
                 if (x < 0.0) {
                     return fxt::nullopt;
                 }
@@ -317,7 +317,7 @@ TEST_CASE("apply - fxt::optional with monadic return values", "[apply]")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(-16.0)
-            | fxt::mapply_append([](double x) -> fxt::optional<double> {
+            | fxt::mtuple_apply_append([](double x) -> fxt::optional<double> {
                 if (x < 0.0) {
                     return fxt::nullopt;
                 }
@@ -331,11 +331,11 @@ TEST_CASE("apply - fxt::optional with monadic return values", "[apply]")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(100.0)
-            | fxt::mapply_append([](double x) -> fxt::optional<double> {
+            | fxt::mtuple_apply_append([](double x) -> fxt::optional<double> {
                 if (x < 0.0) return fxt::nullopt;
                 return std::sqrt(x);
             })
-            | fxt::mapply_append([](double x, double root) -> fxt::optional<double> {
+            | fxt::mtuple_apply_append([](double x, double root) -> fxt::optional<double> {
                 if (root == 0.0) return fxt::nullopt;
                 return x / root;
             });
@@ -357,7 +357,7 @@ TEST_CASE("apply - fxt::optional with void return", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(50)
             | fxt::mtuple_append(25)
-            | fxt::mapply_append([&side_effect](int a, int b) {
+            | fxt::mtuple_apply_append([&side_effect](int a, int b) {
                 side_effect = a - b;
             });
 
@@ -374,7 +374,7 @@ TEST_CASE("apply - fxt::optional with void return", "[apply]")
 
         auto result = fxt::optional<std::tuple<>>{}
             | fxt::mtuple_append(1)
-            | fxt::mapply_append([&side_effect](int x) {
+            | fxt::mtuple_apply_append([&side_effect](int x) {
                 side_effect = x * 2;
             });
 
@@ -388,11 +388,11 @@ TEST_CASE("apply - fxt::optional with void return", "[apply]")
 
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(10)
-            | fxt::mapply_append([](int x) { return x / 2; })
-            | fxt::mapply_append([&side_effect](int x, int y) {
+            | fxt::mtuple_apply_append([](int x) { return x / 2; })
+            | fxt::mtuple_apply_append([&side_effect](int x, int y) {
                 side_effect = x * y;
             })
-            | fxt::mapply_append([](int x, int y) { return x * y; });
+            | fxt::mtuple_apply_append([](int x, int y) { return x * y; });
 
         REQUIRE(result.has_value());
         auto [x, y, product] = *result;
@@ -410,9 +410,9 @@ TEST_CASE("apply - complex pipelines", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(5)
             | fxt::mtuple_append(3)
-            | fxt::mapply_append([](int a, int b) { return a + b; })
-            | fxt::mapply_append([](int a, int b, int sum) { return a * b; })
-            | fxt::mapply_append([](int a, int b, int sum, int product) {
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; })
+            | fxt::mtuple_apply_append([](int a, int b, int sum) { return a * b; })
+            | fxt::mtuple_apply_append([](int a, int b, int sum, int product) {
                 return (sum + product) / 2.0;
             });
 
@@ -430,9 +430,9 @@ TEST_CASE("apply - complex pipelines", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(10)
             | fxt::mtuple_append(2)
-            | fxt::mapply_append([](int a, int b) { return a / b; })
-            | fxt::mapply_append([](int a, int b, int quotient) { return quotient * quotient; })
-            | fxt::mapply_append([](int a, int b, int quotient, int squared) {
+            | fxt::mtuple_apply_append([](int a, int b) { return a / b; })
+            | fxt::mtuple_apply_append([](int a, int b, int quotient) { return quotient * quotient; })
+            | fxt::mtuple_apply_append([](int a, int b, int quotient, int squared) {
                 return std::to_string(squared);
             });
 
@@ -456,7 +456,7 @@ TEST_CASE("apply - const correctness", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(s1)
             | fxt::mtuple_append(s2)
-            | fxt::mapply_append([](const std::string& a, const std::string& b) {
+            | fxt::mtuple_apply_append([](const std::string& a, const std::string& b) {
                 return a + " " + b;
             });
 
@@ -474,8 +474,8 @@ TEST_CASE("apply - type deduction", "[apply]")
     {
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(42)
-            | fxt::mapply_append([](int x) { return std::to_string(x); })
-            | fxt::mapply_append([](int x, const std::string& s) { return s.length(); });
+            | fxt::mtuple_apply_append([](int x) { return std::to_string(x); })
+            | fxt::mtuple_apply_append([](int x, const std::string& s) { return s.length(); });
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::expected<std::tuple<int, std::string, size_t>, std::string>>);
@@ -485,8 +485,8 @@ TEST_CASE("apply - type deduction", "[apply]")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(100)
-            | fxt::mapply_append([](int x) { return static_cast<double>(x); })
-            | fxt::mapply_append([](int x, double d) { return x + static_cast<int>(d); });
+            | fxt::mtuple_apply_append([](int x) { return static_cast<double>(x); })
+            | fxt::mtuple_apply_append([](int x, double d) { return x + static_cast<int>(d); });
 
         REQUIRE(result.has_value());
         static_assert(std::is_same_v<decltype(result), fxt::optional<std::tuple<int, double, int>>>);
@@ -498,7 +498,7 @@ TEST_CASE("apply - edge cases", "[apply]")
     SECTION("apply to empty tuple (expected)")
     {
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
-            | fxt::mapply_append([]() { return 42; });
+            | fxt::mtuple_apply_append([]() { return 42; });
 
         REQUIRE(result.has_value());
         auto [value] = *result;
@@ -508,7 +508,7 @@ TEST_CASE("apply - edge cases", "[apply]")
     SECTION("apply to empty tuple (optional)")
     {
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
-            | fxt::mapply_append([]() { return 99; });
+            | fxt::mtuple_apply_append([]() { return 99; });
 
         REQUIRE(result.has_value());
         auto [value] = *result;
@@ -520,7 +520,7 @@ TEST_CASE("apply - edge cases", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(5)
             | fxt::mtuple_append(5)
-            | fxt::mapply_append([](int a, int b) { return a - b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a - b; });
 
         REQUIRE(result.has_value());
         auto [a, b, diff] = *result;
@@ -532,7 +532,7 @@ TEST_CASE("apply - edge cases", "[apply]")
         auto result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(5)
             | fxt::mtuple_append(10)
-            | fxt::mapply_append([](int a, int b) { return a > b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a > b; });
 
         REQUIRE(result.has_value());
         auto [a, b, comparison] = *result;
@@ -547,8 +547,8 @@ TEST_CASE("apply - multiple values computed", "[apply]")
         auto result = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
             | fxt::mtuple_append(6)
             | fxt::mtuple_append(7)
-            | fxt::mapply_append([](int a, int b) { return a + b; })
-            | fxt::mapply_append([](int a, int b, int sum) { return a * b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; })
+            | fxt::mtuple_apply_append([](int a, int b, int sum) { return a * b; });
 
         REQUIRE(result.has_value());
         auto [a, b, sum, product] = *result;
@@ -560,7 +560,7 @@ TEST_CASE("apply - multiple values computed", "[apply]")
 }
 
 // ============================================================================
-// Tests for fxt::mapply_append with fxt::flat_tuple
+// Tests for fxt::mtuple_apply_append with fxt::flat_tuple
 // ============================================================================
 
 TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
@@ -570,7 +570,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
         auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(2)
             | fxt::mtuple_append(3)
-            | fxt::mapply_append([](int a, int b) { return a * b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a * b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 2);
@@ -583,8 +583,8 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
         auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(10.0)
             | fxt::mtuple_append(5.0)
-            | fxt::mapply_append([](double a, double b) { return a / b; })
-            | fxt::mapply_append([](double a, double b, double quotient) { return quotient + 1.0; });
+            | fxt::mtuple_apply_append([](double a, double b) { return a / b; })
+            | fxt::mtuple_apply_append([](double a, double b, double quotient) { return quotient + 1.0; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 10.0);
@@ -598,7 +598,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
         auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(42)
             | fxt::mtuple_append(std::string{"test"})
-            | fxt::mapply_append([](int x, const std::string& s) {
+            | fxt::mtuple_apply_append([](int x, const std::string& s) {
                 return s + ":" + std::to_string(x);
             });
 
@@ -613,7 +613,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
         auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::unexpected("error")}
             | fxt::mtuple_append(1)
             | fxt::mtuple_append(2)
-            | fxt::mapply_append([](int a, int b) { return a + b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error");
@@ -626,7 +626,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
         auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(5)
             | fxt::mtuple_append(10)
-            | fxt::mapply_append([&side_effect](int a, int b) {
+            | fxt::mtuple_apply_append([&side_effect](int a, int b) {
                 side_effect = a + b;
             });
 
@@ -641,7 +641,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::expected", "[apply][flat_tuple]")
         auto result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(10.0)
             | fxt::mtuple_append(2.0)
-            | fxt::mapply_append([](double a, double b) -> fxt::expected<double, std::string> {
+            | fxt::mtuple_apply_append([](double a, double b) -> fxt::expected<double, std::string> {
                 if (b == 0.0) return fxt::unexpected("Division by zero");
                 return a / b;
             });
@@ -660,7 +660,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::optional", "[apply][flat_tuple]")
         auto result = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(7)
             | fxt::mtuple_append(8)
-            | fxt::mapply_append([](int a, int b) { return a + b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 7);
@@ -673,8 +673,8 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::optional", "[apply][flat_tuple]")
         auto result = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(100)
             | fxt::mtuple_append(10)
-            | fxt::mapply_append([](int a, int b) { return a / b; })
-            | fxt::mapply_append([](int a, int b, int quotient) { return quotient * 2; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a / b; })
+            | fxt::mtuple_apply_append([](int a, int b, int quotient) { return quotient * 2; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 100);
@@ -688,7 +688,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::optional", "[apply][flat_tuple]")
         auto result = fxt::optional<fxt::flat_tuple<>>{}
             | fxt::mtuple_append(1)
             | fxt::mtuple_append(2)
-            | fxt::mapply_append([](int a, int b) { return a + b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -697,7 +697,7 @@ TEST_CASE("mapply - fxt::flat_tuple with fxt::optional", "[apply][flat_tuple]")
     {
         auto result = fxt::optional<fxt::flat_tuple<>>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(16.0)
-            | fxt::mapply_append([](double x) -> fxt::optional<double> {
+            | fxt::mtuple_apply_append([](double x) -> fxt::optional<double> {
                 if (x < 0.0) return fxt::nullopt;
                 return std::sqrt(x);
             });
@@ -1054,7 +1054,7 @@ TEST_CASE("apply - advanced integration tests", "[apply][advanced]")
         auto monadic_result = fxt::expected<fxt::flat_tuple<>, std::string>{fxt::flat_tuple<>{}}
             | fxt::mtuple_append(3)
             | fxt::mtuple_append(4)
-            | fxt::mapply_append([](int a, int b) { return a * b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a * b; });
 
         REQUIRE(monadic_result.has_value());
 
@@ -1071,7 +1071,7 @@ TEST_CASE("apply - advanced integration tests", "[apply][advanced]")
         auto monadic_result = fxt::optional<std::tuple<>>{std::tuple{}}
             | fxt::mtuple_append(10)
             | fxt::mtuple_append(5)
-            | fxt::mapply_append([](int a, int b) { return a - b; });
+            | fxt::mtuple_apply_append([](int a, int b) { return a - b; });
 
         REQUIRE(monadic_result.has_value());
 
@@ -1085,7 +1085,7 @@ TEST_CASE("apply - advanced integration tests", "[apply][advanced]")
 }
 
 // ============================================================================
-// Tests for fxt::mapply (REPLACE semantics — tuple is replaced by result)
+// Tests for fxt::mtuple_apply (REPLACE semantics — tuple is replaced by result)
 // ============================================================================
 
 TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
@@ -1093,7 +1093,7 @@ TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
     SECTION("lvalue expected")
     {
         auto exp = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)};
-        auto result = exp | fxt::mapply([](int a, int b) { return a + b; });
+        auto result = exp | fxt::mtuple_apply([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 7);
@@ -1103,7 +1103,7 @@ TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
     SECTION("rvalue expected")
     {
         auto result = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(5, 6)}
-                    | fxt::mapply([](int a, int b) { return a * b; });
+                    | fxt::mtuple_apply([](int a, int b) { return a * b; });
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 30);
@@ -1113,7 +1113,7 @@ TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
     {
         bool called = false;
         auto result = fxt::expected<std::tuple<int, int>, std::string>{fxt::unexpected("err")}
-                    | fxt::mapply([&called](int, int) { called = true; return 0; });
+                    | fxt::mtuple_apply([&called](int, int) { called = true; return 0; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "err");
@@ -1126,7 +1126,7 @@ TEST_CASE("mapply — expected: monadic return is flattened (and_then)", "[apply
     SECTION("success case")
     {
         auto result = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 2.0)}
-                    | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
+                    | fxt::mtuple_apply([](double a, double b) -> fxt::expected<double, std::string> {
                           if (b == 0.0) return fxt::unexpected(std::string{"div by zero"});
                           return a / b;
                       });
@@ -1138,7 +1138,7 @@ TEST_CASE("mapply — expected: monadic return is flattened (and_then)", "[apply
     SECTION("function returns error — propagated")
     {
         auto result = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 0.0)}
-                    | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
+                    | fxt::mtuple_apply([](double a, double b) -> fxt::expected<double, std::string> {
                           if (b == 0.0) return fxt::unexpected(std::string{"div by zero"});
                           return a / b;
                       });
@@ -1158,7 +1158,7 @@ TEST_CASE("mapply — expected (lvalue): void return — Case 2b regression", "[
         int side_effect = 0;
         auto exp = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)};
 
-        auto result = exp | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+        auto result = exp | fxt::mtuple_apply([&side_effect](int a, int b) { side_effect = a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(side_effect == 7);
@@ -1169,7 +1169,7 @@ TEST_CASE("mapply — expected (lvalue): void return — Case 2b regression", "[
         int side_effect = 0;
         auto exp = fxt::expected<std::tuple<int, int>, std::string>{fxt::unexpected("bad")};
 
-        auto result = exp | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+        auto result = exp | fxt::mtuple_apply([&side_effect](int a, int b) { side_effect = a + b; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(side_effect == 0);
@@ -1180,7 +1180,7 @@ TEST_CASE("mapply — expected (lvalue): void return — Case 2b regression", "[
     {
         int side_effect = 0;
         auto result = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(10, 20)}
-                    | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+                    | fxt::mtuple_apply([&side_effect](int a, int b) { side_effect = a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(side_effect == 30);
@@ -1192,7 +1192,7 @@ TEST_CASE("mapply — optional: plain return replaces tuple", "[apply][mapply]")
     SECTION("has value")
     {
         auto result = fxt::optional<std::tuple<int, int>>{std::make_tuple(5, 6)}
-                    | fxt::mapply([](int a, int b) { return a * b; });
+                    | fxt::mtuple_apply([](int a, int b) { return a * b; });
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 30);
@@ -1203,7 +1203,7 @@ TEST_CASE("mapply — optional: plain return replaces tuple", "[apply][mapply]")
     {
         bool called = false;
         auto result = fxt::optional<std::tuple<int, int>>{}
-                    | fxt::mapply([&called](int, int) { called = true; return 0; });
+                    | fxt::mtuple_apply([&called](int, int) { called = true; return 0; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE_FALSE(called);
@@ -1217,7 +1217,7 @@ TEST_CASE("mapply — optional: void return", "[apply][mapply]")
         int side_effect = 0;
         auto opt = fxt::optional<std::tuple<int, int>>{std::make_tuple(7, 8)};
 
-        auto result = opt | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+        auto result = opt | fxt::mtuple_apply([&side_effect](int a, int b) { side_effect = a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(side_effect == 15);
@@ -1227,10 +1227,11 @@ TEST_CASE("mapply — optional: void return", "[apply][mapply]")
     {
         int side_effect = 0;
         auto result = fxt::optional<std::tuple<int, int>>{}
-                    | fxt::mapply([&side_effect](int a, int b) { side_effect = a + b; });
+                    | fxt::mtuple_apply([&side_effect](int a, int b) { side_effect = a + b; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(side_effect == 0);
     }
 }
+
 

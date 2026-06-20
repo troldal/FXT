@@ -1,5 +1,5 @@
-//
-// Test suite for fxt::apply_replace and fxt::mapply_replace
+﻿//
+// Test suite for fxt::apply_replace and fxt::mtuple_apply_replace
 //
 
 #include "Catch2/catch_amalgamated.hpp"
@@ -146,7 +146,7 @@ TEST_CASE("apply_replace - returning tuple", "[apply_replace]")
 }
 
 // ============================================================================
-// Tests for fxt::mapply_replace with fxt::expected
+// Tests for fxt::mtuple_apply_replace with fxt::expected
 // ============================================================================
 
 TEST_CASE("mapply_replace - fxt::expected with regular return values", "[mapply_replace]")
@@ -154,7 +154,7 @@ TEST_CASE("mapply_replace - fxt::expected with regular return values", "[mapply_
     SECTION("replace with sum in successful expected")
     {
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{5, 10}};
-        auto result = exp | fxt::mapply_replace([](int a, int b) { return a + b; });
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::tuple_size_v<std::remove_cvref_t<decltype(result.value())>> == 1);
@@ -164,7 +164,7 @@ TEST_CASE("mapply_replace - fxt::expected with regular return values", "[mapply_
     SECTION("replace with product in successful expected")
     {
         auto exp = fxt::expected<fxt::tuple<int, int, int>, std::string>{fxt::tuple{2, 3, 4}};
-        auto result = exp | fxt::mapply_replace([](int a, int b, int c) { return a * b * c; });
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b, int c) { return a * b * c; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::tuple_size_v<std::remove_cvref_t<decltype(result.value())>> == 1);
@@ -174,7 +174,7 @@ TEST_CASE("mapply_replace - fxt::expected with regular return values", "[mapply_
     SECTION("type transformation in expected")
     {
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{7, 8}};
-        auto result = exp | fxt::mapply_replace([](int a, int b) {
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) {
             return std::to_string(a) + "-" + std::to_string(b);
         });
 
@@ -185,8 +185,8 @@ TEST_CASE("mapply_replace - fxt::expected with regular return values", "[mapply_
     SECTION("chain multiple mapply_replace operations")
     {
         auto result = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{2, 3}}
-            | fxt::mapply_replace([](int a, int b) { return a + b; })
-            | fxt::mapply_replace([](int sum) { return sum * 2; });
+            | fxt::mtuple_apply_replace([](int a, int b) { return a + b; })
+            | fxt::mtuple_apply_replace([](int sum) { return sum * 2; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(result.value()) == 10);
@@ -198,7 +198,7 @@ TEST_CASE("mapply_replace - fxt::expected with error propagation", "[mapply_repl
     SECTION("error in initial expected")
     {
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::unexpected("error")};
-        auto result = exp | fxt::mapply_replace([](int a, int b) { return a + b; });
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "error");
@@ -207,8 +207,8 @@ TEST_CASE("mapply_replace - fxt::expected with error propagation", "[mapply_repl
     SECTION("error propagates through chain")
     {
         auto result = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::unexpected("initial error")}
-            | fxt::mapply_replace([](int a, int b) { return a + b; })
-            | fxt::mapply_replace([](int sum) { return sum * 2; });
+            | fxt::mtuple_apply_replace([](int a, int b) { return a + b; })
+            | fxt::mtuple_apply_replace([](int sum) { return sum * 2; });
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE(result.error() == "initial error");
@@ -221,7 +221,7 @@ TEST_CASE("mapply_replace - fxt::expected with void return", "[mapply_replace]")
     {
         int side_effect = 0;
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{5, 10}};
-        auto result = exp | fxt::mapply_replace([&](int a, int b) {
+        auto result = exp | fxt::mtuple_apply_replace([&](int a, int b) {
             side_effect = a + b;
         });
 
@@ -234,7 +234,7 @@ TEST_CASE("mapply_replace - fxt::expected with void return", "[mapply_replace]")
     {
         int side_effect = 0;
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::unexpected("error")};
-        auto result = exp | fxt::mapply_replace([&](int a, int b) {
+        auto result = exp | fxt::mtuple_apply_replace([&](int a, int b) {
             side_effect = a + b;
         });
 
@@ -249,7 +249,7 @@ TEST_CASE("mapply_replace - fxt::expected with monadic return", "[mapply_replace
     SECTION("function returning expected (success)")
     {
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{10, 2}};
-        auto result = exp | fxt::mapply_replace([](int a, int b) -> fxt::expected<int, std::string> {
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) -> fxt::expected<int, std::string> {
             if (b == 0) return fxt::unexpected("division by zero");
             return a / b;
         });
@@ -261,7 +261,7 @@ TEST_CASE("mapply_replace - fxt::expected with monadic return", "[mapply_replace
     SECTION("function returning expected (error)")
     {
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{10, 0}};
-        auto result = exp | fxt::mapply_replace([](int a, int b) -> fxt::expected<int, std::string> {
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) -> fxt::expected<int, std::string> {
             if (b == 0) return fxt::unexpected("division by zero");
             return a / b;
         });
@@ -280,7 +280,7 @@ TEST_CASE("mapply_replace - fxt::optional with regular return values", "[mapply_
     SECTION("replace with sum in optional")
     {
         auto opt = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{7, 8}};
-        auto result = opt | fxt::mapply_replace([](int a, int b) { return a + b; });
+        auto result = opt | fxt::mtuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::tuple_size_v<std::remove_cvref_t<decltype(*result)>> == 1);
@@ -290,7 +290,7 @@ TEST_CASE("mapply_replace - fxt::optional with regular return values", "[mapply_
     SECTION("replace with difference in optional")
     {
         auto opt = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{10, 3}};
-        auto result = opt | fxt::mapply_replace([](int a, int b) { return a - b; });
+        auto result = opt | fxt::mtuple_apply_replace([](int a, int b) { return a - b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 7);
@@ -299,7 +299,7 @@ TEST_CASE("mapply_replace - fxt::optional with regular return values", "[mapply_
     SECTION("type transformation in optional")
     {
         auto opt = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{3, 4}};
-        auto result = opt | fxt::mapply_replace([](int a, int b) {
+        auto result = opt | fxt::mtuple_apply_replace([](int a, int b) {
             return std::to_string(a * b);
         });
 
@@ -310,8 +310,8 @@ TEST_CASE("mapply_replace - fxt::optional with regular return values", "[mapply_
     SECTION("chain multiple mapply_replace operations")
     {
         auto result = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{4, 5}}
-            | fxt::mapply_replace([](int a, int b) { return a * b; })
-            | fxt::mapply_replace([](int product) { return product - 10; });
+            | fxt::mtuple_apply_replace([](int a, int b) { return a * b; })
+            | fxt::mtuple_apply_replace([](int product) { return product - 10; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(*result) == 10);
@@ -323,7 +323,7 @@ TEST_CASE("mapply_replace - fxt::optional with nullopt propagation", "[mapply_re
     SECTION("nullopt in initial optional")
     {
         auto opt = fxt::optional<fxt::tuple<int, int>>{std::nullopt};
-        auto result = opt | fxt::mapply_replace([](int a, int b) { return a + b; });
+        auto result = opt | fxt::mtuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -331,8 +331,8 @@ TEST_CASE("mapply_replace - fxt::optional with nullopt propagation", "[mapply_re
     SECTION("nullopt propagates through chain")
     {
         auto result = fxt::optional<fxt::tuple<int, int>>{std::nullopt}
-            | fxt::mapply_replace([](int a, int b) { return a + b; })
-            | fxt::mapply_replace([](int sum) { return sum * 2; });
+            | fxt::mtuple_apply_replace([](int a, int b) { return a + b; })
+            | fxt::mtuple_apply_replace([](int sum) { return sum * 2; });
 
         REQUIRE_FALSE(result.has_value());
     }
@@ -344,7 +344,7 @@ TEST_CASE("mapply_replace - fxt::optional with void return", "[mapply_replace]")
     {
         int side_effect = 0;
         auto opt = fxt::optional<fxt::tuple<int, int>>{fxt::tuple{6, 9}};
-        auto result = opt | fxt::mapply_replace([&](int a, int b) {
+        auto result = opt | fxt::mtuple_apply_replace([&](int a, int b) {
             side_effect = a + b;
         });
 
@@ -357,7 +357,7 @@ TEST_CASE("mapply_replace - fxt::optional with void return", "[mapply_replace]")
     {
         int side_effect = 0;
         auto opt = fxt::optional<fxt::tuple<int, int>>{std::nullopt};
-        auto result = opt | fxt::mapply_replace([&](int a, int b) {
+        auto result = opt | fxt::mtuple_apply_replace([&](int a, int b) {
             side_effect = a + b;
         });
 
@@ -375,7 +375,7 @@ TEST_CASE("mapply_replace - preserves tuple type", "[mapply_replace]")
     SECTION("fxt::tuple is preserved")
     {
         auto exp = fxt::expected<fxt::tuple<int, int>, std::string>{fxt::tuple{3, 4}};
-        auto result = exp | fxt::mapply_replace([](int a, int b) { return a + b; });
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::impl::is_fxt_tuple_v<decltype(result.value())>);
@@ -384,7 +384,7 @@ TEST_CASE("mapply_replace - preserves tuple type", "[mapply_replace]")
     SECTION("fxt::flat_tuple is preserved")
     {
         auto exp = fxt::expected<fxt::flat_tuple<int, int>, std::string>{fxt::flat_tuple<int, int>{3, 4}};
-        auto result = exp | fxt::mapply_replace([](int a, int b) { return a + b; });
+        auto result = exp | fxt::mtuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::impl::is_flat_tuple_v<decltype(result.value())>);
@@ -439,3 +439,4 @@ TEST_CASE("apply_replace - comparison with apply_append", "[apply_replace]")
         REQUIRE(fxt::get<0>(result) == 7);
     }
 }
+

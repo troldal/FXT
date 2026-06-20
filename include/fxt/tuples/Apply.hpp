@@ -38,6 +38,34 @@
 
 */
 
+/**
+ * @file Apply.hpp
+ * @brief Tuple apply operations: non-monadic fxt::apply and monadic fxt::mtuple_apply
+ *
+ * ## fxt::apply
+ * Extends std::apply to cover fxt::flat_tuple, and provides a curried single-argument
+ * overload for pipe-operator usage:
+ * @code
+ * auto t  = fxt::make_tuple(1, 2, 3);
+ * auto s  = t | fxt::apply([](int a, int b, int c) { return a + b + c; }); // 6
+ *
+ * auto ft = fxt::make_flat_tuple(2.0, 3.0);
+ * auto p  = ft | fxt::apply([](double a, double b) { return a * b; });     // 6.0
+ * @endcode
+ *
+ * ## fxt::mtuple_apply
+ * Monadic apply that unpacks a tuple held inside an `expected`- or `optional`-like
+ * container and invokes a callable with its elements. The container is updated to hold
+ * only the function's return value — the original tuple is **replaced**.
+ * Use fxt::mtuple_apply_append to extend the tuple instead.
+ *
+ * Three dispatch cases:
+ *   1. **Monadic return**: `.and_then()` — early-exit on error/nullopt.
+ *   2. **void return**: `.transform()` returning `fxt::unit`.
+ *   3. **Plain return**: `.transform()` replacing the tuple with the value.
+ *
+ * @see fxt::mtuple_apply_append (ApplyAppend.hpp)
+ */
 
 #pragma once
 
@@ -45,11 +73,8 @@
 #include "../concepts/IsOptional.hpp"
 #include "TupleAppend.hpp"
 #include "../utils/Unit.hpp"
-#include "Append.hpp"
 #include "Tuple.hpp"
 #include "FlatTuple.hpp"
-#include <concepts>
-#include <string>
 #include <type_traits>
 #include <utility>
 #include <tuple>
@@ -57,82 +82,12 @@
 namespace fxt
 {
     // ========================================================================
-    // fxt::apply - Direct apply function for tuples (non-monadic)
+    // fxt::apply — non-monadic apply for std::tuple and fxt::flat_tuple
     // ========================================================================
 
-    /**
-     * @brief Apply a function to elements of fxt::tuple
-     *
-     * For fxt::tuple (which is an alias for std::tuple), this simply forwards to std::apply.
-     *
-     * @tparam F Function type
-     * @tparam Ts Tuple element types
-     * @param f Function to apply
-     * @param t Tuple whose elements are used as function arguments
-     * @return Result of invoking f with tuple elements as arguments
-     */
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>& t)
-    // {
-    //     return std::apply(std::forward<F>(f), t);
-    // }
-    //
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>& t)
-    // {
-    //     return std::apply(std::forward<F>(f), t);
-    // }
-    //
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>&& t)
-    // {
-    //     return std::apply(std::forward<F>(f), std::move(t));
-    // }
-    //
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>&& t)
-    // {
-    //     return std::apply(std::forward<F>(f), std::move(t));
-    // }
-
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>& t)
-    // {
-    //     return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&>(t));
-    // }
-    //
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>& t)
-    // {
-    //     return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&>(t));
-    // }
-    //
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, tuple<Ts...>&& t)
-    // {
-    //     return std::apply(std::forward<F>(f), static_cast<std::tuple<Ts...>&&>(std::move(t)));
-    // }
-    //
-    // template<typename F, typename... Ts>
-    // constexpr decltype(auto) apply(F&& f, const tuple<Ts...>&& t)
-    // {
-    //     return std::apply(std::forward<F>(f), static_cast<const std::tuple<Ts...>&&>(std::move(t)));
-    // }
-
+    // Re-export std::apply unchanged; it handles fxt::tuple (= std::tuple) directly.
     using std::apply;
 
-    /**
-     * @brief Apply a function to elements of fxt::flat_tuple
-     *
-     * For fxt::flat_tuple, this provides a custom implementation that unpacks
-     * the flat_tuple elements and passes them as arguments to the function.
-     *
-     * @tparam F Function type
-     * @tparam Ts flat_tuple element types
-     * @param f Function to apply
-     * @param t flat_tuple whose elements are used as function arguments
-     * @return Result of invoking f with flat_tuple elements as arguments
-     */
     namespace impl
     {
         template<typename F, typename... Ts, std::size_t... Is>
@@ -158,7 +113,7 @@ namespace fxt
         {
             return std::invoke(std::forward<F>(f), fxt::get<Is>(std::move(t))...);
         }
-    }
+    }    // namespace impl
 
     template<typename F, typename... Ts>
     constexpr decltype(auto) apply(F&& f, flat_tuple<Ts...>& t)
@@ -184,150 +139,25 @@ namespace fxt
         return impl::apply_flat_tuple_impl(std::forward<F>(f), std::move(t), std::index_sequence_for<Ts...>{});
     }
 
-    // ========================================================================
-    // Curried versions of fxt::apply for use with pipe operator
-    // ========================================================================
-
     /**
-     * @brief Curried version of apply for use with pipe operator
+     * @brief Curried apply for pipe-operator usage.
      *
-     * Returns a callable that applies the given function to a tuple passed to it.
-     * Works with both fxt::tuple and fxt::flat_tuple.
-     *
-     * @tparam F Function type
-     * @param f Function to apply to tuple elements
-     * @return A callable that takes a tuple and returns the result of applying f
-     *
-     * Example:
-     * @code
-     * auto t = fxt::make_tuple(1, 2, 3);
-     * auto sum = t | fxt::apply([](int a, int b, int c) { return a + b + c; });
-     * // sum = 6
-     *
-     * auto ft = fxt::make_flat_tuple(2.0, 3.0);
-     * auto product = ft | fxt::apply([](double a, double b) { return a * b; });
-     * // product = 6.0
-     * @endcode
-     */
-    template<typename F>
-    struct apply_curried
-    {
-        F func;
-
-        // Overload for fxt::tuple (lvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(tuple<Ts...>& t) const
-        {
-            return fxt::apply(func, t);
-        }
-
-        // Overload for fxt::tuple (const lvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(const tuple<Ts...>& t) const
-        {
-            return fxt::apply(func, t);
-        }
-
-        // Overload for fxt::tuple (rvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(tuple<Ts...>&& t) const
-        {
-            return fxt::apply(func, std::move(t));
-        }
-
-        // Overload for fxt::tuple (const rvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(const tuple<Ts...>&& t) const
-        {
-            return fxt::apply(func, std::move(t));
-        }
-
-        // Overload for fxt::flat_tuple (lvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(flat_tuple<Ts...>& t) const
-        {
-            return fxt::apply(func, t);
-        }
-
-        // Overload for fxt::flat_tuple (const lvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(const flat_tuple<Ts...>& t) const
-        {
-            return fxt::apply(func, t);
-        }
-
-        // Overload for fxt::flat_tuple (rvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(flat_tuple<Ts...>&& t) const
-        {
-            return fxt::apply(func, std::move(t));
-        }
-
-        // Overload for fxt::flat_tuple (const rvalue)
-        template<typename... Ts>
-        constexpr decltype(auto) operator()(const flat_tuple<Ts...>&& t) const
-        {
-            return fxt::apply(func, std::move(t));
-        }
-    };
-
-    /**
-     * @brief Create a curried apply function for pipe operator usage
-     *
-     * This overload is called when apply is given just a function (no tuple argument).
-     * It returns a callable that can be used with the pipe operator.
-     *
-     * @tparam F Function type
-     * @param f Function to apply
-     * @return A callable wrapper that applies f to a tuple
+     * Returns a generic callable that, when invoked with a tuple (or flat_tuple),
+     * applies @p f to its elements. Both `fxt::tuple` and `fxt::flat_tuple` are
+     * supported via the overloaded two-argument `fxt::apply`.
      */
     template<typename F>
     constexpr auto apply(F&& f)
     {
-        return apply_curried<std::decay_t<F>>{std::forward<F>(f)};
+        return [f = std::forward<F>(f)]<typename TupleT>(TupleT&& t) -> decltype(auto) {
+            return fxt::apply(f, std::forward<TupleT>(t));
+        };
     }
 
-    namespace impl
-    {
-        // Helper to extract value type from expected-like or optional-like objects
-        template<typename T>
-        struct expected_value_type
-        {
-            using type = T;
-        };
+    // ========================================================================
+    // Supporting concepts for fxt::mtuple_apply
+    // ========================================================================
 
-        // Expected-like specialization takes precedence (more specific)
-        template<typename T>
-            requires expected_like<T>
-        struct expected_value_type<T>
-        {
-            using type = typename T::value_type;
-        };
-
-        // Optional-like specialization only applies if NOT expected-like
-        template<typename T>
-            requires optional_like<T> && (!expected_like<T>)
-        struct expected_value_type<T>
-        {
-            using type = typename T::value_type;
-        };
-
-        template<typename T>
-        using expected_value_type_t = typename expected_value_type<T>::type;
-
-        // Main type trait for function return type processing
-        template<typename TFunction, typename... TArgs>
-        struct processed_invoke_result
-        {
-            using raw_result = std::invoke_result_t<TFunction, TArgs...>;
-            using type       = expected_value_type_t<raw_result>;
-        };
-
-        template<typename TFunction, typename... TArgs>
-        using processed_invoke_result_t = typename processed_invoke_result<TFunction, TArgs...>::type;
-    }    // namespace impl
-
-    // Concept version for easier use
     template<typename TFunction, typename... TArgs>
     concept returns_expected_like = expected_like<std::invoke_result_t<TFunction, TArgs...>>;
 
@@ -351,7 +181,7 @@ namespace fxt
             template<typename TFunction>
             using invoke_result_t = std::invoke_result_t<TFunction, Ts...>;
         };
-    }
+    }    // namespace impl
 
     template<typename TFunction, typename TTuple>
     concept returns_monadic_with_tuple = impl::tuple_elements<TTuple>::template returns_monadic_v<TFunction>;
@@ -359,172 +189,134 @@ namespace fxt
     template<typename TFunction, typename TTuple>
     using invoke_result_with_tuple_t = typename impl::tuple_elements<TTuple>::template invoke_result_t<TFunction>;
 
-    /**
-     * @brief Wrapper struct that holds a function and provides overloaded operator() for applying it
-     */
+    // ========================================================================
+    // apply_wrapper — six-case dispatch for mtuple_apply
+    // ========================================================================
+
     template<typename TFunction>
     struct apply_wrapper
     {
         TFunction function;
 
-        // ========================================================================
-        // Case 1a: Optional-like container + fxt::tuple + Function returning monadic type
-        // ========================================================================
+        // Case 1a: optional<tuple> + monadic return → and_then (flattens the monad)
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires optional_like<std::remove_cvref_t<TArg>>
-                && tuple_like<std::remove_cvref_t<TTuple>>
-                && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
-        auto operator()(TArg&& tupleContainer) const
+                  && tuple_like<std::remove_cvref_t<TTuple>>
+                  && returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>
+        auto operator()(TArg&& opt) const
         {
-             // return tupleContainer
-             //     ? mappend(fxt::apply(function, *std::forward<TArg>(tupleContainer)))(std::forward<TArg>(tupleContainer))
-             //     : fxt::nullopt;
-
-            // if (!tupleContainer) return tupleContainer;
-            // auto tuple = tupleContainer.value();
-            // auto result = fxt::apply(function, tuple);
-            // if (!result) return tupleContainer.and_then([](const TTuple& t) { return fxt::nullopt;});
-            // return tupleContainer.transform([result](const TTuple& t) { return result;});
-            return tupleContainer.and_then([this](const TTuple& tuple) {
+            return std::forward<TArg>(opt).and_then([this](const TTuple& tuple) {
                 return fxt::apply(function, tuple);
             });
         }
 
-        // ========================================================================
-        // Case 1b: Expected-like container + fxt::tuple + Function returning monadic type
-        // ========================================================================
+        // Case 1b: expected<tuple> + monadic return → and_then (flattens the monad)
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-        requires expected_like<std::remove_cvref_t<TArg>>
-            && tuple_like<std::remove_cvref_t<TTuple>>
-            && (returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
-        auto operator()(TArg&& tupleExpected) const
+            requires expected_like<std::remove_cvref_t<TArg>>
+                  && tuple_like<std::remove_cvref_t<TTuple>>
+                  && returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>
+        auto operator()(TArg&& exp) const
         {
-             // return tupleExpected
-             //     ? mappend(fxt::apply(function, *std::forward<TArg>(tupleExpected)))(std::forward<TArg>(tupleExpected))
-             //     : typename invoke_result_with_tuple_t<TFunction, TTuple>::unexpected_type(tupleExpected.error());
-
-            // if (!tupleExpected) return tupleExpected;
-            // auto tuple = tupleExpected.value();
-            // auto result = fxt::apply(function, tuple);
-            // if (!result) return tupleExpected.and_then([](const TTuple& t) { return fxt::nullopt;});
-            // return tupleExpected.transform([result](const TTuple& t) { return result;});
-            return tupleExpected.and_then([this](const TTuple& tuple) {
+            return std::forward<TArg>(exp).and_then([this](const TTuple& tuple) {
                 return fxt::apply(function, tuple);
             });
         }
 
-        // ========================================================================
-        // Case 2a: Optional-like container + fxt::tuple + Function returning void
-        // ========================================================================
+        // Case 2a: optional<tuple> + void return → transform returning fxt::unit
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires optional_like<std::remove_cvref_t<TArg>>
-                && tuple_like<std::remove_cvref_t<TTuple>>
-                && (std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
+                  && tuple_like<std::remove_cvref_t<TTuple>>
+                  && std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>
         auto operator()(TArg&& opt) const
         {
             return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
-                //return tuple;
                 return fxt::unit{};
             });
         }
 
-        // ========================================================================
-        // Case 2b: Expected-like container + fxt::tuple + Function returning void
-        // ========================================================================
+        // Case 2b: expected<tuple> + void return → transform returning fxt::unit
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires expected_like<std::remove_cvref_t<TArg>>
-                && tuple_like<std::remove_cvref_t<TTuple>>
-                && std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>
-        auto operator()(TArg&& tupleExpected) const
+                  && tuple_like<std::remove_cvref_t<TTuple>>
+                  && std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>
+        auto operator()(TArg&& exp) const
         {
-            return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
+            return std::forward<TArg>(exp).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
-                //return tuple;
                 return fxt::unit{};
             });
         }
 
-        // ========================================================================
-        // Case 3a: Optional-like container + fxt::tuple + Function returning regular value
-        // ========================================================================
+        // Case 3a: optional<tuple> + plain return → transform (tuple replaced by value)
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-        requires optional_like<std::remove_cvref_t<TArg>>
-            && tuple_like<std::remove_cvref_t<TTuple>>
-            && (!returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
-            && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>,void>)
+            requires optional_like<std::remove_cvref_t<TArg>>
+                  && tuple_like<std::remove_cvref_t<TTuple>>
+                  && (!returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
+                  && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
         auto operator()(TArg&& opt) const
         {
-            // Let the compiler deduce the return type from the expression.
             return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
-                //return fxt::tuple_append(tuple, fxt::apply(function, tuple));
                 return fxt::apply(function, tuple);
             });
         }
 
-        // ========================================================================
-        // Case 3b: Expected-like container + fxt::tuple + Function returning regular value
-        // ========================================================================
+        // Case 3b: expected<tuple> + plain return → transform (tuple replaced by value)
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires expected_like<std::remove_cvref_t<TArg>>
-                && tuple_like<std::remove_cvref_t<TTuple>>
-                && (!returns_monadic_with_tuple<TFunction, TTuple>)
-                && (!std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>)
-        auto operator()(TArg&& tupleExpected) const
+                  && tuple_like<std::remove_cvref_t<TTuple>>
+                  && (!returns_monadic_with_tuple<TFunction, TTuple>)
+                  && (!std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>)
+        auto operator()(TArg&& exp) const
         {
-            return std::forward<TArg>(tupleExpected).transform([this](const TTuple& tuple) {
-                //return fxt::tuple_append(tuple, fxt::apply(function, tuple));
+            return std::forward<TArg>(exp).transform([this](const TTuple& tuple) {
                 return fxt::apply(function, tuple);
             });
         }
-
     };
 
+    // ========================================================================
+    // fxt::mtuple_apply / fxt::mapply
+    // ========================================================================
+
     /**
-     * @brief Monadic apply — applies a function to tuple elements inside a monadic container,
+     * @brief Monadic apply — applies a function to tuple elements inside a monad,
      *        replacing the tuple with the function's result.
      *
-     * `fxt::mapply(f)` unpacks the tuple held by an `expected`- or `optional`-like container
-     * and invokes `f` with its elements. The container is then updated to hold only the
-     * function's return value — the original tuple is **replaced**, not extended.
-     * To extend the tuple by appending the result, use `fxt::mapply_append(f)` instead.
+     * `fxt::mtuple_apply(f)` unpacks the tuple held by an `expected`- or `optional`-like
+     * container and invokes `f` with its elements. The container is updated to hold only
+     * the function's return value — the original tuple is **replaced**, not extended.
+     * Use `fxt::mtuple_apply_append(f)` to keep the tuple and append the result.
      *
      * Three dispatch cases are handled automatically:
-     *   1. **Monadic return** (`expected`/`optional`): uses `.and_then()` — the function's
-     *      monad is flattened into the outer container (early-exit on error/nullopt).
-     *   2. **`void` return**: uses `.transform()` returning `fxt::unit` — side effects only.
-     *   3. **Plain return**: uses `.transform()` — the tuple is replaced by the return value.
+     *   1. **Monadic return** (`expected`/`optional`): `.and_then()` — early-exit on error/nullopt.
+     *   2. **`void` return**: `.transform()` returning `fxt::unit` — side effects only.
+     *   3. **Plain return**: `.transform()` — tuple replaced by the return value.
      *
-     * @tparam TFunction Type of the function to apply to the tuple elements
+     * @tparam TFunction Type of the callable to apply to the tuple elements
      * @param  f         Callable accepting the unpacked tuple elements
      * @return A pipe adaptor that, when applied to a monad-of-tuple, returns a monad of
      *         the function's result type (or monad-of-unit for void functions).
      *
-     * @section Usage
      * @code
-     * // Case 3 — plain return: tuple is replaced by function result
+     * // Case 3 — plain return: tuple replaced by function result
      * auto r1 = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)}
-     *         | fxt::mapply([](int a, int b) { return a + b; });
+     *         | fxt::mtuple_apply([](int a, int b) { return a + b; });
      * // r1 is fxt::expected<int, std::string>{7}
      *
-     * // Case 3 — optional variant
-     * auto r2 = fxt::optional<std::tuple<int, int>>{std::make_tuple(5, 6)}
-     *         | fxt::mapply([](int a, int b) { return a * b; });
-     * // r2 is fxt::optional<int>{30}
-     *
-     * // Case 2 — void return: side effects only, result holds fxt::unit
+     * // Case 2 — void return: side effects only, container holds fxt::unit
      * int logged = 0;
-     * auto r3 = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)}
-     *         | fxt::mapply([&logged](int a, int b) { logged = a + b; });
-     * // logged == 7; r3 is fxt::expected<fxt::unit, std::string>{}
+     * auto r2 = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)}
+     *         | fxt::mtuple_apply([&logged](int a, int b) { logged = a + b; });
+     * // logged == 7; r2 is fxt::expected<fxt::unit, std::string>{}
      *
      * // Case 1 — monadic return: flattened via and_then
-     * auto r4 = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 2.0)}
-     *         | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
-     *               if (b == 0.0) return fxt::unexpected(std::string{"division by zero"});
+     * auto r3 = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 2.0)}
+     *         | fxt::mtuple_apply([](double a, double b) -> fxt::expected<double, std::string> {
+     *               if (b == 0.0) return fxt::unexpected("division by zero");
      *               return a / b;
      *           });
-     * // r4 is fxt::expected<double, std::string>{5.0}
+     * // r3 is fxt::expected<double, std::string>{5.0}
      * @endcode
      */
     struct apply_fn
@@ -536,10 +328,9 @@ namespace fxt
         }
     };
 
-    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, the non-monadic
-    //       `apply` stays bare (it is a std re-export extended for flat_tuple), but
-    //       its monadic lift should normalize to the `mtuple_` form: rename mapply
-    //       -> mtuple_apply (keep mapply as a [[deprecated]] alias for one release).
+    inline constexpr apply_fn mtuple_apply{};
+
+    [[deprecated("Use fxt::mtuple_apply")]]
     inline constexpr apply_fn mapply{};
 
 }    // namespace fxt

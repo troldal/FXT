@@ -474,6 +474,9 @@ namespace fxt
         }
     };
 
+    inline constexpr mapply_replace_fn mtuple_apply_replace{};
+
+    [[deprecated("Use fxt::mtuple_apply_replace")]]
     inline constexpr mapply_replace_fn mapply_replace{};
 
 }    // namespace fxt
