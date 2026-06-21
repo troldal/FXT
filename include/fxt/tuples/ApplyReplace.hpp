@@ -206,7 +206,7 @@ namespace fxt
     template<typename F, typename TTuple>
     constexpr auto apply_replace(F&& f, TTuple&& t)
     {
-             auto result = fxt::apply_append(std::forward<F>(f), std::forward<TTuple>(t));
+             auto result = fxt::tuple_apply_append(std::forward<F>(f), std::forward<TTuple>(t));
              return fxt::take_last<1>(result);
     }
 

@@ -422,7 +422,7 @@ TEST_CASE("apply_replace - comparison with apply_append", "[apply_replace]")
     SECTION("apply_append keeps original elements")
     {
         auto t = fxt::tuple{3, 4};
-        auto result = fxt::apply_append([](int a, int b) { return a + b; }, t);
+        auto result = fxt::tuple_apply_append([](int a, int b) { return a + b; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
         REQUIRE(fxt::get<0>(result) == 3);

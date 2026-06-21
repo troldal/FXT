@@ -16,7 +16,7 @@ TEST_CASE("apply_append - basic operations with fxt::tuple", "[apply_append]")
     SECTION("append sum to two-element tuple")
     {
         auto t = fxt::tuple{3, 4};
-        auto result = fxt::apply_append([](int a, int b) { return a + b; }, t);
+        auto result = fxt::tuple_apply_append([](int a, int b) { return a + b; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
         REQUIRE(fxt::get<0>(result) == 3);
@@ -27,7 +27,7 @@ TEST_CASE("apply_append - basic operations with fxt::tuple", "[apply_append]")
     SECTION("append product to three-element tuple")
     {
         auto t = fxt::tuple{2, 3, 4};
-        auto result = fxt::apply_append([](int a, int b, int c) { return a * b * c; }, t);
+        auto result = fxt::tuple_apply_append([](int a, int b, int c) { return a * b * c; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
         REQUIRE(fxt::get<0>(result) == 2);
@@ -39,7 +39,7 @@ TEST_CASE("apply_append - basic operations with fxt::tuple", "[apply_append]")
     SECTION("type transformation - ints to string")
     {
         auto t = fxt::tuple{10, 20};
-        auto result = fxt::apply_append([](int a, int b) {
+        auto result = fxt::tuple_apply_append([](int a, int b) {
             return std::to_string(a) + "+" + std::to_string(b);
         }, t);
 
@@ -52,7 +52,7 @@ TEST_CASE("apply_append - basic operations with fxt::tuple", "[apply_append]")
     SECTION("single element tuple")
     {
         auto t = fxt::tuple{42};
-        auto result = fxt::apply_append([](int x) { return x * 2; }, t);
+        auto result = fxt::tuple_apply_append([](int x) { return x * 2; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 2);
         REQUIRE(fxt::get<0>(result) == 42);
@@ -65,7 +65,7 @@ TEST_CASE("apply_append - with pipe operator", "[apply_append]")
     SECTION("single application")
     {
         auto result = fxt::tuple{5, 10}
-            | fxt::apply_append([](int a, int b) { return a + b; });
+            | fxt::tuple_apply_append([](int a, int b) { return a + b; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
         REQUIRE(fxt::get<0>(result) == 5);
@@ -76,8 +76,8 @@ TEST_CASE("apply_append - with pipe operator", "[apply_append]")
     SECTION("chained applications")
     {
         auto result = fxt::tuple{2, 3}
-            | fxt::apply_append([](int a, int b) { return a * b; })
-            | fxt::apply_append([](int a, int b, int product) { return a + b + product; });
+            | fxt::tuple_apply_append([](int a, int b) { return a * b; })
+            | fxt::tuple_apply_append([](int a, int b, int product) { return a + b + product; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
         REQUIRE(fxt::get<0>(result) == 2);
@@ -89,9 +89,9 @@ TEST_CASE("apply_append - with pipe operator", "[apply_append]")
     SECTION("multiple chained applications")
     {
         auto result = fxt::tuple{1, 2}
-            | fxt::apply_append([](int a, int b) { return a + b; })
-            | fxt::apply_append([](int a, int b, int sum) { return a * b; })
-            | fxt::apply_append([](int a, int b, int sum, int product) { return sum + product; });
+            | fxt::tuple_apply_append([](int a, int b) { return a + b; })
+            | fxt::tuple_apply_append([](int a, int b, int sum) { return a * b; })
+            | fxt::tuple_apply_append([](int a, int b, int sum, int product) { return sum + product; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 5);
         REQUIRE(fxt::get<0>(result) == 1);
@@ -107,7 +107,7 @@ TEST_CASE("apply_append - with flat_tuple", "[apply_append]")
     SECTION("append to two elements")
     {
         auto ft = fxt::flat_tuple<double, double>{2.0, 3.0};
-        auto result = fxt::apply_append([](double a, double b) { return a / b; }, ft);
+        auto result = fxt::tuple_apply_append([](double a, double b) { return a / b; }, ft);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 3);
         REQUIRE(fxt::get<0>(result) == 2.0);
@@ -118,7 +118,7 @@ TEST_CASE("apply_append - with flat_tuple", "[apply_append]")
     SECTION("flat_tuple with pipe operator")
     {
         auto result = fxt::flat_tuple<int, int, int>{1, 2, 3}
-            | fxt::apply_append([](int a, int b, int c) { return a + b + c; });
+            | fxt::tuple_apply_append([](int a, int b, int c) { return a + b + c; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
         REQUIRE(fxt::get<0>(result) == 1);
@@ -130,8 +130,8 @@ TEST_CASE("apply_append - with flat_tuple", "[apply_append]")
     SECTION("chained flat_tuple operations")
     {
         auto result = fxt::flat_tuple<double, double>{10.0, 2.0}
-            | fxt::apply_append([](double a, double b) { return a / b; })
-            | fxt::apply_append([](double a, double b, double quotient) { return quotient * 2; });
+            | fxt::tuple_apply_append([](double a, double b) { return a / b; })
+            | fxt::tuple_apply_append([](double a, double b, double quotient) { return quotient * 2; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 4);
         REQUIRE(fxt::get<0>(result) == 10.0);
@@ -147,7 +147,7 @@ TEST_CASE("apply_append - void-returning functions", "[apply_append]")
     {
         int side_effect = 0;
         auto t = fxt::tuple{5, 10};
-        auto result = fxt::apply_append([&](int a, int b) {
+        auto result = fxt::tuple_apply_append([&](int a, int b) {
             side_effect = a + b;
         }, t);
 
@@ -161,8 +161,8 @@ TEST_CASE("apply_append - void-returning functions", "[apply_append]")
     {
         int side_effect = 0;
         auto result = fxt::tuple{3, 4}
-            | fxt::apply_append([](int a, int b) { return a + b; })
-            | fxt::apply_append([&](int a, int b, int sum) {
+            | fxt::tuple_apply_append([](int a, int b) { return a + b; })
+            | fxt::tuple_apply_append([&](int a, int b, int sum) {
                 side_effect = sum;
             });
 
@@ -470,7 +470,7 @@ TEST_CASE("apply_append - works with const and reference qualifiers", "[apply_ap
     SECTION("const lvalue reference")
     {
         const auto t = fxt::tuple{5, 10};
-        auto result = fxt::apply_append([](int a, int b) { return a + b; }, t);
+        auto result = fxt::tuple_apply_append([](int a, int b) { return a + b; }, t);
 
         REQUIRE(fxt::get<0>(result) == 5);
         REQUIRE(fxt::get<1>(result) == 10);
@@ -479,7 +479,7 @@ TEST_CASE("apply_append - works with const and reference qualifiers", "[apply_ap
 
     SECTION("rvalue reference")
     {
-        auto result = fxt::apply_append([](int a, int b) { return a + b; }, fxt::tuple{7, 3});
+        auto result = fxt::tuple_apply_append([](int a, int b) { return a + b; }, fxt::tuple{7, 3});
 
         REQUIRE(fxt::get<0>(result) == 7);
         REQUIRE(fxt::get<1>(result) == 3);
@@ -496,13 +496,13 @@ TEST_CASE("apply_append - complex computation pipelines", "[apply_append]")
     SECTION("building up mathematical results")
     {
         auto result = fxt::tuple{3.0, 4.0}
-            | fxt::apply_append([](double x, double y) {
+            | fxt::tuple_apply_append([](double x, double y) {
                 return std::sqrt(x * x + y * y);  // hypotenuse
             })
-            | fxt::apply_append([](double x, double y, double h) {
+            | fxt::tuple_apply_append([](double x, double y, double h) {
                 return (x * y) / 2.0;  // triangle area
             })
-            | fxt::apply_append([](double x, double y, double h, double area) {
+            | fxt::tuple_apply_append([](double x, double y, double h, double area) {
                 return x + y + h;  // perimeter
             });
 
@@ -546,7 +546,7 @@ TEST_CASE("apply_append - edge cases", "[apply_append]")
     SECTION("empty tuple becomes single element")
     {
         auto t = fxt::tuple{};
-        auto result = fxt::apply_append([]() { return 42; }, t);
+        auto result = fxt::tuple_apply_append([]() { return 42; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 42);
@@ -555,7 +555,7 @@ TEST_CASE("apply_append - edge cases", "[apply_append]")
     SECTION("appending tuple creates nested tuple")
     {
         auto t = fxt::tuple{1, 2};
-        auto result = fxt::apply_append([](int a, int b) {
+        auto result = fxt::tuple_apply_append([](int a, int b) {
             return fxt::tuple{a + b, a * b};
         }, t);
 
