@@ -41,8 +41,6 @@
 #pragma once
 
 #include "FlatTuple.hpp"
-#include "../monads/Expected.hpp"
-#include "../monads/Optional.hpp"
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -72,8 +70,8 @@ namespace fxt
     constexpr decltype(auto) get(FlatTupleT&& tuple) noexcept
     {
         using CleanTuple  = std::remove_cvref_t<FlatTupleT>;
-        using ValueType   = typename CleanTuple::template type_at<I>;
-        using IndexedType = typename CleanTuple::template indexed<I, ValueType>;
+        using ValueType   = CleanTuple::template type_at<I>;
+        using IndexedType = CleanTuple::template indexed<I, ValueType>;
         auto* ptr = std::get_if<IndexedType>(&tuple.values[I]);
         return std::forward_like<FlatTupleT>(ptr->value);
     }
