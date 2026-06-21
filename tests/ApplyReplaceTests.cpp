@@ -1,5 +1,5 @@
 ﻿//
-// Test suite for fxt::apply_replace and fxt::mtuple_apply_replace
+// Test suite for fxt::tuple_apply_replace and fxt::mtuple_apply_replace
 //
 
 #include "Catch2/catch_amalgamated.hpp"
@@ -8,7 +8,7 @@
 #include <tuple>
 
 // ============================================================================
-// Tests for fxt::apply_replace with fxt::tuple
+// Tests for fxt::tuple_apply_replace with fxt::tuple
 // ============================================================================
 
 TEST_CASE("apply_replace - basic operations with fxt::tuple", "[apply_replace]")
@@ -16,7 +16,7 @@ TEST_CASE("apply_replace - basic operations with fxt::tuple", "[apply_replace]")
     SECTION("replace two elements with their sum")
     {
         auto t = fxt::tuple{3, 4};
-        auto result = fxt::apply_replace([](int a, int b) { return a + b; }, t);
+        auto result = fxt::tuple_apply_replace([](int a, int b) { return a + b; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 7);
@@ -25,7 +25,7 @@ TEST_CASE("apply_replace - basic operations with fxt::tuple", "[apply_replace]")
     SECTION("replace three elements with their product")
     {
         auto t = fxt::tuple{2, 3, 4};
-        auto result = fxt::apply_replace([](int a, int b, int c) { return a * b * c; }, t);
+        auto result = fxt::tuple_apply_replace([](int a, int b, int c) { return a * b * c; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 24);
@@ -34,7 +34,7 @@ TEST_CASE("apply_replace - basic operations with fxt::tuple", "[apply_replace]")
     SECTION("type transformation - ints to string")
     {
         auto t = fxt::tuple{10, 20};
-        auto result = fxt::apply_replace([](int a, int b) {
+        auto result = fxt::tuple_apply_replace([](int a, int b) {
             return std::to_string(a) + "+" + std::to_string(b);
         }, t);
 
@@ -45,7 +45,7 @@ TEST_CASE("apply_replace - basic operations with fxt::tuple", "[apply_replace]")
     SECTION("single element tuple")
     {
         auto t = fxt::tuple{42};
-        auto result = fxt::apply_replace([](int x) { return x * 2; }, t);
+        auto result = fxt::tuple_apply_replace([](int x) { return x * 2; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 84);
@@ -57,7 +57,7 @@ TEST_CASE("apply_replace - with pipe operator", "[apply_replace]")
     SECTION("single application")
     {
         auto result = fxt::tuple{5, 10}
-            | fxt::apply_replace([](int a, int b) { return a + b; });
+            | fxt::tuple_apply_replace([](int a, int b) { return a + b; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 15);
@@ -66,8 +66,8 @@ TEST_CASE("apply_replace - with pipe operator", "[apply_replace]")
     SECTION("chained applications")
     {
         auto result = fxt::tuple{2, 3}
-            | fxt::apply_replace([](int a, int b) { return a * b; })
-            | fxt::apply_replace([](int product) { return product + 10; });
+            | fxt::tuple_apply_replace([](int a, int b) { return a * b; })
+            | fxt::tuple_apply_replace([](int product) { return product + 10; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 16);
@@ -76,9 +76,9 @@ TEST_CASE("apply_replace - with pipe operator", "[apply_replace]")
     SECTION("multiple chained applications")
     {
         auto result = fxt::tuple{1, 2}
-            | fxt::apply_replace([](int a, int b) { return a + b; })
-            | fxt::apply_replace([](int sum) { return sum * 2; })
-            | fxt::apply_replace([](int doubled) { return doubled - 1; });
+            | fxt::tuple_apply_replace([](int a, int b) { return a + b; })
+            | fxt::tuple_apply_replace([](int sum) { return sum * 2; })
+            | fxt::tuple_apply_replace([](int doubled) { return doubled - 1; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 5);  // (1+2)*2-1 = 5
@@ -90,7 +90,7 @@ TEST_CASE("apply_replace - with flat_tuple", "[apply_replace]")
     SECTION("replace two elements")
     {
         auto ft = fxt::flat_tuple<double, double>{2.0, 3.0};
-        auto result = fxt::apply_replace([](double a, double b) { return a / b; }, ft);
+        auto result = fxt::tuple_apply_replace([](double a, double b) { return a / b; }, ft);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == Catch::Approx(0.666667).epsilon(0.001));
@@ -99,7 +99,7 @@ TEST_CASE("apply_replace - with flat_tuple", "[apply_replace]")
     SECTION("flat_tuple with pipe operator")
     {
         auto result = fxt::flat_tuple<int, int, int>{1, 2, 3}
-            | fxt::apply_replace([](int a, int b, int c) { return a + b + c; });
+            | fxt::tuple_apply_replace([](int a, int b, int c) { return a + b + c; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 6);
@@ -108,8 +108,8 @@ TEST_CASE("apply_replace - with flat_tuple", "[apply_replace]")
     SECTION("chained flat_tuple operations")
     {
         auto result = fxt::flat_tuple<double, double>{10.0, 2.0}
-            | fxt::apply_replace([](double a, double b) { return a / b; })
-            | fxt::apply_replace([](double quotient) { return quotient * 2; });
+            | fxt::tuple_apply_replace([](double a, double b) { return a / b; })
+            | fxt::tuple_apply_replace([](double quotient) { return quotient * 2; });
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == Catch::Approx(10.0).epsilon(0.001));
@@ -121,7 +121,7 @@ TEST_CASE("apply_replace - returning tuple", "[apply_replace]")
     SECTION("return nested tuple from two elements")
     {
         auto t = fxt::tuple{10, 3};
-        auto result = fxt::apply_replace([](int a, int b) {
+        auto result = fxt::tuple_apply_replace([](int a, int b) {
             return fxt::tuple{a / b, a % b};
         }, t);
 
@@ -134,7 +134,7 @@ TEST_CASE("apply_replace - returning tuple", "[apply_replace]")
     SECTION("return tuple with mixed types")
     {
         auto t = fxt::tuple{42};
-        auto result = fxt::apply_replace([](int x) {
+        auto result = fxt::tuple_apply_replace([](int x) {
             return fxt::tuple{x, std::to_string(x)};
         }, t);
 
@@ -400,14 +400,14 @@ TEST_CASE("apply_replace - works with const and reference qualifiers", "[apply_r
     SECTION("const lvalue reference")
     {
         const auto t = fxt::tuple{5, 10};
-        auto result = fxt::apply_replace([](int a, int b) { return a + b; }, t);
+        auto result = fxt::tuple_apply_replace([](int a, int b) { return a + b; }, t);
 
         REQUIRE(fxt::get<0>(result) == 15);
     }
 
     SECTION("rvalue reference")
     {
-        auto result = fxt::apply_replace([](int a, int b) { return a + b; }, fxt::tuple{7, 3});
+        auto result = fxt::tuple_apply_replace([](int a, int b) { return a + b; }, fxt::tuple{7, 3});
 
         REQUIRE(fxt::get<0>(result) == 10);
     }
@@ -433,7 +433,7 @@ TEST_CASE("apply_replace - comparison with apply_append", "[apply_replace]")
     SECTION("apply_replace removes original elements")
     {
         auto t = fxt::tuple{3, 4};
-        auto result = fxt::apply_replace([](int a, int b) { return a + b; }, t);
+        auto result = fxt::tuple_apply_replace([](int a, int b) { return a + b; }, t);
 
         REQUIRE(fxt::tuple_size_v<decltype(result)> == 1);
         REQUIRE(fxt::get<0>(result) == 7);
