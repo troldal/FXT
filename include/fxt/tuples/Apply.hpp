@@ -88,55 +88,19 @@ namespace fxt
     // Re-export std::apply unchanged; it handles fxt::tuple (= std::tuple) directly.
     using std::apply;
 
-    namespace impl
+    // Single forwarding-reference overload constrained to fxt::flat_tuple. The
+    // requires clause keeps it from competing with the re-exported std::apply,
+    // which still handles std::tuple and other tuple-protocol types. The index
+    // pack is generated and expanded inline via an immediately-invoked lambda;
+    // value-category correctness is delegated to fxt::get's four overloads via
+    // std::forward.
+    template<typename F, typename FlatTupleT>
+        requires impl::is_flat_tuple_v<std::remove_cvref_t<FlatTupleT>>
+    constexpr decltype(auto) apply(F&& f, FlatTupleT&& t)
     {
-        template<typename F, typename... Ts, std::size_t... Is>
-        constexpr decltype(auto) apply_flat_tuple_impl(F&& f, flat_tuple<Ts...>& t, std::index_sequence<Is...>)
-        {
-            return std::invoke(std::forward<F>(f), fxt::get<Is>(t)...);
-        }
-
-        template<typename F, typename... Ts, std::size_t... Is>
-        constexpr decltype(auto) apply_flat_tuple_impl(F&& f, const flat_tuple<Ts...>& t, std::index_sequence<Is...>)
-        {
-            return std::invoke(std::forward<F>(f), fxt::get<Is>(t)...);
-        }
-
-        template<typename F, typename... Ts, std::size_t... Is>
-        constexpr decltype(auto) apply_flat_tuple_impl(F&& f, flat_tuple<Ts...>&& t, std::index_sequence<Is...>)
-        {
-            return std::invoke(std::forward<F>(f), fxt::get<Is>(std::move(t))...);
-        }
-
-        template<typename F, typename... Ts, std::size_t... Is>
-        constexpr decltype(auto) apply_flat_tuple_impl(F&& f, const flat_tuple<Ts...>&& t, std::index_sequence<Is...>)
-        {
-            return std::invoke(std::forward<F>(f), fxt::get<Is>(std::move(t))...);
-        }
-    }    // namespace impl
-
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, flat_tuple<Ts...>& t)
-    {
-        return impl::apply_flat_tuple_impl(std::forward<F>(f), t, std::index_sequence_for<Ts...>{});
-    }
-
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, const flat_tuple<Ts...>& t)
-    {
-        return impl::apply_flat_tuple_impl(std::forward<F>(f), t, std::index_sequence_for<Ts...>{});
-    }
-
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, flat_tuple<Ts...>&& t)
-    {
-        return impl::apply_flat_tuple_impl(std::forward<F>(f), std::move(t), std::index_sequence_for<Ts...>{});
-    }
-
-    template<typename F, typename... Ts>
-    constexpr decltype(auto) apply(F&& f, const flat_tuple<Ts...>&& t)
-    {
-        return impl::apply_flat_tuple_impl(std::forward<F>(f), std::move(t), std::index_sequence_for<Ts...>{});
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) -> decltype(auto) {
+            return std::invoke(std::forward<F>(f), fxt::get<Is>(std::forward<FlatTupleT>(t))...);
+        }(std::make_index_sequence<std::remove_cvref_t<FlatTupleT>::size()>{});
     }
 
     /**
