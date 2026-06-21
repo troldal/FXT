@@ -49,122 +49,126 @@
 
 namespace fxt
 {
-    /**
-     * @brief Implementation details for as_array
-     */
     namespace impl
     {
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr std::array<T, sizeof...(Ts)> as_array_impl(const tuple<Ts...>& t, std::index_sequence<Is...>)
+        // Single forwarding-ref impl replaces the four typed overloads (const tuple&,
+        // tuple&&, const flat_tuple&, flat_tuple&&). The if constexpr selects the
+        // right accessor: std::get for fxt::tuple (= std::tuple), fxt::get for flat_tuple.
+        template<typename T, typename TTuple, std::size_t... Is>
+        constexpr auto as_array_impl(TTuple&& t, std::index_sequence<Is...>)
         {
-            return {static_cast<T>(std::get<Is>(t))...};
-        }
-
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr std::array<T, sizeof...(Ts)> as_array_impl(tuple<Ts...>&& t, std::index_sequence<Is...>)
-        {
-            return {static_cast<T>(std::get<Is>(std::move(t)))...};
-        }
-
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr std::array<T, sizeof...(Ts)> as_array_impl(const flat_tuple<Ts...>& t, std::index_sequence<Is...>)
-        {
-            return {static_cast<T>(fxt::get<Is>(t))...};
-        }
-
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr std::array<T, sizeof...(Ts)> as_array_impl(flat_tuple<Ts...>&& t, std::index_sequence<Is...>)
-        {
-            return {static_cast<T>(fxt::get<Is>(std::move(t)))...};
+            if constexpr (is_flat_tuple_v<std::remove_cvref_t<TTuple>>) {
+                return std::array<T, sizeof...(Is)>{
+                    static_cast<T>(fxt::get<Is>(std::forward<TTuple>(t)))...
+                };
+            } else {
+                return std::array<T, sizeof...(Is)>{
+                    static_cast<T>(std::get<Is>(std::forward<TTuple>(t)))...
+                };
+            }
         }
     }
+
+    // ========================================================================
+    // fxt::tuple_as_array — convert a tuple to std::array
+    // ========================================================================
 
     /**
      * @brief Convert a tuple-like object to a std::array
      *
      * Takes a tuple-like object (either fxt::tuple or fxt::flat_tuple) and converts
-     * it to a std::array where all elements are converted to the specified type T.
+     * it to a std::array where all elements are cast to @p T.
      *
      * @tparam T The element type of the resulting array (must be constructible from all tuple elements)
-     * @tparam TTuple The tuple type (deduced)
+     * @tparam Ts Tuple element types (deduced)
      * @param t The tuple to convert
      * @return std::array<T, N> where N is the number of elements in the tuple
      *
-     * @section Usage
      * @code
      * auto tpl = fxt::make_tuple(1, 2.5, 3);
-     * auto arr = fxt::as_array<double>(tpl);  // std::array<double, 3>{1.0, 2.5, 3.0}
+     * auto arr = fxt::tuple_as_array<double>(tpl);  // std::array<double, 3>{1.0, 2.5, 3.0}
      * @endcode
      */
     template<typename T, typename... Ts>
-    constexpr std::array<T, sizeof...(Ts)> as_array(const tuple<Ts...>& t)
-    requires (std::constructible_from<T, const Ts&> && ...)
+    constexpr auto tuple_as_array(const tuple<Ts...>& t)
+        requires (std::constructible_from<T, const Ts&> && ...)
     {
         return impl::as_array_impl<T>(t, std::index_sequence_for<Ts...>{});
     }
 
     template<typename T, typename... Ts>
-    constexpr std::array<T, sizeof...(Ts)> as_array(tuple<Ts...>&& t)
-    requires (std::constructible_from<T, Ts> && ...)
+    constexpr auto tuple_as_array(tuple<Ts...>&& t)
+        requires (std::constructible_from<T, Ts> && ...)
     {
         return impl::as_array_impl<T>(std::move(t), std::index_sequence_for<Ts...>{});
     }
 
     template<typename T, typename... Ts>
-    constexpr std::array<T, sizeof...(Ts)> as_array(const flat_tuple<Ts...>& t)
-    requires (std::constructible_from<T, const Ts&> && ...)
+    constexpr auto tuple_as_array(const flat_tuple<Ts...>& t)
+        requires (std::constructible_from<T, const Ts&> && ...)
     {
         return impl::as_array_impl<T>(t, std::index_sequence_for<Ts...>{});
     }
 
     template<typename T, typename... Ts>
-    constexpr std::array<T, sizeof...(Ts)> as_array(flat_tuple<Ts...>&& t)
-    requires (std::constructible_from<T, Ts> && ...)
+    constexpr auto tuple_as_array(flat_tuple<Ts...>&& t)
+        requires (std::constructible_from<T, Ts> && ...)
     {
         return impl::as_array_impl<T>(std::move(t), std::index_sequence_for<Ts...>{});
     }
 
-    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
-    //       fxt-original ops to carry the `tuple_` prefix: as_array -> tuple_as_array
-    //       and mas_array -> mtuple_as_array (keep old names as [[deprecated]]
-    //       aliases for one release).
+    // Deprecated two-argument forwarder covering all old as_array(t) call sites.
+    template<typename T, typename TTuple>
+    [[deprecated("Use fxt::tuple_as_array")]]
+    constexpr auto as_array(TTuple&& t)
+        -> decltype(tuple_as_array<T>(std::forward<TTuple>(t)))
+    {
+        return tuple_as_array<T>(std::forward<TTuple>(t));
+    }
+
+    // ========================================================================
+    // fxt::tuple_as_array (curried) — pipe-operator form
+    // ========================================================================
+
     /**
-     * @brief Curried version of as_array
-     *
-     * Returns a lambda that converts a tuple-like object to a std::array.
-     * This is useful for piping operations.
+     * @brief Curried tuple_as_array for pipe-operator usage.
      *
      * @tparam T The element type of the resulting array
      * @return A lambda that takes a tuple and returns std::array<T, N>
      *
-     * @section Usage
      * @code
      * auto tpl = fxt::make_tuple(1, 2.5, 3);
-     * auto arr = tpl | fxt::as_array<double>();  // std::array<double, 3>{1.0, 2.5, 3.0}
+     * auto arr = tpl | fxt::tuple_as_array<double>();  // std::array<double, 3>{1.0, 2.5, 3.0}
      * @endcode
      */
     template<typename T>
-    constexpr auto as_array()
+    constexpr auto tuple_as_array()
     {
         return []<typename TTuple>(TTuple&& t)
-        requires tuple_like<TTuple>
+            requires tuple_like<std::remove_cvref_t<TTuple>>
         {
-            return as_array<T>(std::forward<TTuple>(t));
+            return tuple_as_array<T>(std::forward<TTuple>(t));
         };
     }
 
+    template<typename T>
+    [[deprecated("Use fxt::tuple_as_array")]]
+    constexpr auto as_array()
+    {
+        return tuple_as_array<T>();
+    }
+
     // ========================================================================
-    // Monadic as_array - mas_array
+    // fxt::mtuple_as_array — monadic as_array
     // ========================================================================
 
     namespace impl
     {
-        // Helper type to get the result monad type when transforming a monadic element
         template<typename T, typename MonadT>
         struct transformed_monad_type;
 
         template<typename T, typename MonadT>
-        requires monad_like<MonadT>
+            requires monad_like<MonadT>
         struct transformed_monad_type<T, MonadT>
         {
             using type = decltype(std::declval<MonadT>().transform([](auto&& val) { return static_cast<T>(val); }));
@@ -173,47 +177,32 @@ namespace fxt
         template<typename T, typename MonadT>
         using transformed_monad_type_t = typename transformed_monad_type<T, MonadT>::type;
 
-        // Helper to transform monadic elements in tuple to array
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr auto mas_array_impl_monadic_elements(const tuple<Ts...>& t, std::index_sequence<Is...>)
-        requires (sizeof...(Ts) > 0) && (monad_like<Ts> && ...)
+        // Single forwarding-ref impl replaces four typed overloads. Dispatches on
+        // is_flat_tuple_v to pick the right accessor (fxt::get vs std::get).
+        template<typename T, typename TTuple, std::size_t... Is>
+        constexpr auto mas_array_impl_monadic_elements(TTuple&& t, std::index_sequence<Is...>)
         {
-            using result_monad_type = transformed_monad_type_t<T, std::tuple_element_t<0, tuple<Ts...>>>;
-            return std::array<result_monad_type, sizeof...(Ts)>{std::get<Is>(t).transform([](auto&& val) { return static_cast<T>(val); })...};
+            using CleanTuple = std::remove_cvref_t<TTuple>;
+            using elem_type  = std::tuple_element_t<0, CleanTuple>;
+            using result_monad_type = transformed_monad_type_t<T, elem_type>;
+            if constexpr (is_flat_tuple_v<CleanTuple>) {
+                return std::array<result_monad_type, sizeof...(Is)>{
+                    fxt::get<Is>(std::forward<TTuple>(t)).transform([](auto&& val) {
+                        return static_cast<T>(val);
+                    })...
+                };
+            } else {
+                return std::array<result_monad_type, sizeof...(Is)>{
+                    std::get<Is>(std::forward<TTuple>(t)).transform([](auto&& val) {
+                        return static_cast<T>(val);
+                    })...
+                };
+            }
         }
 
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr auto mas_array_impl_monadic_elements(tuple<Ts...>&& t, std::index_sequence<Is...>)
-        requires (sizeof...(Ts) > 0) && (monad_like<Ts> && ...)
-        {
-            using result_monad_type = transformed_monad_type_t<T, std::tuple_element_t<0, tuple<Ts...>>>;
-            return std::array<result_monad_type, sizeof...(Ts)>{std::get<Is>(std::move(t)).transform([](auto&& val) { return static_cast<T>(val); })...};
-        }
-
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr auto mas_array_impl_monadic_elements(const flat_tuple<Ts...>& t, std::index_sequence<Is...>)
-        requires (sizeof...(Ts) > 0) && (monad_like<Ts> && ...)
-        {
-            using result_monad_type = transformed_monad_type_t<T, std::tuple_element_t<0, flat_tuple<Ts...>>>;
-            return std::array<result_monad_type, sizeof...(Ts)>{fxt::get<Is>(t).transform([](auto&& val) { return static_cast<T>(val); })...};
-        }
-
-        template<typename T, typename... Ts, std::size_t... Is>
-        constexpr auto mas_array_impl_monadic_elements(flat_tuple<Ts...>&& t, std::index_sequence<Is...>)
-        requires (sizeof...(Ts) > 0) && (monad_like<Ts> && ...)
-        {
-            using result_monad_type = transformed_monad_type_t<T, std::tuple_element_t<0, flat_tuple<Ts...>>>;
-            return std::array<result_monad_type, sizeof...(Ts)>{fxt::get<Is>(std::move(t)).transform([](auto&& val) { return static_cast<T>(val); })...};
-        }
-    }
-
-    namespace impl
-    {
-        // Helper to check if all types in a tuple are monadic (returns false for empty tuples)
         template<typename... Ts>
         constexpr bool all_monadic_v = (sizeof...(Ts) > 0) && (monad_like<Ts> && ...);
 
-        // Specialization for tuple
         template<typename T>
         struct tuple_elements_are_monadic : std::false_type {};
 
@@ -225,32 +214,32 @@ namespace fxt
     }
 
     /**
-     * @brief Monadic version of as_array (mas_array)
+     * @brief Monadic version of tuple_as_array
      *
-     * This function works in monadic contexts (optional/expected containing tuples).
-     * It has two modes of operation:
-     * 1. If the tuple elements are NOT monadic: converts tuple to std::array<T, N>
-     * 2. If the tuple elements ARE monadic: converts to std::array<Monad<T>, N> where each monad is transformed
+     * Works with monadic containers (optional/expected) holding tuples.
+     * Two dispatch cases:
+     *   1. Tuple elements are **not** monadic → converts tuple to `std::array<T, N>` inside the monad.
+     *   2. Tuple elements **are** monadic → produces `std::array<Monad<T>, N>` where each element
+     *      is individually transformed.
      *
-     * @tparam T The target element type (for non-monadic elements) or the target value type (for monadic elements)
-     * @return A lambda that works with monadic containers containing tuples
+     * @tparam T Target value type (or target inner-value type for monadic elements)
+     * @return A callable that applies to a monadic container holding a tuple
      *
-     * @section Usage
      * @code
-     * // Case 1: Optional containing a tuple of non-monadic values
+     * // Case 1: optional<tuple<int, double, int>>
      * std::optional<fxt::tuple<int, double, int>> opt = fxt::make_tuple(1, 2.5, 3);
-     * auto result1 = opt | fxt::mas_array<double>();
-     * // result1: std::optional<std::array<double, 3>>
+     * auto r1 = opt | fxt::mtuple_as_array<double>();
+     * // r1: std::optional<std::array<double, 3>>
      *
-     * // Case 2: Expected containing a tuple of monadic values
+     * // Case 2: expected<tuple<Exp, Exp, Exp>, E>
      * using Exp = fxt::expected<int, std::string>;
      * fxt::expected<fxt::tuple<Exp, Exp, Exp>, std::string> exp = ...;
-     * auto result2 = exp | fxt::mas_array<double>();
-     * // result2: fxt::expected<std::array<fxt::expected<double, std::string>, 3>, std::string>
+     * auto r2 = exp | fxt::mtuple_as_array<double>();
+     * // r2: fxt::expected<std::array<fxt::expected<double, std::string>, 3>, std::string>
      * @endcode
      */
     template<typename T>
-    constexpr auto mas_array()
+    constexpr auto mtuple_as_array()
     {
         return []<typename TMonad>(TMonad&& monad)
         {
@@ -258,31 +247,34 @@ namespace fxt
                 using tuple_type = std::remove_cvref_t<decltype(tuple_val)>;
 
                 if constexpr (tuple_like<tuple_type>) {
-                    // Check if tuple contains monadic elements
                     if constexpr (impl::tuple_elements_are_monadic<tuple_type>::value) {
-                        // Tuple contains monadic elements - transform each
-                        if constexpr (impl::is_fxt_tuple_v<tuple_type>) {
-                            return impl::mas_array_impl_monadic_elements<T>(
-                                std::forward<decltype(tuple_val)>(tuple_val),
-                                std::make_index_sequence<std::tuple_size_v<tuple_type>>{}
-                            );
-                        } else {
+                        // flat_tuple uses ::size(), fxt::tuple (= std::tuple) uses tuple_size_v
+                        if constexpr (impl::is_flat_tuple_v<tuple_type>) {
                             return impl::mas_array_impl_monadic_elements<T>(
                                 std::forward<decltype(tuple_val)>(tuple_val),
                                 std::make_index_sequence<tuple_type::size()>{}
                             );
+                        } else {
+                            return impl::mas_array_impl_monadic_elements<T>(
+                                std::forward<decltype(tuple_val)>(tuple_val),
+                                std::make_index_sequence<std::tuple_size_v<tuple_type>>{}
+                            );
                         }
                     } else {
-                        // Tuple contains non-monadic elements - convert directly
-                        return as_array<T>(std::forward<decltype(tuple_val)>(tuple_val));
+                        return tuple_as_array<T>(std::forward<decltype(tuple_val)>(tuple_val));
                     }
                 } else {
-                    // Not a tuple, just forward
-                    static_assert(tuple_like<tuple_type>, "mas_array requires a tuple-like type inside the monad");
+                    static_assert(tuple_like<tuple_type>, "mtuple_as_array requires a tuple-like type inside the monad");
                 }
             });
         };
     }
 
-} // namespace fxt
+    template<typename T>
+    [[deprecated("Use fxt::mtuple_as_array")]]
+    constexpr auto mas_array()
+    {
+        return mtuple_as_array<T>();
+    }
 
+} // namespace fxt
