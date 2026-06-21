@@ -73,8 +73,6 @@
 #include "../concepts/IsOptional.hpp"
 #include "TupleAppend.hpp"
 #include "../utils/Unit.hpp"
-#include "Tuple.hpp"
-#include "FlatTuple.hpp"
 #include <type_traits>
 #include <utility>
 #include <tuple>
@@ -119,20 +117,20 @@ namespace fxt
     }
 
     // ========================================================================
-    // Supporting concepts for fxt::mtuple_apply
+    // impl helpers for fxt::mtuple_apply
     // ========================================================================
-
-    template<typename TFunction, typename... TArgs>
-    concept returns_expected_like = expected_like<std::invoke_result_t<TFunction, TArgs...>>;
-
-    template<typename TFunction, typename... TArgs>
-    concept returns_optional_like = optional_like<std::invoke_result_t<TFunction, TArgs...>>;
-
-    template<typename TFunction, typename... TArgs>
-    concept returns_monadic = returns_expected_like<TFunction, TArgs...> || returns_optional_like<TFunction, TArgs...>;
 
     namespace impl
     {
+        template<typename TFunction, typename... TArgs>
+        concept returns_expected_like = expected_like<std::invoke_result_t<TFunction, TArgs...>>;
+
+        template<typename TFunction, typename... TArgs>
+        concept returns_optional_like = optional_like<std::invoke_result_t<TFunction, TArgs...>>;
+
+        template<typename TFunction, typename... TArgs>
+        concept returns_monadic = returns_expected_like<TFunction, TArgs...> || returns_optional_like<TFunction, TArgs...>;
+
         template<typename T>
         struct tuple_elements;
 
@@ -145,16 +143,20 @@ namespace fxt
             template<typename TFunction>
             using invoke_result_t = std::invoke_result_t<TFunction, Ts...>;
         };
+
+        template<typename T>
+        concept monadic_container = optional_like<T> || expected_like<T>;
     }    // namespace impl
 
+    // Thin wrappers kept for ApplyAppend.hpp / ApplyReplace.hpp compatibility.
     template<typename TFunction, typename TTuple>
     concept returns_monadic_with_tuple = impl::tuple_elements<TTuple>::template returns_monadic_v<TFunction>;
 
     template<typename TFunction, typename TTuple>
-    using invoke_result_with_tuple_t = typename impl::tuple_elements<TTuple>::template invoke_result_t<TFunction>;
+    using invoke_result_with_tuple_t = impl::tuple_elements<TTuple>::template invoke_result_t<TFunction>;
 
     // ========================================================================
-    // apply_wrapper — six-case dispatch for mtuple_apply
+    // apply_wrapper — three-case dispatch for mtuple_apply
     // ========================================================================
 
     template<typename TFunction>
@@ -162,78 +164,40 @@ namespace fxt
     {
         TFunction function;
 
-        // Case 1a: optional<tuple> + monadic return → and_then (flattens the monad)
+        // Case 1: monadic<tuple> + monadic return → and_then (flattens the monad)
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires optional_like<std::remove_cvref_t<TArg>>
+            requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
-                  && returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>
-        auto operator()(TArg&& opt) const
+                  && impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>
+        auto operator()(TArg&& arg) const
         {
-            return std::forward<TArg>(opt).and_then([this](const TTuple& tuple) {
+            return std::forward<TArg>(arg).and_then([this](const TTuple& tuple) {
                 return fxt::apply(function, tuple);
             });
         }
 
-        // Case 1b: expected<tuple> + monadic return → and_then (flattens the monad)
+        // Case 2: monadic<tuple> + void return → transform returning fxt::unit
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires expected_like<std::remove_cvref_t<TArg>>
+            requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
-                  && returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>
-        auto operator()(TArg&& exp) const
+                  && std::same_as<typename impl::tuple_elements<std::remove_cvref_t<TTuple>>::template invoke_result_t<TFunction>, void>
+        auto operator()(TArg&& arg) const
         {
-            return std::forward<TArg>(exp).and_then([this](const TTuple& tuple) {
-                return fxt::apply(function, tuple);
-            });
-        }
-
-        // Case 2a: optional<tuple> + void return → transform returning fxt::unit
-        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires optional_like<std::remove_cvref_t<TArg>>
-                  && tuple_like<std::remove_cvref_t<TTuple>>
-                  && std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>
-        auto operator()(TArg&& opt) const
-        {
-            return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
+            return std::forward<TArg>(arg).transform([this](const TTuple& tuple) {
                 fxt::apply(function, tuple);
                 return fxt::unit{};
             });
         }
 
-        // Case 2b: expected<tuple> + void return → transform returning fxt::unit
+        // Case 3: monadic<tuple> + plain return → transform (tuple replaced by value)
         template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires expected_like<std::remove_cvref_t<TArg>>
+            requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
-                  && std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>
-        auto operator()(TArg&& exp) const
+                  && (!impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>)
+                  && (!std::same_as<typename impl::tuple_elements<std::remove_cvref_t<TTuple>>::template invoke_result_t<TFunction>, void>)
+        auto operator()(TArg&& arg) const
         {
-            return std::forward<TArg>(exp).transform([this](const TTuple& tuple) {
-                fxt::apply(function, tuple);
-                return fxt::unit{};
-            });
-        }
-
-        // Case 3a: optional<tuple> + plain return → transform (tuple replaced by value)
-        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires optional_like<std::remove_cvref_t<TArg>>
-                  && tuple_like<std::remove_cvref_t<TTuple>>
-                  && (!returns_monadic_with_tuple<TFunction, std::remove_cvref_t<TTuple>>)
-                  && (!std::same_as<invoke_result_with_tuple_t<TFunction, std::remove_cvref_t<TTuple>>, void>)
-        auto operator()(TArg&& opt) const
-        {
-            return std::forward<TArg>(opt).transform([this](const TTuple& tuple) {
-                return fxt::apply(function, tuple);
-            });
-        }
-
-        // Case 3b: expected<tuple> + plain return → transform (tuple replaced by value)
-        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
-            requires expected_like<std::remove_cvref_t<TArg>>
-                  && tuple_like<std::remove_cvref_t<TTuple>>
-                  && (!returns_monadic_with_tuple<TFunction, TTuple>)
-                  && (!std::same_as<invoke_result_with_tuple_t<TFunction, TTuple>, void>)
-        auto operator()(TArg&& exp) const
-        {
-            return std::forward<TArg>(exp).transform([this](const TTuple& tuple) {
+            return std::forward<TArg>(arg).transform([this](const TTuple& tuple) {
                 return fxt::apply(function, tuple);
             });
         }
