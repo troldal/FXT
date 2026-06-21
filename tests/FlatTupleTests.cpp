@@ -635,3 +635,88 @@ TEST_CASE("flat_tuple - practical use cases", "[flat_tuple]")
     }
 }
 
+TEST_CASE("flat_tuple - type-based get", "[flat_tuple][get]")
+{
+    SECTION("get by unique type")
+    {
+        fxt::flat_tuple<int, std::string, double> tuple(42, "hello", 3.14);
+        REQUIRE(fxt::get<int>(tuple) == 42);
+        REQUIRE(fxt::get<std::string>(tuple) == "hello");
+        REQUIRE(fxt::get<double>(tuple) == 3.14);
+    }
+
+    SECTION("modify through type-based get")
+    {
+        fxt::flat_tuple<int, std::string> tuple(1, "old");
+        fxt::get<int>(tuple) = 99;
+        fxt::get<std::string>(tuple) = "new";
+        REQUIRE(fxt::get<0>(tuple) == 99);
+        REQUIRE(fxt::get<1>(tuple) == "new");
+    }
+
+    SECTION("const correctness")
+    {
+        const fxt::flat_tuple<int, std::string> tuple(7, "const");
+        REQUIRE(fxt::get<int>(tuple) == 7);
+        static_assert(std::is_same_v<decltype(fxt::get<int>(tuple)), const int&>);
+        static_assert(std::is_same_v<decltype(fxt::get<std::string>(tuple)), const std::string&>);
+    }
+
+    SECTION("value categories match index-based get")
+    {
+        using Tuple = fxt::flat_tuple<int, std::string>;
+        Tuple tuple(1, "x");
+        static_assert(std::is_same_v<decltype(fxt::get<int>(tuple)), int&>);
+        static_assert(std::is_same_v<decltype(fxt::get<int>(Tuple(1, "x"))), int&&>);
+    }
+
+    SECTION("move-only type extracted by type from rvalue")
+    {
+        auto ptr = fxt::get<std::unique_ptr<int>>(
+            fxt::flat_tuple<int, std::unique_ptr<int>>(1, std::make_unique<int>(100)));
+        REQUIRE(*ptr == 100);
+    }
+
+    SECTION("matches std::get<T> on std::tuple")
+    {
+        std::tuple<int, std::string>      std_tuple(42, "test");
+        fxt::flat_tuple<int, std::string> flat_tuple(42, "test");
+
+        REQUIRE(std::get<int>(std_tuple) == fxt::get<int>(flat_tuple));
+        REQUIRE(std::get<std::string>(std_tuple) == fxt::get<std::string>(flat_tuple));
+    }
+}
+
+TEST_CASE("flat_tuple - constexpr usage", "[flat_tuple][constexpr]")
+{
+    SECTION("constexpr construction and index-based get")
+    {
+        constexpr fxt::flat_tuple<int, double, char> tuple(42, 3.5, 'x');
+        static_assert(fxt::get<0>(tuple) == 42);
+        static_assert(fxt::get<1>(tuple) == 3.5);
+        static_assert(fxt::get<2>(tuple) == 'x');
+    }
+
+    SECTION("constexpr type-based get")
+    {
+        constexpr fxt::flat_tuple<int, double, char> tuple(7, 1.25, 'q');
+        static_assert(fxt::get<int>(tuple) == 7);
+        static_assert(fxt::get<double>(tuple) == 1.25);
+        static_assert(fxt::get<char>(tuple) == 'q');
+    }
+
+    SECTION("constexpr get from rvalue")
+    {
+        static_assert(fxt::get<0>(fxt::flat_tuple<int, double>(5, 6.5)) == 5);
+        static_assert(fxt::get<double>(fxt::flat_tuple<int, double>(5, 6.5)) == 6.5);
+    }
+
+    SECTION("constexpr result usable as a constant expression")
+    {
+        constexpr fxt::flat_tuple<int> tuple(3);
+        constexpr int n = fxt::get<0>(tuple);
+        std::array<int, n> arr{};
+        static_assert(arr.size() == 3);
+    }
+}
+

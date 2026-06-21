@@ -228,9 +228,10 @@
 #pragma once
 
 #include <array>
+#include <concepts>
+#include <type_traits>
 #include <utility>
 #include <variant>
-#include <concepts>
 
 namespace fxt
 {
@@ -290,9 +291,11 @@ namespace fxt
         std::array<variant_t, sizeof...(Ts)> values;
 
     public:
-        // Constructor for non-empty tuples
+        // Constructor for non-empty tuples. constexpr so a flat_tuple of literal
+        // element types can be built and accessed in constant expressions, matching
+        // std::tuple's constexpr usability.
         template<size_t... Is>
-        explicit flat_tuple(std::index_sequence<Is...>, Ts... args)
+        constexpr explicit flat_tuple(std::index_sequence<Is...>, Ts... args)
             : values{variant_t(std::in_place_index<Is>, indexed<Is, Ts>{std::move(args)})...} {}
 
         // Default constructor for empty tuples
@@ -301,7 +304,7 @@ namespace fxt
         // Constructor that forwards to the index_sequence version (only enabled for non-empty)
         template<typename... Args>
             requires (sizeof...(Args) > 0 && sizeof...(Args) == sizeof...(Ts))
-        explicit flat_tuple(Args&&... args)
+        constexpr explicit flat_tuple(Args&&... args)
             : flat_tuple(std::index_sequence_for<Ts...>{}, std::forward<Args>(args)...) {}
 
         // template<class F>
@@ -313,18 +316,17 @@ namespace fxt
 
         static constexpr size_t size() { return sizeof...(Ts); }
 
-        // Friend declarations for get functions in fxt namespace
-        template<size_t I, class... Us>
-        friend auto& get(flat_tuple<Us...>& tuple);
+        // Tag type used as a self-contained constraint in the friend declaration and
+        // the fxt::get definition so both sides name the same function template
+        // without introducing a circular include dependency.
+        struct flat_tuple_tag {};
 
-        template<size_t I, class... Us>
-        friend const auto& get(const flat_tuple<Us...>& tuple);
-
-        template<size_t I, class... Us>
-        friend auto&& get(flat_tuple<Us...>&& tuple);
-
-        template<size_t I, class... Us>
-        friend const auto&& get(const flat_tuple<Us...>&& tuple);
+        // Single forwarding-ref friend; definition is the constexpr noexcept
+        // overload in Get.hpp.  The requires-clause is identical on both sides,
+        // satisfying C++20 constraint-identity rules.
+        template<std::size_t I, typename FlatTupleT>
+            requires requires { typename std::remove_cvref_t<FlatTupleT>::flat_tuple_tag; }
+        friend constexpr decltype(auto) get(FlatTupleT&&) noexcept;
     };
 
     /**

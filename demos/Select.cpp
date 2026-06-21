@@ -203,8 +203,8 @@ int main()
         | fxt::mtuple_append(5)
         | fxt::mtuple_append(10)
         | fxt::mtuple_append(15)
-        | fxt::mtuple_apply([](int a, int b, int c) { return a + b + c; })
-        | fxt::mtuple_apply([](int a, int b, int c, int sum) { return a * b * c; });
+        | fxt::mtuple_apply_append([](int a, int b, int c) { return a + b + c; })
+        | fxt::mtuple_apply_append([](int a, int b, int c, int sum) { return a * b * c; });
 
     std::cout << "Computed tuple: (5, 10, 15, 30, 750)" << std::endl;
 

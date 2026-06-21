@@ -56,6 +56,8 @@ TEST_CASE("tuple_size - fxt::tuple basic", "[tuple_size][tuple]")
 
 TEST_CASE("tuple_size - fxt::tuple with cv qualifiers", "[tuple_size][tuple]")
 {
+    // volatile and const volatile qualify are deprecated in C++20 ([depr.volatile.type])
+    // and intentionally not tested here.
     using Tuple = fxt::tuple<int, std::string, double>;
 
     SECTION("non-const")
@@ -68,18 +70,6 @@ TEST_CASE("tuple_size - fxt::tuple with cv qualifiers", "[tuple_size][tuple]")
     {
         REQUIRE(fxt::tuple_size<const Tuple>::value == 3);
         REQUIRE(fxt::tuple_size_v<const Tuple> == 3);
-    }
-
-    SECTION("volatile")
-    {
-        REQUIRE(fxt::tuple_size<volatile Tuple>::value == 3);
-        REQUIRE(fxt::tuple_size_v<volatile Tuple> == 3);
-    }
-
-    SECTION("const volatile")
-    {
-        REQUIRE(fxt::tuple_size<const volatile Tuple>::value == 3);
-        REQUIRE(fxt::tuple_size_v<const volatile Tuple> == 3);
     }
 }
 
@@ -151,6 +141,8 @@ TEST_CASE("tuple_size - fxt::flat_tuple basic", "[tuple_size][flat_tuple]")
 
 TEST_CASE("tuple_size - fxt::flat_tuple with cv qualifiers", "[tuple_size][flat_tuple]")
 {
+    // volatile and const volatile qualifiers are deprecated in C++20 ([depr.volatile.type])
+    // and intentionally not tested here.
     using Tuple = fxt::flat_tuple<int, std::string, double>;
 
     SECTION("non-const")
@@ -163,18 +155,6 @@ TEST_CASE("tuple_size - fxt::flat_tuple with cv qualifiers", "[tuple_size][flat_
     {
         REQUIRE(fxt::tuple_size<const Tuple>::value == 3);
         REQUIRE(fxt::tuple_size_v<const Tuple> == 3);
-    }
-
-    SECTION("volatile")
-    {
-        REQUIRE(fxt::tuple_size<volatile Tuple>::value == 3);
-        REQUIRE(fxt::tuple_size_v<volatile Tuple> == 3);
-    }
-
-    SECTION("const volatile")
-    {
-        REQUIRE(fxt::tuple_size<const volatile Tuple>::value == 3);
-        REQUIRE(fxt::tuple_size_v<const volatile Tuple> == 3);
     }
 }
 

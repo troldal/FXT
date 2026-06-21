@@ -170,12 +170,14 @@ int main()
     std::cout << "\n\nPart 7: Combining get with apply" << std::endl;
     std::cout << "--------------------------------" << std::endl;
 
-    // Build a tuple with computations, then extract specific elements
+    // Build a tuple with computations, then extract specific elements.
+    // mtuple_apply_append keeps the tuple and appends each result, so the tuple
+    // grows (5, 10) -> (5, 10, 15) -> (5, 10, 15, 50).
     auto computed = fxt::expected<std::tuple<>, std::string>{std::tuple{}}
         | fxt::mtuple_append(5)
         | fxt::mtuple_append(10)
-        | fxt::mtuple_apply([](int a, int b) { return a + b; })
-        | fxt::mtuple_apply([](int a, int b, int sum) { return a * b; });
+        | fxt::mtuple_apply_append([](int a, int b) { return a + b; })
+        | fxt::mtuple_apply_append([](int a, int b, int sum) { return a * b; });
 
     std::cout << "Computed tuple contains: (5, 10, 15, 50)" << std::endl;
 

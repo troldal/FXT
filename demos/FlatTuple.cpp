@@ -235,6 +235,50 @@ void example_memory_layout() {
 }
 
 // ============================================================================
+// Example 11: Type-Based Element Access (like std::get<T>)
+// ============================================================================
+
+void example_type_based_access() {
+    std::cout << "Example 11: Type-Based Element Access\n";
+    std::cout << "=====================================\n\n";
+
+    fxt::flat_tuple<int, std::string, double> tuple(42, "Hello", 3.14);
+
+    // Access elements by their (unique) type, just like std::get<T>(std::tuple)
+    std::cout << "   get<int>:         " << fxt::get<int>(tuple) << "\n";
+    std::cout << "   get<std::string>: " << fxt::get<std::string>(tuple) << "\n";
+    std::cout << "   get<double>:      " << fxt::get<double>(tuple) << "\n";
+
+    // Type-based get yields an lvalue reference too, so it is assignable
+    fxt::get<std::string>(tuple) = "World";
+    std::cout << "   after get<std::string>() = \"World\": " << fxt::get<1>(tuple) << "\n\n";
+}
+
+// ============================================================================
+// Example 12: Compile-Time (constexpr) Usage
+// ============================================================================
+
+void example_constexpr_usage() {
+    std::cout << "Example 12: Compile-Time (constexpr) Usage\n";
+    std::cout << "==========================================\n\n";
+
+    // flat_tuple of literal types can be built and queried in constant expressions,
+    // exactly like std::tuple.
+    constexpr fxt::flat_tuple<int, double, char> tuple(7, 2.5, 'z');
+
+    static_assert(fxt::get<0>(tuple) == 7);       // index-based, at compile time
+    static_assert(fxt::get<double>(tuple) == 2.5); // type-based, at compile time
+
+    // The result is a core constant expression — usable as a non-type template arg.
+    constexpr int n = fxt::get<0>(tuple);
+    std::array<int, n> arr{};
+
+    std::cout << "   constexpr get<0>: " << fxt::get<0>(tuple) << "\n";
+    std::cout << "   constexpr get<char>: " << fxt::get<char>(tuple) << "\n";
+    std::cout << "   std::array sized by get<0>(): " << arr.size() << " elements\n\n";
+}
+
+// ============================================================================
 // Main Function
 // ============================================================================
 
@@ -254,6 +298,8 @@ int main() {
     example_practical_use();
     // example_visit_aggregation();
     example_memory_layout();
+    example_type_based_access();
+    example_constexpr_usage();
 
     std::cout << "========================================\n";
     std::cout << "  All examples completed successfully!\n";

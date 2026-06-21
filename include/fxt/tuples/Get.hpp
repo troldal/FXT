@@ -40,172 +40,150 @@
 
 #pragma once
 
+#include "FlatTuple.hpp"
 #include "../monads/Expected.hpp"
 #include "../monads/Optional.hpp"
-#include "../utils/Overload.hpp"
 #include <tuple>
+#include <utility>
+#include <variant>
 
 namespace fxt
 {
-
-    //template<class... Ts> void get(std::tuple<Ts...>&) = delete;
-    //template<class... Ts> void get(const std::tuple<Ts...>&) = delete;
-    //template<class... Ts> void get(std::tuple<Ts...>&&) = delete;
-
-
-
-    /**
-     * @brief Get element from tuple by index
-     *
-     * Forwards to std::get for std::tuple. Provides a consistent fxt::get
-     * interface that works with both fxt::tuple and fxt::flat_tuple.
-     *
-     * @tparam I Index of the element to get
-     * @param t Tuple to get element from
-     * @return Reference to the element at index I
-     */
-    // template<std::size_t I, typename... Ts>
-    // constexpr auto& get(tuple<Ts...>& t) noexcept
-    // {
-    //     return std::get<I>(t);
-    // }
-    //
-    // template<std::size_t I, typename... Ts>
-    // constexpr const auto& get(const tuple<Ts...>& t) noexcept
-    // {
-    //     return std::get<I>(t);
-    // }
-    //
-    // template<std::size_t I, typename... Ts>
-    // constexpr auto&& get(tuple<Ts...>&& t) noexcept
-    // {
-    //     return std::get<I>(std::move(t));
-    // }
-    //
-    // template<std::size_t I, typename... Ts>
-    // constexpr const auto&& get(const tuple<Ts...>&& t) noexcept
-    // {
-    //     return std::get<I>(std::move(t));
-    // }
-    //
-    // // Free functions for element access in fxt namespace (similar to std::get for std::tuple)
-    // template<size_t I, class... Ts>
-    // auto& get(flat_tuple<Ts...>& tuple) {
-    //     return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
-    // }
-    //
-    // template<size_t I, class... Ts>
-    // const auto& get(const flat_tuple<Ts...>& tuple) {
-    //     return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
-    // }
-    //
-    // template<size_t I, class... Ts>
-    // auto&& get(flat_tuple<Ts...>&& tuple) {
-    //     return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
-    // }
-    //
-    // template<size_t I, class... Ts>
-    // const auto&& get(const flat_tuple<Ts...>&& tuple) {
-    //     return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
-    // }
-
+    // Re-export std::get so fxt::get works for fxt::tuple (= std::tuple) and any
+    // other type that std::get already handles.
     using std::get;
 
-    // Free functions for element access on fxt::flat_tuple (not covered by std::get)
-    // TODO: CONSISTENCY — std::get is constexpr and noexcept; these flat_tuple overloads are
-    //       neither, so flat_tuple silently loses constexpr usability that fxt::tuple has.
-    //       Mark them constexpr (and noexcept — the variant alternative is known by
-    //       construction, though std::get on variant can throw; consider
-    //       *std::get_if<...>(...) to make the noexcept claim honest).
-    template<size_t I, class... Ts>
-    auto& get(flat_tuple<Ts...>& tuple) {
-        return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
+    // Single constexpr noexcept forwarding-reference overload for fxt::flat_tuple.
+    //
+    // Uses std::get_if rather than std::get on the internal variant: std::get throws
+    // std::bad_variant_access when the wrong alternative is active, while std::get_if
+    // returns nullptr. flat_tuple's construction invariant guarantees slot I always
+    // holds alternative I, so the pointer dereference is safe and the noexcept claim
+    // is honest.
+    //
+    // std::forward_like re-applies the value category AND const-ness of the tuple
+    // argument to the extracted member, covering all four cases (T& / const T& /
+    // T&& / const T&&) in one expression. A plain `return ptr->value;` would not
+    // work: decltype(auto) on an unparenthesized member access deduces the member's
+    // declared type by value, silently dropping the reference and making the result
+    // non-assignable.
+    template<std::size_t I, typename FlatTupleT>
+        requires requires { typename std::remove_cvref_t<FlatTupleT>::flat_tuple_tag; }
+    constexpr decltype(auto) get(FlatTupleT&& tuple) noexcept
+    {
+        using CleanTuple  = std::remove_cvref_t<FlatTupleT>;
+        using ValueType   = typename CleanTuple::template type_at<I>;
+        using IndexedType = typename CleanTuple::template indexed<I, ValueType>;
+        auto* ptr = std::get_if<IndexedType>(&tuple.values[I]);
+        return std::forward_like<FlatTupleT>(ptr->value);
     }
 
-    template<size_t I, class... Ts>
-    const auto& get(const flat_tuple<Ts...>& tuple) {
-        return std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value;
+    namespace impl
+    {
+        // Resolves a type T to its index within a flat_tuple's element list — the
+        // machinery behind the type-based fxt::get<T>(flat_tuple), mirroring
+        // std::get<T>(std::tuple). `count` lets the caller enforce "exactly one T"
+        // as a constraint (so a wrong count removes the overload rather than hard-
+        // erroring), and `index` is the position of the unique match.
+        template<typename T, typename FlatTupleT>
+        struct flat_type_lookup;
+
+        template<typename T, typename... Ts>
+        struct flat_type_lookup<T, flat_tuple<Ts...>>
+        {
+            static constexpr std::size_t count = (std::size_t{std::is_same_v<T, Ts>} + ... + std::size_t{0});
+
+            static constexpr std::size_t index = []
+            {
+                std::size_t idx   = 0;
+                std::size_t found = 0;
+                // Walk the pack left to right; on the first match record the running
+                // index and short-circuit. `idx` counts the non-matches seen so far,
+                // which equals the position of the match.
+                (void)((std::is_same_v<T, Ts> ? (found = idx, true) : (++idx, false)) || ...);
+                return found;
+            }();
+        };
+    }    // namespace impl
+
+    // Type-based access for fxt::flat_tuple, mirroring std::get<T>(std::tuple).
+    // Constrained so T must occur exactly once (count == 1); otherwise the overload
+    // drops out (no viable get, same observable effect as std::get<T>'s ill-formed
+    // case). Delegates to the index-based overload above, inheriting its value-
+    // category propagation, noexcept guarantee, and constexpr-ness for free.
+    template<typename T, typename FlatTupleT>
+        requires requires { typename std::remove_cvref_t<FlatTupleT>::flat_tuple_tag; }
+              && (impl::flat_type_lookup<T, std::remove_cvref_t<FlatTupleT>>::count == 1)
+    constexpr decltype(auto) get(FlatTupleT&& tuple) noexcept
+    {
+        constexpr std::size_t idx = impl::flat_type_lookup<T, std::remove_cvref_t<FlatTupleT>>::index;
+        return fxt::get<idx>(std::forward<FlatTupleT>(tuple));
     }
 
-    template<size_t I, class... Ts>
-    auto&& get(flat_tuple<Ts...>&& tuple) {
-        return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
-    }
-
-    template<size_t I, class... Ts>
-    const auto&& get(const flat_tuple<Ts...>&& tuple) {
-        return std::move(std::get<typename flat_tuple<Ts...>::template indexed<I, typename flat_tuple<Ts...>::template type_at<I>>>(tuple.values[I]).value);
-    }
+    // ========================================================================
+    // fxt::mget — element extraction from a monad-of-tuple
+    // ========================================================================
 
     /**
-     * @brief Get element at the specified index from a tuple inside a monadic container
+     * @brief Extract the element at index I from a tuple inside a monadic container.
      *
-     * Creates a function that extracts the element at the Ith position of a tuple contained
-     * within an fxt::expected or fxt::optional object. The result is wrapped in a new container
-     * of the same type, preserving the error handling or empty state semantics.
+     * Returns a callable that, when applied to an `expected`- or `optional`-like
+     * container holding a tuple, extracts element I and re-wraps it in a new
+     * container of the same kind. Supports both lvalue and rvalue monads so the
+     * element can be moved out of a temporary pipeline.
      *
-     * @tparam I The index of the element to extract from the tuple
-     * @return A function that transforms a monadic container<tuple> to extract the Ith element
+     * @tparam I Zero-based index of the element to extract
+     * @return A pipe-adaptor callable
      *
-     * @example
-     *   // With expected
-     *   auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = exp | fxt::get<0>();  // result contains 1
+     * @code
+     * auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>
+     *                {std::make_tuple(1, 2.0, "three")};
+     * auto r = exp | fxt::mget<0>();  // fxt::expected<int, Error>{1}
      *
-     *   // With optional
-     *   auto opt = fxt::optional<std::tuple<int, double, std::string>>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = opt | fxt::get<0>();  // result contains 1
+     * auto opt = fxt::optional<std::tuple<int, double>>{std::make_tuple(42, 3.14)};
+     * auto r2 = opt | fxt::mget<1>();  // fxt::optional<double>{3.14}
+     * @endcode
      */
-    // TODO: DOCS — the doc blocks for both mget overloads still show `fxt::get<0>()` /
-    //       `fxt::get<std::string>()` in their examples; the function was renamed to mget.
-    // TODO: ERGONOMICS — mget only accepts const-lvalue monads, so the extracted element is
-    //       always copied; rvalue overloads would allow moving out of temporary pipelines.
-    template<size_t I>
-    auto mget()
+    template<std::size_t I>
+    constexpr auto mget()
     {
-        return overload { // Handle expected-like containers
-                          []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                              return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
-                          },
-                          // Handle optional-like containers
-                          []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                              return tuple.transform([](const TTuple& t) { return fxt::get<I>(t); });
-                          }
+        // The inner callback returns by value: fxt::get yields int& / int&& depending
+        // on the monad's value category, and decaying to a prvalue both satisfies
+        // expected/optional (whose value type must be a non-reference) and lets an
+        // rvalue pipeline move the element out instead of copying it.
+        return []<typename TMonad>(TMonad&& monad) {
+            return std::forward<TMonad>(monad).transform([](auto&& t) {
+                return fxt::get<I>(std::forward<decltype(t)>(t));
+            });
         };
     }
 
     /**
-     * @brief Get element of the specified type from a tuple inside a monadic container
+     * @brief Extract the element of type T from a tuple inside a monadic container.
      *
-     * Creates a function that extracts the element of type T from a tuple contained
-     * within an fxt::expected or fxt::optional object. The result is wrapped in a new
-     * container of the same type, preserving the error handling or empty state semantics.
+     * Returns a callable that, when applied to an `expected`- or `optional`-like
+     * container holding a tuple, extracts the unique element of type T and re-wraps
+     * it. The tuple must contain exactly one element of type T. Supports both lvalue
+     * and rvalue monads.
      *
-     * @tparam T The type of the element to extract from the tuple
-     * @return A function that transforms a monadic container<tuple> to extract the element of type T
+     * @tparam T Type of the element to extract (must appear exactly once in the tuple)
+     * @return A pipe-adaptor callable
      *
-     * @note The tuple must contain exactly one element of type T, otherwise std::get will fail
-     *
-     * @example
-     *   // With expected
-     *   auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = exp | fxt::get<std::string>();  // result contains "three"
-     *
-     *   // With optional
-     *   auto opt = fxt::optional<std::tuple<int, double, std::string>>{std::make_tuple(1, 2.0, "three")};
-     *   auto result = opt | fxt::get<std::string>();  // result contains "three"
+     * @code
+     * auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>
+     *                {std::make_tuple(1, 2.0, "three")};
+     * auto r = exp | fxt::mget<std::string>();  // fxt::expected<std::string, Error>{"three"}
+     * @endcode
      */
     template<typename T>
-    auto mget()
+    constexpr auto mget()
     {
-        return overload { // Handle expected-like containers
-                          []<typename TTuple, typename TError>(const fxt::expected<TTuple, TError>& tuple) {
-                              return tuple.transform([](const TTuple& t) { return std::get<T>(t); });
-                          },
-                          // Handle optional-like containers
-                          []<typename TTuple>(const fxt::optional<TTuple>& tuple) {
-                              return tuple.transform([](const TTuple& t) { return std::get<T>(t); });
-                          }
+        return []<typename TMonad>(TMonad&& monad) {
+            return std::forward<TMonad>(monad).transform([](auto&& t) {
+                // fxt::get<T> resolves to std::get<T> for std::tuple and to the
+                // flat_tuple overload otherwise, so mget<T> works for both.
+                return fxt::get<T>(std::forward<decltype(t)>(t));
+            });
         };
     }
 
