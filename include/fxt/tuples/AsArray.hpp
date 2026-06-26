@@ -42,7 +42,6 @@
 
 #include "../concepts/IsMonad.hpp"
 #include "../concepts/IsTuple.hpp"
-#include "TupleSize.hpp"
 #include <array>
 #include <utility>
 
@@ -214,16 +213,16 @@ namespace fxt
     constexpr auto mtuple_as_array()
     {
         return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([](auto&& tuple_val) {
-                using tuple_type = std::remove_cvref_t<decltype(tuple_val)>;
+            return std::forward<TMonad>(monad).transform([]<typename TTuple>(TTuple&& tuple_val) {
+                using tuple_type = std::remove_cvref_t<TTuple>;
 
                 if constexpr (tuple_like<tuple_type>) {
                     if constexpr (impl::tuple_elements_are_monadic<tuple_type>::value) {
-                        return impl::mas_array_impl_monadic_elements<T>(std::forward<decltype(tuple_val)>(tuple_val),
+                        return impl::mas_array_impl_monadic_elements<T>(std::forward<TTuple>(tuple_val),
                                                                         std::make_index_sequence<std::tuple_size_v<tuple_type>> {});
                     }
                     else {
-                        return tuple_as_array<T>(std::forward<decltype(tuple_val)>(tuple_val));
+                        return tuple_as_array<T>(std::forward<TTuple>(tuple_val));
                     }
                 }
                 else {

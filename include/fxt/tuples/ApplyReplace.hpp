@@ -210,8 +210,8 @@ namespace fxt
                   && impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>
         auto operator()(TArg&& arg) const
         {
-            return std::forward<TArg>(arg).and_then([this](auto&& tuple) {
-                auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
+            return std::forward<TArg>(arg).and_then([this]<typename T0>(T0&& tuple) {
+                auto result = fxt::apply(function, std::forward<T0>(tuple));
                 return result.transform([]<typename TValue>(TValue&& value) {
                     if constexpr (impl::is_flat_tuple_v<TTuple>) {
                         return fxt::make_flat_tuple(std::forward<TValue>(value));

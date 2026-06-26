@@ -221,36 +221,38 @@ namespace fxt
      * auto result3 = ft | fxt::tuple_append(3.0, 4.0); // fxt::flat_tuple{1.0, 2.0, 3.0, 4.0}
      * @endcode
      */
-    // TODO: SAFETY — the curried adaptors below are `mutable` lambdas that move out of their
-    //       captures (`std::forward<U>(value)` / `std::move(fxt::get<I>(values))`) on every
-    //       call. Storing the adaptor (`auto add3 = fxt::tuple_append(3);`) and piping two
-    //       tuples through it silently appends moved-from values the second time. Either
-    //       copy from the capture (drop `mutable`/the moves) or document the adaptors as
-    //       single-use. The same pattern exists in tuple_prepend, mtuple_append,
-    //       mtuple_prepend, tuple_cat and mtuple_cat.
     template<class U, class... Us>
         requires (!impl::is_tuple_like_v<std::remove_cvref_t<U>>)
     auto tuple_append(U&& u, Us&&... us)
     {
         if constexpr (sizeof...(Us) == 0) {
-            // Single element version
+            // Copy-constructible: std::as_const forces a copy on every call → reusable adaptor.
+            // Move-only: std::move is unavoidable → single-use by necessity (the type itself
+            // prevents reuse; the caller must re-construct the adaptor for a second pipeline).
             return [value = std::forward<U>(u)]<class Tuple>(Tuple&& t) mutable {
                 constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
-                return impl::append_impl(std::forward<Tuple>(t), std::forward<U>(value), std::make_index_sequence<N>{});
+                if constexpr (std::is_copy_constructible_v<std::decay_t<U>>) {
+                    return impl::append_impl(std::forward<Tuple>(t), std::as_const(value), std::make_index_sequence<N>{});
+                } else {
+                    return impl::append_impl(std::forward<Tuple>(t), std::move(value), std::make_index_sequence<N>{});
+                }
             };
         } else {
-            // Multiple elements version - capture values in a tuple and unpack them
-            return [values = fxt::tuple<U, Us...>{std::forward<U>(u), std::forward<Us>(us)...}]<class Tuple>(Tuple&& t) mutable {
+            return [values = fxt::tuple<std::decay_t<U>, std::decay_t<Us>...>{
+                        std::forward<U>(u), std::forward<Us>(us)...}]<class Tuple>(Tuple&& t) mutable {
                 constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
                 constexpr std::size_t M = sizeof...(Us) + 1;
-
-                // Unpack the captured tuple and pass to append_impl_variadic
-                return [&t, &values, N]<std::size_t... I>(std::index_sequence<I...>) {
-                    return impl::append_impl_variadic(
-                        std::forward<Tuple>(t),
-                        std::make_index_sequence<N>{},
-                        std::move(fxt::get<I>(values))...
-                    );
+                return [&t, &values]<std::size_t... I>(std::index_sequence<I...>) {
+                    if constexpr (std::is_copy_constructible_v<std::decay_t<U>> &&
+                                  (std::is_copy_constructible_v<std::decay_t<Us>> && ...)) {
+                        return impl::append_impl_variadic(
+                            std::forward<Tuple>(t), std::make_index_sequence<N>{},
+                            std::as_const(fxt::get<I>(values))...);
+                    } else {
+                        return impl::append_impl_variadic(
+                            std::forward<Tuple>(t), std::make_index_sequence<N>{},
+                            std::move(fxt::get<I>(values))...);
+                    }
                 }(std::make_index_sequence<M>{});
             };
         }
@@ -522,8 +524,15 @@ namespace fxt
         requires (!expected_like<std::remove_cvref_t<U>>)
     constexpr auto mtuple_append(U&& u, Us&&... us)
     {
+        // Copy-constructible types: std::as_const forces a copy → reusable adaptor.
+        // Move-only types: std::move unavoidable → single-use by necessity.
         return [u = std::forward<U>(u), ... us = std::forward<Us>(us)]<typename TMonad>(TMonad&& container) mutable {
-            return fxt::mtuple_append(std::forward<TMonad>(container), std::move(u), std::move(us)...);
+            if constexpr (std::is_copy_constructible_v<std::decay_t<U>> &&
+                          (std::is_copy_constructible_v<std::decay_t<Us>> && ...)) {
+                return fxt::mtuple_append(std::forward<TMonad>(container), std::as_const(u), std::as_const(us)...);
+            } else {
+                return fxt::mtuple_append(std::forward<TMonad>(container), std::move(u), std::move(us)...);
+            }
         };
     }
 
