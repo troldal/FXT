@@ -72,7 +72,7 @@ int main() {
     print_fxt_tuple(tuple1);
     std::cout << "\n";
 
-    auto take2 = fxt::take<2>(tuple1);
+    auto take2 = fxt::tuple_take<2>(tuple1);
     std::cout << "   After take<2>: ";
     print_fxt_tuple(take2);
     std::cout << "\n\n";
@@ -84,7 +84,7 @@ int main() {
     print_fxt_tuple(tuple2);
     std::cout << "\n";
 
-    auto take_last2 = fxt::take_last<2>(tuple2);
+    auto take_last2 = fxt::tuple_take_last<2>(tuple2);
     std::cout << "   After take_last<2>: ";
     print_fxt_tuple(take_last2);
     std::cout << "\n\n";
@@ -96,7 +96,7 @@ int main() {
     print_fxt_tuple(mixed);
     std::cout << "\n";
 
-    auto mixed_take = fxt::take<3>(mixed);
+    auto mixed_take = fxt::tuple_take<3>(mixed);
     std::cout << "   After take<3>: ";
     print_fxt_tuple(mixed_take);
     std::cout << "\n\n";
@@ -115,7 +115,7 @@ int main() {
     print_flat_tuple(ft1);
     std::cout << "\n";
 
-    auto ft_take2 = fxt::take<2>(ft1);
+    auto ft_take2 = fxt::tuple_take<2>(ft1);
     std::cout << "   After take<2>: ";
     print_flat_tuple(ft_take2);
     std::cout << "\n\n";
@@ -127,7 +127,7 @@ int main() {
     print_flat_tuple(ft2);
     std::cout << "\n";
 
-    auto ft_take_last3 = fxt::take_last<3>(ft2);
+    auto ft_take_last3 = fxt::tuple_take_last<3>(ft2);
     std::cout << "   After take_last<3>: ";
     print_flat_tuple(ft_take_last3);
     std::cout << "\n\n";
@@ -146,8 +146,8 @@ int main() {
     print_fxt_tuple(t3);
     std::cout << "\n";
 
-    auto t3_result = t3 | fxt::take<4>();
-    std::cout << "   t | fxt::take<4>(): ";
+    auto t3_result = t3 | fxt::tuple_take<4>();
+    std::cout << "   t | fxt::tuple_take<4>(): ";
     print_fxt_tuple(t3_result);
     std::cout << "\n\n";
 
@@ -158,8 +158,8 @@ int main() {
     print_fxt_tuple(t4);
     std::cout << "\n";
 
-    auto t4_result = t4 | fxt::take_last<3>();
-    std::cout << "   t | fxt::take_last<3>(): ";
+    auto t4_result = t4 | fxt::tuple_take_last<3>();
+    std::cout << "   t | fxt::tuple_take_last<3>(): ";
     print_fxt_tuple(t4_result);
     std::cout << "\n\n";
 
@@ -170,7 +170,7 @@ int main() {
     print_fxt_tuple(t5);
     std::cout << "\n";
 
-    auto t5_result = t5 | fxt::take<7>() | fxt::take_last<4>();
+    auto t5_result = t5 | fxt::tuple_take<7>() | fxt::tuple_take_last<4>();
     std::cout << "   t | take<7>() | take_last<4>(): ";
     print_fxt_tuple(t5_result);
     std::cout << " (elements 4-7)\n\n";
@@ -191,7 +191,7 @@ int main() {
     print_expected(exp1);
     std::cout << "\n";
 
-    auto exp1_result = fxt::mtake<3>(exp1);
+    auto exp1_result = fxt::mtuple_take<3>(exp1);
     std::cout << "   After mtake<3>: ";
     print_expected(exp1_result);
     std::cout << "\n\n";
@@ -205,7 +205,7 @@ int main() {
     print_expected(exp2);
     std::cout << "\n";
 
-    auto exp2_result = fxt::mtake_last<2>(exp2);
+    auto exp2_result = fxt::mtuple_take_last<2>(exp2);
     std::cout << "    After mtake_last<2>: ";
     print_expected(exp2_result);
     std::cout << "\n\n";
@@ -219,7 +219,7 @@ int main() {
     print_expected(exp3);
     std::cout << "\n";
 
-    auto exp3_result = fxt::mtake<2>(exp3);
+    auto exp3_result = fxt::mtuple_take<2>(exp3);
     std::cout << "    After mtake<2>: ";
     print_expected(exp3_result);
     std::cout << " (error preserved)\n\n";
@@ -240,7 +240,7 @@ int main() {
     print_expected(exp_ft1);
     std::cout << "\n";
 
-    auto exp_ft1_result = fxt::mtake<3>(exp_ft1);
+    auto exp_ft1_result = fxt::mtuple_take<3>(exp_ft1);
     std::cout << "    After mtake<3>: ";
     print_expected(exp_ft1_result);
     std::cout << "\n\n";
@@ -254,7 +254,7 @@ int main() {
     print_expected(exp_ft2);
     std::cout << "\n";
 
-    auto exp_ft2_result = fxt::mtake_last<2>(exp_ft2);
+    auto exp_ft2_result = fxt::mtuple_take_last<2>(exp_ft2);
     std::cout << "    After mtake_last<2>: ";
     print_expected(exp_ft2_result);
     std::cout << "\n\n";
@@ -275,8 +275,8 @@ int main() {
     print_expected(exp4);
     std::cout << "\n";
 
-    auto exp4_result = exp4 | fxt::mtake<4>();
-    std::cout << "    exp | fxt::mtake<4>(): ";
+    auto exp4_result = exp4 | fxt::mtuple_take<4>();
+    std::cout << "    exp | fxt::mtuple_take<4>(): ";
     print_expected(exp4_result);
     std::cout << "\n\n";
 
@@ -289,8 +289,8 @@ int main() {
     print_expected(exp5);
     std::cout << "\n";
 
-    auto exp5_result = exp5 | fxt::mtake_last<3>();
-    std::cout << "    exp | fxt::mtake_last<3>(): ";
+    auto exp5_result = exp5 | fxt::mtuple_take_last<3>();
+    std::cout << "    exp | fxt::mtuple_take_last<3>(): ";
     print_expected(exp5_result);
     std::cout << "\n\n";
 
@@ -303,7 +303,7 @@ int main() {
     print_expected(exp6);
     std::cout << "\n";
 
-    auto exp6_result = exp6 | fxt::mtake<6>() | fxt::mtake_last<3>();
+    auto exp6_result = exp6 | fxt::mtuple_take<6>() | fxt::mtuple_take_last<3>();
     std::cout << "    exp | mtake<6>() | mtake_last<3>(): ";
     print_expected(exp6_result);
     std::cout << " (elements 4-6)\n\n";
@@ -317,7 +317,7 @@ int main() {
     print_expected(exp7);
     std::cout << "\n";
 
-    auto exp7_result = exp7 | fxt::mtake<3>() | fxt::mtake_last<2>();
+    auto exp7_result = exp7 | fxt::mtuple_take<3>() | fxt::mtuple_take_last<2>();
     std::cout << "    exp | mtake<3>() | mtake_last<2>(): ";
     print_expected(exp7_result);
     std::cout << " (error propagates)\n\n";
@@ -340,14 +340,14 @@ int main() {
     print_fxt_tuple(direct_tuple);
     std::cout << "\n";
     std::cout << "    Direct tuple | take<3>(): ";
-    print_fxt_tuple(direct_tuple | fxt::take<3>());
+    print_fxt_tuple(direct_tuple | fxt::tuple_take<3>());
     std::cout << "\n\n";
 
     std::cout << "    Monadic tuple: ";
     print_expected(monadic_tuple);
     std::cout << "\n";
     std::cout << "    Monadic tuple | mtake<3>(): ";
-    print_expected(monadic_tuple | fxt::mtake<3>());
+    print_expected(monadic_tuple | fxt::mtuple_take<3>());
     std::cout << "\n\n";
 
     // ========================================================================
@@ -362,8 +362,8 @@ int main() {
     auto t7 = fxt::make_tuple(10, 20, 30);
     auto exp8 = fxt::expected<fxt::tuple<int, int, int>, std::string>{fxt::make_tuple(10, 20, 30)};
 
-    auto t7_empty = fxt::take<0>(t7);
-    auto exp8_empty = exp8 | fxt::mtake<0>();
+    auto t7_empty = fxt::tuple_take<0>(t7);
+    auto exp8_empty = exp8 | fxt::mtuple_take<0>();
     std::cout << "    take<0> on tuple: ";
     print_fxt_tuple(t7_empty);
     std::cout << " (empty)\n";
@@ -373,8 +373,8 @@ int main() {
 
     // Example 20: Take all elements
     std::cout << "20. Edge cases - take all elements:\n";
-    auto t8_all = fxt::take<3>(t7);
-    auto exp9_all = exp8 | fxt::mtake<3>();
+    auto t8_all = fxt::tuple_take<3>(t7);
+    auto exp9_all = exp8 | fxt::mtuple_take<3>();
     std::cout << "    take<3> on 3-element tuple: ";
     print_fxt_tuple(t8_all);
     std::cout << " (all)\n";

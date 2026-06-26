@@ -7,7 +7,7 @@ int main() {
     // Complex pipeline
     //auto result1 = t1
     //    | fxt::transform_tuple([](auto x) { return x * 2; })
-    //    | fxt::take<8>
+    //    | fxt::tuple_take<8>
     //    | fxt::transform_tuple([](auto x) { return x + 1; })
     //    | fxt::drop<2>
     //    | fxt::transform_tuple([](auto x) { return x * x; });

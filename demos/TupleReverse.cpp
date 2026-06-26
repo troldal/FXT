@@ -69,7 +69,7 @@ void example_tuple_pipe() {
     std::cout << "   Initial: (10, 20, 30, 40, 50)\n";
 
     auto result2 = tuple2
-        | fxt::take<3>()
+        | fxt::tuple_take<3>()
         | fxt::tuple_reverse();
 
     std::cout << "   After | take<3>() | tuple_reverse(): (30, 20, 10)\n";
@@ -165,7 +165,7 @@ void example_complex_chaining() {
 
     auto result = initial
         | fxt::drop<2>()           // Drop first 2: (3, 4, 5, 6, 7, 8)
-        | fxt::take<4>()           // Take first 4: (3, 4, 5, 6)
+        | fxt::tuple_take<4>()           // Take first 4: (3, 4, 5, 6)
         | fxt::tuple_reverse();    // Reverse: (6, 5, 4, 3)
 
     std::cout << "   After | drop<2>() | take<4>() | tuple_reverse():\n";

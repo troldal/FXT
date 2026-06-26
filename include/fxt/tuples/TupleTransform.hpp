@@ -76,7 +76,7 @@
  * // Pipeline usage with type change
  * auto result2 = fxt::tuple{1, 2, 3}
  *     | fxt::tuple_transform([](auto x) { return std::to_string(x); })
- *     | fxt::take<2>();
+ *     | fxt::tuple_take<2>();
  * // result2 is fxt::tuple<std::string, std::string>{"1", "2"}
  *
  * // Monadic transformation with error propagation
@@ -192,7 +192,7 @@ namespace fxt
      * auto t2 = fxt::make_tuple(1, 2, 3, 4);
      * auto result3 = t2
      *     | fxt::tuple_transform([](auto x) { return x * 2; })
-     *     | fxt::take<2>();
+     *     | fxt::tuple_take<2>();
      * // result3 is fxt::tuple<int, int>{2, 4}
      * @endcode
      */

@@ -95,7 +95,7 @@
  * @code
  * auto t = fxt::tuple{1, 2, 3, 4, 5};
  * auto result = t
- *     | fxt::take<3>()
+ *     | fxt::tuple_take<3>()
  *     | fxt::tuple_reverse();
  * // result is fxt::tuple<int, int, int>{3, 2, 1}
  * @endcode
@@ -182,7 +182,7 @@ namespace fxt
      * // Chaining with other operations
      * auto t2 = fxt::make_tuple(1, 2, 3, 4, 5);
      * auto result3 = t2
-     *     | fxt::take<3>()
+     *     | fxt::tuple_take<3>()
      *     | fxt::tuple_reverse();
      * // result3 is fxt::tuple<int, int, int>{3, 2, 1}
      * @endcode

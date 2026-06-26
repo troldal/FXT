@@ -72,7 +72,7 @@ TEST_CASE("transform_tuple with fxt::tuple - pipe operator", "[transform_tuple]"
         auto t = fxt::make_tuple(1, 2, 3, 4);
         auto result = t
             | fxt::tuple_transform([](auto x) { return x * 2; })
-            | fxt::take<2>();
+            | fxt::tuple_take<2>();
 
         REQUIRE(fxt::get<0>(result) == 2);
         REQUIRE(fxt::get<1>(result) == 4);
