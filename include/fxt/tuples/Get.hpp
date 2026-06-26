@@ -43,7 +43,6 @@
 #include "FlatTuple.hpp"
 #include <tuple>
 #include <utility>
-#include <variant>
 
 namespace fxt
 {
@@ -53,27 +52,29 @@ namespace fxt
 
     // Single constexpr noexcept forwarding-reference overload for fxt::flat_tuple.
     //
-    // Uses std::get_if rather than std::get on the internal variant: std::get throws
-    // std::bad_variant_access when the wrong alternative is active, while std::get_if
-    // returns nullptr. flat_tuple's construction invariant guarantees slot I always
-    // holds alternative I, so the pointer dereference is safe and the noexcept claim
-    // is honest.
+    // flat_tuple now stores each element in a flat_leaf<I,T> base class (see
+    // FlatTuple.hpp). Access is a plain static_cast to the right base — no variant,
+    // no tag check, no runtime branching.
     //
-    // std::forward_like re-applies the value category AND const-ness of the tuple
-    // argument to the extracted member, covering all four cases (T& / const T& /
-    // T&& / const T&&) in one expression. A plain `return ptr->value;` would not
-    // work: decltype(auto) on an unparenthesized member access deduces the member's
-    // declared type by value, silently dropping the reference and making the result
-    // non-assignable.
+    // Friendship grants access to the private base chain
+    // flat_tuple → flat_storage_base → flat_leaf<I,T>. std::forward_like
+    // re-applies FlatTupleT's value category and const-ness to the member,
+    // covering T& / const T& / T&& / const T&&.
     template<std::size_t I, typename FlatTupleT>
         requires requires { typename std::remove_cvref_t<FlatTupleT>::flat_tuple_tag; }
     constexpr decltype(auto) get(FlatTupleT&& tuple) noexcept
     {
-        using CleanTuple  = std::remove_cvref_t<FlatTupleT>;
-        using ValueType   = CleanTuple::template type_at<I>;
-        using IndexedType = CleanTuple::template indexed<I, ValueType>;
-        auto* ptr = std::get_if<IndexedType>(&tuple.values[I]);
-        return std::forward_like<FlatTupleT>(ptr->value);
+        using CleanTuple = std::remove_cvref_t<FlatTupleT>;
+        using T          = CleanTuple::template type_at<I>;
+        // Propagate const-ness from FlatTupleT into the leaf cast: without this,
+        // static_cast<flat_leaf<I,T>&> would always strip const and the compiler
+        // would reject calls on const-qualified tuples with "drops const qualifier".
+        // std::forward_like then applies the value category (lvalue vs rvalue).
+        using Leaf = std::conditional_t<
+            std::is_const_v<std::remove_reference_t<FlatTupleT>>,
+            const impl::flat_leaf<I, T>,
+            impl::flat_leaf<I, T>>;
+        return std::forward_like<FlatTupleT>(static_cast<Leaf&>(tuple).value);
     }
 
     namespace impl
@@ -150,8 +151,8 @@ namespace fxt
         // expected/optional (whose value type must be a non-reference) and lets an
         // rvalue pipeline move the element out instead of copying it.
         return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([](auto&& t) {
-                return fxt::get<I>(std::forward<decltype(t)>(t));
+            return std::forward<TMonad>(monad).transform([]<typename TValue>(TValue&& t) {
+                return fxt::get<I>(std::forward<TValue>(t));
             });
         };
     }
@@ -177,10 +178,10 @@ namespace fxt
     constexpr auto mget()
     {
         return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([](auto&& t) {
+            return std::forward<TMonad>(monad).transform([]<typename TValue>(TValue&& t) {
                 // fxt::get<T> resolves to std::get<T> for std::tuple and to the
                 // flat_tuple overload otherwise, so mget<T> works for both.
-                return fxt::get<T>(std::forward<decltype(t)>(t));
+                return fxt::get<T>(std::forward<TValue>(t));
             });
         };
     }

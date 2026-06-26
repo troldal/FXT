@@ -720,3 +720,122 @@ TEST_CASE("flat_tuple - constexpr usage", "[flat_tuple][constexpr]")
     }
 }
 
+TEST_CASE("flat_tuple - operator==", "[flat_tuple][comparison]")
+{
+    SECTION("equal tuples")
+    {
+        fxt::flat_tuple<int, std::string> a(42, "hello");
+        fxt::flat_tuple<int, std::string> b(42, "hello");
+        REQUIRE(a == b);
+        REQUIRE_FALSE(a != b);
+    }
+
+    SECTION("unequal by first element")
+    {
+        fxt::flat_tuple<int, int> a(1, 2);
+        fxt::flat_tuple<int, int> b(2, 2);
+        REQUIRE_FALSE(a == b);
+        REQUIRE(a != b);
+    }
+
+    SECTION("unequal by second element")
+    {
+        fxt::flat_tuple<int, int> a(1, 2);
+        fxt::flat_tuple<int, int> b(1, 3);
+        REQUIRE_FALSE(a == b);
+    }
+
+    SECTION("empty tuples are equal")
+    {
+        fxt::flat_tuple<> x, y;
+        REQUIRE(x == y);
+    }
+
+    SECTION("single element")
+    {
+        fxt::flat_tuple<int> a(7), b(7), c(8);
+        REQUIRE(a == b);
+        REQUIRE_FALSE(a == c);
+    }
+
+    SECTION("const correctness")
+    {
+        const fxt::flat_tuple<int, double> a(1, 2.0);
+        const fxt::flat_tuple<int, double> b(1, 2.0);
+        REQUIRE(a == b);
+    }
+
+    SECTION("matches std::tuple behavior")
+    {
+        fxt::flat_tuple<int, std::string> ft(10, "x");
+        std::tuple<int, std::string>      st(10, "x");
+        // Both should be equal to themselves
+        REQUIRE(ft == ft);
+        REQUIRE(st == st);
+        REQUIRE((fxt::get<0>(ft) == std::get<0>(st)));
+        REQUIRE((fxt::get<1>(ft) == std::get<1>(st)));
+    }
+}
+
+TEST_CASE("flat_tuple - operator<=>", "[flat_tuple][comparison]")
+{
+    SECTION("less than by first element")
+    {
+        fxt::flat_tuple<int, int> a(1, 99);
+        fxt::flat_tuple<int, int> b(2, 0);
+        REQUIRE(a < b);
+        REQUIRE(a <= b);
+        REQUIRE_FALSE(a > b);
+    }
+
+    SECTION("less than by second element (first elements equal)")
+    {
+        fxt::flat_tuple<int, int> a(5, 1);
+        fxt::flat_tuple<int, int> b(5, 2);
+        REQUIRE(a < b);
+        REQUIRE(b > a);
+    }
+
+    SECTION("equal tuples compare as equivalent")
+    {
+        fxt::flat_tuple<int, std::string> a(3, "abc");
+        fxt::flat_tuple<int, std::string> b(3, "abc");
+        REQUIRE((a <=> b) == std::strong_ordering::equal);
+        REQUIRE(a <= b);
+        REQUIRE(a >= b);
+    }
+
+    SECTION("empty tuples compare as equivalent")
+    {
+        fxt::flat_tuple<> x, y;
+        REQUIRE((x <=> y) == std::strong_ordering::equal);
+    }
+
+    SECTION("single element ordering")
+    {
+        fxt::flat_tuple<int> lo(1), hi(2);
+        REQUIRE(lo < hi);
+        REQUIRE(hi > lo);
+    }
+
+    SECTION("lexicographic — first element dominates")
+    {
+        fxt::flat_tuple<int, int, int> a(1, 9, 9);
+        fxt::flat_tuple<int, int, int> b(2, 0, 0);
+        REQUIRE(a < b);
+    }
+
+    SECTION("result type matches common_comparison_category")
+    {
+        fxt::flat_tuple<int, int> ii(1, 2);
+        static_assert(std::is_same_v<
+            decltype(ii <=> ii),
+            std::strong_ordering>);
+
+        fxt::flat_tuple<double, double> dd(1.0, 2.0);
+        static_assert(std::is_same_v<
+            decltype(dd <=> dd),
+            std::partial_ordering>);
+    }
+}
+

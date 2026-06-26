@@ -108,36 +108,14 @@
 
 #pragma once
 
-#include "Tuple.hpp"
 #include "FlatTuple.hpp"
 
-// ============================================================================
-// std::tuple_size specializations for fxt::flat_tuple
-//
-// Extending namespace std is permitted for program-defined types ([tuple.helper]).
-// This allows std::tuple_size_v<fxt::flat_tuple<Ts...>> to work alongside
-// fxt::tuple_size_v, enabling generic tuple code that uses the std interface
-// (including std::apply, structured bindings via tuple_element + get, and any
-// code that dispatches on std::tuple_size).
-// ============================================================================
-namespace std    // NOLINT(cert-dcl58-cpp) — intentional std extension for UDT
-{
-    template<typename... Ts>
-    struct tuple_size<fxt::flat_tuple<Ts...>>
-        : integral_constant<size_t, sizeof...(Ts)> {};
-
-    template<typename... Ts>
-    struct tuple_size<const fxt::flat_tuple<Ts...>>
-        : integral_constant<size_t, sizeof...(Ts)> {};
-
-    template<typename... Ts>
-    struct tuple_size<volatile fxt::flat_tuple<Ts...>>
-        : integral_constant<size_t, sizeof...(Ts)> {};
-
-    template<typename... Ts>
-    struct tuple_size<const volatile fxt::flat_tuple<Ts...>>
-        : integral_constant<size_t, sizeof...(Ts)> {};
-}    // namespace std
+// Only the unqualified specialization is needed. Since C++17, <tuple>
+// provides template<class T> struct tuple_size<const T> : tuple_size<T> {}
+// (and volatile / const volatile variants), so the cv-qualified forms are
+// automatically derived from this primary specialization.
+template<typename... Ts>
+struct std::tuple_size<fxt::flat_tuple<Ts...>> : integral_constant<size_t, sizeof...(Ts)>{};
 
 namespace fxt
 {

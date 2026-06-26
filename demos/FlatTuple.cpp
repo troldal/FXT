@@ -217,21 +217,25 @@ void example_practical_use() {
 // ============================================================================
 
 void example_memory_layout() {
-    std::cout << "Example 10: Memory Layout\n";
-    std::cout << "=========================\n\n";
+    std::cout << "Example 10: Memory Layout and Compile-Speed Design\n";
+    std::cout << "===================================================\n\n";
 
-    using TupleType = fxt::flat_tuple<char, int, double, std::string>;
+    using TupleType    = fxt::flat_tuple<char, int, double, std::string>;
+    using StdTupleType = std::tuple<char, int, double, std::string>;
     TupleType tuple('A', 42, 3.14, "Test");
 
-    std::cout << "   Tuple type size: " << sizeof(TupleType) << " bytes\n";
+    std::cout << "   fxt::flat_tuple<char,int,double,string> size: " << sizeof(TupleType) << " bytes\n";
+    std::cout << "   std::tuple<char,int,double,string> size:       " << sizeof(StdTupleType) << " bytes\n";
     std::cout << "   Individual element sizes:\n";
     std::cout << "      char: " << sizeof(char) << " bytes\n";
     std::cout << "      int: " << sizeof(int) << " bytes\n";
     std::cout << "      double: " << sizeof(double) << " bytes\n";
     std::cout << "      string: " << sizeof(std::string) << " bytes\n";
 
-    std::cout << "\n   Note: flat_tuple uses std::array of std::variant\n";
-    std::cout << "         to achieve a flattened memory layout.\n\n";
+    std::cout << "\n   Design: flat_tuple inherits from one flat_leaf<I,T> base per element\n";
+    std::cout << "   using a single pack-expansion step (O(1) instantiation depth).\n";
+    std::cout << "   This avoids std::tuple's recursive inheritance chain and the old\n";
+    std::cout << "   variant-array design, giving faster compilation for large packs.\n\n";
 }
 
 // ============================================================================

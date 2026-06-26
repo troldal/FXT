@@ -40,304 +40,239 @@
 
 /**
  * @file FlatTuple.hpp
- * @brief Flat tuple type with contiguous memory layout for the FXT library
+ * @brief fxt::flat_tuple — a tuple designed for fast compilation
  *
- * This file provides the flat_tuple type, an alternative tuple implementation with a contiguous
- * memory layout. Unlike std::tuple which may have padding between elements, flat_tuple stores
- * all elements in a single contiguous array, potentially offering better cache locality and
- * memory efficiency for certain use cases.
+ * ## Design goal
  *
- * ## Main Types
+ * `fxt::flat_tuple` targets compilation speed, not a particular runtime memory
+ * layout.  `std::tuple`'s most common implementation uses a recursive class
+ * hierarchy that grows O(N) deep in template instantiation; `flat_tuple` uses
+ * non-recursive **multiple inheritance from leaf base classes** expanded in a
+ * single pack-expansion step, giving O(1) instantiation depth for construction
+ * and element access regardless of the element count.
  *
- * ### fxt::flat_tuple
- * A tuple-like container that stores elements in a flat, contiguous memory layout.
- * It provides similar semantics to std::tuple and fxt::tuple, but with different
- * internal representation using std::array and std::variant for element storage.
+ * ## Storage model
  *
- * **Key Characteristics:**
- * - Contiguous memory layout (all elements stored in a single array)
- * - Potentially better cache locality than std::tuple
- * - Compatible with all FXT tuple operations (transform, reverse, append, etc.)
- * - Supports empty tuples (zero elements)
- * - Works seamlessly with FXT's pipeline operators
+ * Each element `Ts[I]` is stored in a private base class `impl::flat_leaf<I, Ts[I]>`.
+ * An intermediate `impl::flat_storage_base<index_sequence<Is...>, Ts...>` expands
+ * all leaves simultaneously:
  *
- * **Implementation Details:**
- * - Uses `std::array<std::variant<...>, N>` for storage
- * - Each element is wrapped in an indexed variant for type safety
- * - Provides compile-time size information via `size()` method
- * - Friend declarations enable `fxt::get` access to internal storage
+ * @code
+ * flat_tuple<int, double>
+ *   : flat_storage_base<{0,1}, int, double>
+ *       : flat_leaf<0, int>    { int value; }
+ *       : flat_leaf<1, double> { double value; }
+ * @endcode
+ *
+ * The memory footprint is the same as a plain `struct { int e0; double e1; }` —
+ * identical to `std::tuple` (and much smaller than the old `std::array<std::variant<…>>` design).
+ * Element access is a single `static_cast` to the appropriate base, with no
+ * variant tag check or runtime indirection.
+ *
+ * ## Comparison with fxt::tuple (std::tuple)
+ *
+ * | Property | fxt::tuple (std::tuple) | fxt::flat_tuple |
+ * |---|---|---|
+ * | Instantiation depth | O(N) recursive | O(1) non-recursive |
+ * | Element size | size of element | size of element |
+ * | Memory layout | similar to struct | similar to struct |
+ * | Element access | recursive base cast | direct `static_cast` |
+ * | Comparison operators | yes (since C++20) | yes (`operator==` / `<=>`) |
+ * | Structured bindings | yes | yes |
+ * | `constexpr` usability | yes | yes |
  *
  * ## Main Functions
  *
  * ### fxt::make_flat_tuple
- * Factory function to create a flat_tuple with automatic type deduction from arguments.
- * Similar to `std::make_tuple` but creates a `flat_tuple` instead. Uses `std::decay_t`
- * to remove references and cv-qualifiers from deduced types.
- *
- * **Type Deduction:**
- * - Removes references (T& → T)
- * - Removes cv-qualifiers (const T → T)
- * - Decays arrays and functions to pointers
- *
- * ## Pipe Operators
- *
- * This file defines pipe operators (`operator|`) for `fxt::flat_tuple` that enable
- * functional-style composition, identical to those provided for `fxt::tuple`.
- *
- * ### Pipe Operator Overloads
- * - **Lvalue reference**: `flat_tuple& | callable` - Pipes a mutable lvalue flat_tuple
- * - **Const lvalue reference**: `const flat_tuple& | callable` - Pipes a const lvalue flat_tuple
- * - **Rvalue reference**: `flat_tuple&& | callable` - Pipes an rvalue flat_tuple (move semantics)
- * - **Const rvalue reference**: `const flat_tuple&& | callable` - Pipes a const rvalue flat_tuple
- *
- * The pipe operators use `std::invoke` to call the callable with the flat_tuple, supporting
- * function pointers, function objects, lambdas, and member function pointers.
- *
- * ## Key Features
- * - Contiguous memory layout for better cache performance
- * - Compatible with all FXT tuple operations
- * - Perfect forwarding support for construction
- * - Pipeline-friendly design with pipe operator support
- * - Universal value category support (lvalue, rvalue, const)
- * - Type-safe element access via friend `fxt::get` functions
- * - Zero-overhead for empty tuples
- *
- * ## Performance Considerations
- * - Better cache locality than std::tuple in many scenarios
- * - Contiguous storage may improve iteration performance
- * - Similar compile-time overhead to std::tuple
- * - Variant-based storage adds small runtime overhead per element access
- * - Best suited for tuples with multiple elements of similar size
+ * Factory function mirroring `std::make_tuple`. Uses `std::decay_t` on deduced
+ * argument types.
  *
  * ## Examples
  *
- * ### Creating flat_tuples
+ * ### Creating and accessing flat_tuples
  * @code
- * // Direct construction (requires explicit types)
- * fxt::flat_tuple<int, double, float> ft1{42, 3.14, 2.71f};
+ * fxt::flat_tuple<int, double, float> ft(42, 3.14, 2.71f);
  *
- * // Using make_flat_tuple with type deduction
+ * int   a = fxt::get<0>(ft);          // by index
+ * float c = fxt::get<float>(ft);      // by (unique) type
+ *
  * auto ft2 = fxt::make_flat_tuple(42, 3.14, 2.71f);
- * // Type: fxt::flat_tuple<int, double, float>
- *
- * // Empty flat_tuple
- * fxt::flat_tuple<> empty;
  * @endcode
  *
- * ### Accessing elements
+ * ### Comparison
  * @code
- * auto ft = fxt::make_flat_tuple(1, 2.5, 3.0f);
- *
- * // Access by index using fxt::get
- * int first = fxt::get<0>(ft);      // 1
- * double second = fxt::get<1>(ft);  // 2.5
- * float third = fxt::get<2>(ft);    // 3.0f
- * @endcode
- *
- * ### Using with FXT operations
- * @code
- * auto ft = fxt::make_flat_tuple(1, 2, 3, 4, 5);
- *
- * // Transform elements
- * auto doubled = ft | fxt::tuple_transform([](auto x) { return x * 2; });
- * // Result: fxt::flat_tuple<int, int, int, int, int>{2, 4, 6, 8, 10}
- *
- * // Reverse order
- * auto reversed = ft | fxt::tuple_reverse();
- * // Result: fxt::flat_tuple<int, int, int, int, int>{5, 4, 3, 2, 1}
- *
- * // Chain operations
- * auto result = ft
- *     | fxt::drop<2>()
- *     | fxt::tuple_reverse()
- *     | fxt::take<2>();
- * // Result: fxt::flat_tuple<int, int>{5, 4}
- * @endcode
- *
- * ### Using the pipe operator
- * @code
- * auto ft = fxt::make_flat_tuple(10, 20, 30);
- *
- * // Pipe to transformation
- * auto result = ft | fxt::tuple_transform([](auto x) { return x + 1; });
- * // Result: fxt::flat_tuple<int, int, int>{11, 21, 31}
- *
- * // Pipe with rvalue
- * auto result2 = fxt::make_flat_tuple(5, 10, 15)
- *     | fxt::tuple_reverse();
- * // Result: fxt::flat_tuple<int, int, int>{15, 10, 5}
+ * auto a = fxt::make_flat_tuple(1, 2, 3);
+ * auto b = fxt::make_flat_tuple(1, 2, 4);
+ * assert(a == a);
+ * assert(a != b);
+ * assert(a < b);
  * @endcode
  *
  * ### Interoperability with fxt::tuple
  * @code
- * // Operations work the same way on both types
- * auto t = fxt::make_tuple(1, 2, 3);
+ * auto t  = fxt::make_tuple(1, 2, 3);
  * auto ft = fxt::make_flat_tuple(1, 2, 3);
  *
- * // Both support the same operations
- * auto t_reversed = t | fxt::tuple_reverse();    // fxt::tuple<int, int, int>
- * auto ft_reversed = ft | fxt::tuple_reverse();  // fxt::flat_tuple<int, int, int>
+ * auto t_rev  = t  | fxt::tuple_reverse();
+ * auto ft_rev = ft | fxt::tuple_reverse();
  *
- * // Type is preserved through operations
- * static_assert(fxt::impl::is_fxt_tuple_v<decltype(t_reversed)>);
- * static_assert(fxt::impl::is_flat_tuple_v<decltype(ft_reversed)>);
+ * static_assert(fxt::impl::is_fxt_tuple_v<decltype(t_rev)>);
+ * static_assert(fxt::impl::is_flat_tuple_v<decltype(ft_rev)>);
  * @endcode
- *
- * ### Working with monads
- * @code
- * auto ft = fxt::make_flat_tuple(1, 2, 3);
- * auto exp = fxt::expected<fxt::flat_tuple<int, int, int>, Error>{ft};
- *
- * // Monadic operations preserve flat_tuple type
- * auto result = exp
- *     | fxt::mtuple_reverse()
- *     | fxt::mtransform_tuple([](auto x) { return x * 2; });
- * // Result: fxt::expected<fxt::flat_tuple<int, int, int>, Error>
- * @endcode
- *
- * ## Type Summary
- *
- * | Type | Description |
- * |------|-------------|
- * | `fxt::flat_tuple<Ts...>` | Tuple with contiguous memory layout, alternative to std::tuple |
- *
- * ## Function Summary
- *
- * | Function | Description |
- * |----------|-------------|
- * | `fxt::make_flat_tuple(args...)` | Create a flat_tuple with type deduction from arguments |
- * | `flat_tuple<Ts...>::size()` | Static method returning the number of elements (constexpr) |
- *
- * ## Operator Summary
- *
- * | Operator | Description |
- * |----------|-------------|
- * | `flat_tuple& \| callable` | Pipe lvalue flat_tuple to callable |
- * | `const flat_tuple& \| callable` | Pipe const lvalue flat_tuple to callable |
- * | `flat_tuple&& \| callable` | Pipe rvalue flat_tuple to callable |
- * | `const flat_tuple&& \| callable` | Pipe const rvalue flat_tuple to callable |
  *
  * @see fxt::tuple
- * @see fxt::tuple_transform
- * @see fxt::tuple_reverse
- * @see fxt::tuple_append
- * @see fxt::tuple_size
  * @see fxt::get
+ * @see fxt::tuple_size
+ * @see fxt::tuple_element
  */
 
 #pragma once
 
-#include <array>
+#include <compare>
 #include <concepts>
 #include <type_traits>
 #include <utility>
-#include <variant>
 
 namespace fxt
 {
+    namespace impl
+    {
+        // ====================================================================
+        // flat_leaf<I, T> — stores one element at a compile-time index.
+        //
+        // Using a separate struct per element (rather than a variant slot)
+        // eliminates the discriminator byte and the max-sizeof overhead of the
+        // old std::array<std::variant<...>> design, and makes element access a
+        // plain static_cast with no runtime branching.
+        // ====================================================================
+        template<std::size_t I, typename T>
+        struct flat_leaf
+        {
+            T value;
 
-    // TODO: DOCS/DESIGN — the file comment above oversells flat_tuple: storage is
-    //       std::array<std::variant<indexed<Is,Ts>...>, N>, so EVERY slot occupies
-    //       max(sizeof(Ts)...) plus a discriminator. For heterogeneous element sizes this is
-    //       usually LARGER than std::tuple and the "contiguous memory / better cache
-    //       locality" claim only holds for same-sized elements; element access also goes
-    //       through a variant. Either document the real trade-offs or reimplement with
-    //       aligned byte storage.
-    // TODO: COMPLETENESS — flat_tuple lacks std::tuple_size / std::tuple_element
-    //       specializations and an ADL get, so structured bindings (`auto [a, b] = ft;`)
-    //       and std::apply do not work, unlike fxt::tuple. It also has no operator== /
-    //       operator<=>, so two flat_tuples cannot be compared.
-    // TODO: SAFETY — the variadic constructor takes `Ts... args` by value via the
-    //       index_sequence overload, forcing a copy/move per element even when Args are
-    //       lvalues that could bind by reference; consider perfect forwarding to the
-    //       indexed wrappers.
-    template<class... Ts>
-    class flat_tuple {
-        template<size_t I, class T>
-        struct indexed { T value; };
+            constexpr flat_leaf() = default;
 
-        template<size_t I, class... Us>
-        struct type_at_impl;
-
-        template<size_t I, class U, class... Us>
-        struct type_at_impl<I, U, Us...> {
-            using type = typename type_at_impl<I - 1, Us...>::type;
+            // Perfect-forwarding constructor: accepts any U convertible to T,
+            // fixing the old design which took Ts... by value and forced an
+            // extra copy/move even for lvalue arguments.
+            template<typename U>
+                requires (!std::same_as<std::remove_cvref_t<U>, flat_leaf>)
+            constexpr explicit flat_leaf(U&& v)
+                noexcept(std::is_nothrow_constructible_v<T, U&&>)
+                : value(std::forward<U>(v)) {}
         };
 
-        template<class U, class... Us>
-        struct type_at_impl<0, U, Us...> {
-            using type = U;
+        // ====================================================================
+        // flat_storage_base<index_sequence<Is...>, Ts...>
+        //
+        // Inherits from ALL flat_leaf<Is, Ts>... in a SINGLE non-recursive
+        // pack-expansion step. This gives O(1) template instantiation depth
+        // regardless of the number of elements — the key compile-speed
+        // advantage over std::tuple's recursive chain.
+        // ====================================================================
+        template<typename IdxSeq, typename... Ts>
+        struct flat_storage_base;
+
+        template<std::size_t... Is, typename... Ts>
+        struct flat_storage_base<std::index_sequence<Is...>, Ts...>
+            : flat_leaf<Is, Ts>...
+        {
+            constexpr flat_storage_base() = default;
+
+            template<typename... Us>
+            constexpr explicit flat_storage_base(Us&&... args)
+                noexcept((std::is_nothrow_constructible_v<Ts, Us&&> && ...))
+                : flat_leaf<Is, Ts>(std::forward<Us>(args))... {}
         };
+    }    // namespace impl
 
-        template<size_t I>
-        using type_at = typename type_at_impl<I, Ts...>::type;
-
-        template<class Seq>
-        struct make_variant;
-
-        template<size_t... Is>
-        struct make_variant<std::index_sequence<Is...>> {
-            // Use std::monostate if the parameter pack is empty, otherwise use the indexed types
-            using type = std::conditional_t<
-                sizeof...(Is) == 0,
-                std::variant<std::monostate>,
-                std::variant<indexed<Is, Ts>...>
-            >;
-        };
-
-        using variant_t = typename make_variant<std::index_sequence_for<Ts...>>::type;
-
-        // For empty tuple, use std::array with size 0 (which is valid and has special behavior)
-        std::array<variant_t, sizeof...(Ts)> values;
+    // ========================================================================
+    // fxt::flat_tuple<Ts...>
+    // ========================================================================
+    template<typename... Ts>
+    class flat_tuple
+        : private impl::flat_storage_base<std::index_sequence_for<Ts...>, Ts...>
+    {
+        using Base = impl::flat_storage_base<std::index_sequence_for<Ts...>, Ts...>;
 
     public:
-        // Constructor for non-empty tuples. constexpr so a flat_tuple of literal
-        // element types can be built and accessed in constant expressions, matching
-        // std::tuple's constexpr usability.
-        template<size_t... Is>
-        constexpr explicit flat_tuple(std::index_sequence<Is...>, Ts... args)
-            : values{variant_t(std::in_place_index<Is>, indexed<Is, Ts>{std::move(args)})...} {}
+        constexpr flat_tuple() = default;
 
-        // Default constructor for empty tuples
-        flat_tuple() = default;
+        template<typename... Us>
+            requires (sizeof...(Us) > 0 && sizeof...(Us) == sizeof...(Ts))
+        constexpr explicit flat_tuple(Us&&... args)
+            noexcept((std::is_nothrow_constructible_v<Ts, Us&&> && ...))
+            : Base(std::forward<Us>(args)...) {}
 
-        // Constructor that forwards to the index_sequence version (only enabled for non-empty)
-        template<typename... Args>
-            requires (sizeof...(Args) > 0 && sizeof...(Args) == sizeof...(Ts))
-        constexpr explicit flat_tuple(Args&&... args)
-            : flat_tuple(std::index_sequence_for<Ts...>{}, std::forward<Args>(args)...) {}
+        static constexpr std::size_t size() noexcept { return sizeof...(Ts); }
 
-        // template<class F>
-        // void visit_all(F&& f) {
-        //     [&]<size_t... Is>(std::index_sequence<Is...>) {
-        //         (std::forward<F>(f)(std::get<indexed<Is, type_at<Is>>>(values[Is]).value), ...);
-        //     }(std::index_sequence_for<Ts...>{});
-        // }
+        // O(1) element-type alias via base-class overload deduction.
+        //
+        // Base publicly inherits from flat_leaf<I,T> for each (I,T) pair, so
+        // overload resolution on `leaf_type_id<I>(Base*)` deduces the unique T
+        // for that I without recursion and without touching std::tuple.
+        //
+        // The function returns std::type_identity<T> (a defined, trivially
+        // default-constructible empty struct) so the IDE sees a complete
+        // definition and does not warn about a missing implementation. The body
+        // is never actually executed: decltype operates in an unevaluated context.
+        template<std::size_t I, typename T>
+        static constexpr std::type_identity<T> leaf_type_id(impl::flat_leaf<I, T>*)
+        { return {};}
 
-        static constexpr size_t size() { return sizeof...(Ts); }
+        template<std::size_t I>
+        using type_at = decltype(leaf_type_id<I>(static_cast<Base*>(nullptr)))::type;
 
-        // Tag type used as a self-contained constraint in the friend declaration and
-        // the fxt::get definition so both sides name the same function template
-        // without introducing a circular include dependency.
+        // Tag type shared between this class and Get.hpp so both sides of the
+        // friend declaration name the same constrained function template without
+        // introducing a circular include dependency.
         struct flat_tuple_tag {};
 
-        // Single forwarding-ref friend; definition is the constexpr noexcept
-        // overload in Get.hpp.  The requires-clause is identical on both sides,
-        // satisfying C++20 constraint-identity rules.
+        // Single forwarding-ref friend; the constrained definition is in Get.hpp.
         template<std::size_t I, typename FlatTupleT>
             requires requires { typename std::remove_cvref_t<FlatTupleT>::flat_tuple_tag; }
         friend constexpr decltype(auto) get(FlatTupleT&&) noexcept;
+
+        // ====================================================================
+        // Comparison — element-wise, lexicographic, short-circuit
+        // ====================================================================
+
+        // operator== is enabled when every element type is equality comparable.
+        friend constexpr bool operator==(const flat_tuple& a, const flat_tuple& b)
+            requires (std::equality_comparable<Ts> && ...)
+        {
+            return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+                return ((static_cast<const impl::flat_leaf<Is, Ts>&>(a).value ==
+                         static_cast<const impl::flat_leaf<Is, Ts>&>(b).value) && ...);
+            }(std::index_sequence_for<Ts...>{});
+        }
+
+        // operator<=> returns the common comparison category of all element
+        // types and short-circuits on the first non-equivalent pair.
+        friend constexpr auto operator<=>(const flat_tuple& a, const flat_tuple& b)
+            requires (std::three_way_comparable<Ts> && ...)
+        {
+            using Cat = std::common_comparison_category_t<
+                std::compare_three_way_result_t<Ts>...>;
+            Cat result = Cat::equivalent;
+            [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+                // The || fold drives short-circuit evaluation but its bool result
+                // is intentionally discarded — we only need the side-effect of
+                // setting `result`.  static_cast<void> suppresses -Wunused-value.
+                static_cast<void>(
+                    ((result = static_cast<const impl::flat_leaf<Is, Ts>&>(a).value <=>
+                                static_cast<const impl::flat_leaf<Is, Ts>&>(b).value,
+                      result != 0) || ...));
+            }(std::index_sequence_for<Ts...>{});
+            return result;
+        }
     };
 
     /**
-     * @brief Create a flat_tuple, deducing the target type from the types of arguments
+     * @brief Create a flat_tuple with automatic type deduction from arguments.
      *
-     * Similar to std::make_tuple but creates a flat_tuple instead.
-     * Automatically deduces types and uses std::decay to remove references and cv-qualifiers.
-     *
-     * @tparam Ts Types of the elements (deduced)
-     * @param args Values to initialize the flat_tuple with
-     * @return A flat_tuple containing the given values
+     * Mirrors `std::make_tuple`. Uses `std::decay_t` to strip references and
+     * cv-qualifiers from the deduced types.
      *
      * @code
      * auto ft = fxt::make_flat_tuple(42, 3.14, 99.9f);
@@ -350,23 +285,10 @@ namespace fxt
         return flat_tuple<std::decay_t<Ts>...>(std::forward<Ts>(args)...);
     }
 
-    /**
-     * @brief Pipe operator for fxt::flat_tuple with callable (lvalue reference)
-     *
-     * Allows piping a flat_tuple to a callable function, enabling functional-style composition.
-     * The callable receives the flat_tuple and returns the result.
-     *
-     * @tparam Ts Types in the flat_tuple
-     * @tparam Callable Type of the callable
-     * @param tuple The flat_tuple to pipe
-     * @param callable The callable to apply to the flat_tuple
-     * @return The result of invoking the callable with the flat_tuple
-     *
-     * @code
-     * fxt::flat_tuple<int, double> t{42, 3.14};
-     * auto result = t | fxt::get<0>;  // Returns 42
-     * @endcode
-     */
+    // ========================================================================
+    // Pipe operators — four value-category overloads
+    // ========================================================================
+
     template<typename... Ts, typename Callable>
     requires requires(flat_tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
     constexpr auto operator|(flat_tuple<Ts...>& tuple, Callable&& callable)
@@ -375,9 +297,6 @@ namespace fxt
         return std::invoke(std::forward<Callable>(callable), tuple);
     }
 
-    /**
-     * @brief Pipe operator for fxt::flat_tuple with callable (const lvalue reference)
-     */
     template<typename... Ts, typename Callable>
     requires requires(const flat_tuple<Ts...>& t, Callable&& c) { std::invoke(std::forward<Callable>(c), t); }
     constexpr auto operator|(const flat_tuple<Ts...>& tuple, Callable&& callable)
@@ -386,9 +305,6 @@ namespace fxt
         return std::invoke(std::forward<Callable>(callable), tuple);
     }
 
-    /**
-     * @brief Pipe operator for fxt::flat_tuple with callable (rvalue reference)
-     */
     template<typename... Ts, typename Callable>
     requires requires(flat_tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
     constexpr auto operator|(flat_tuple<Ts...>&& tuple, Callable&& callable)
@@ -397,9 +313,6 @@ namespace fxt
         return std::invoke(std::forward<Callable>(callable), std::move(tuple));
     }
 
-    /**
-     * @brief Pipe operator for fxt::flat_tuple with callable (const rvalue reference)
-     */
     template<typename... Ts, typename Callable>
     requires requires(const flat_tuple<Ts...>&& t, Callable&& c) { std::invoke(std::forward<Callable>(c), std::move(t)); }
     constexpr auto operator|(const flat_tuple<Ts...>&& tuple, Callable&& callable)
@@ -408,4 +321,4 @@ namespace fxt
         return std::invoke(std::forward<Callable>(callable), std::move(tuple));
     }
 
-}
+}    // namespace fxt
