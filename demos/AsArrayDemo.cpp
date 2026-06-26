@@ -13,7 +13,7 @@ int main()
     // Example 1: Convert fxt::tuple with mixed types to double array
     std::cout << "Example 1: fxt::tuple to std::array<double>" << std::endl;
     auto tpl1 = fxt::make_tuple(1, 2.5, 3);
-    auto arr1 = fxt::as_array<double>(tpl1);
+    auto arr1 = fxt::tuple_as_array<double>(tpl1);
 
     std::cout << "Original tuple: ";
     fxt::apply([](auto... args) {
@@ -30,7 +30,7 @@ int main()
     // Example 2: Convert fxt::flat_tuple to int array
     std::cout << "Example 2: fxt::flat_tuple to std::array<int>" << std::endl;
     auto tpl2 = fxt::make_flat_tuple(1.1, 2.9, 3.5, 4.2);
-    auto arr2 = fxt::as_array<int>(tpl2);
+    auto arr2 = fxt::tuple_as_array<int>(tpl2);
 
     std::cout << "Original flat_tuple: ";
     fxt::apply([](auto... args) {
@@ -47,7 +47,7 @@ int main()
     // Example 3: Curried version with pipe operator
     std::cout << "Example 3: Curried version with pipe operator" << std::endl;
     auto tpl3 = fxt::make_tuple(10, 20, 30, 40);
-    auto arr3 = tpl3 | fxt::as_array<double>();
+    auto arr3 = tpl3 | fxt::tuple_as_array<double>();
 
     std::cout << "Original tuple: ";
     fxt::apply([](auto... args) {
@@ -64,7 +64,7 @@ int main()
     // Example 4: Chain with other operations
     std::cout << "Example 4: Chained operations" << std::endl;
     auto result = fxt::make_flat_tuple(1, 2, 3, 4, 5)
-        | fxt::as_array<double>();
+        | fxt::tuple_as_array<double>();
 
     std::cout << "Result array: ";
     for (const auto& val : result) {

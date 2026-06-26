@@ -113,19 +113,6 @@ namespace fxt
         };
     }
 
-    // Deprecated aliases
-    template<std::size_t X, typename Tuple>
-    [[deprecated("Use fxt::tuple_take")]]
-    constexpr auto take(Tuple&& tpl)
-        -> decltype(tuple_take<X>(std::forward<Tuple>(tpl)))
-    {
-        return tuple_take<X>(std::forward<Tuple>(tpl));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::tuple_take")]]
-    constexpr auto take() { return tuple_take<X>(); }
-
     // ========================================================================
     // fxt::tuple_take_last — last X elements
     // ========================================================================
@@ -168,19 +155,6 @@ namespace fxt
             return fxt::tuple_take_last<X>(std::forward<Tuple>(tpl));
         };
     }
-
-    // Deprecated aliases
-    template<std::size_t X, typename Tuple>
-    [[deprecated("Use fxt::tuple_take_last")]]
-    constexpr auto take_last(Tuple&& tpl)
-        -> decltype(tuple_take_last<X>(std::forward<Tuple>(tpl)))
-    {
-        return tuple_take_last<X>(std::forward<Tuple>(tpl));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::tuple_take_last")]]
-    constexpr auto take_last() { return tuple_take_last<X>(); }
 
     // ========================================================================
     // fxt::mtuple_take — monadic lift of tuple_take
@@ -228,19 +202,6 @@ namespace fxt
         };
     }
 
-    // Deprecated aliases
-    template<std::size_t X, typename Container>
-    [[deprecated("Use fxt::mtuple_take")]]
-    constexpr auto mtake(Container&& container)
-        -> decltype(mtuple_take<X>(std::forward<Container>(container)))
-    {
-        return mtuple_take<X>(std::forward<Container>(container));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::mtuple_take")]]
-    constexpr auto mtake() { return mtuple_take<X>(); }
-
     // ========================================================================
     // fxt::mtuple_take_last — monadic lift of tuple_take_last
     // ========================================================================
@@ -286,18 +247,5 @@ namespace fxt
             return fxt::mtuple_take_last<X>(std::forward<Container>(container));
         };
     }
-
-    // Deprecated aliases
-    template<std::size_t X, typename Container>
-    [[deprecated("Use fxt::mtuple_take_last")]]
-    constexpr auto mtake_last(Container&& container)
-        -> decltype(mtuple_take_last<X>(std::forward<Container>(container)))
-    {
-        return mtuple_take_last<X>(std::forward<Container>(container));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::mtuple_take_last")]]
-    constexpr auto mtake_last() { return mtuple_take_last<X>(); }
 
 }    // namespace fxt

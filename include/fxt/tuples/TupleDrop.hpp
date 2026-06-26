@@ -112,19 +112,6 @@ namespace fxt
         };
     }
 
-    // Deprecated aliases
-    template<std::size_t X, typename Tuple>
-    [[deprecated("Use fxt::tuple_drop")]]
-    constexpr auto drop(Tuple&& tpl)
-        -> decltype(tuple_drop<X>(std::forward<Tuple>(tpl)))
-    {
-        return tuple_drop<X>(std::forward<Tuple>(tpl));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::tuple_drop")]]
-    constexpr auto drop() { return tuple_drop<X>(); }
-
     // ========================================================================
     // fxt::tuple_drop_last — remove last X elements
     // ========================================================================
@@ -166,19 +153,6 @@ namespace fxt
             return fxt::tuple_drop_last<X>(std::forward<Tuple>(tpl));
         };
     }
-
-    // Deprecated aliases
-    template<std::size_t X, typename Tuple>
-    [[deprecated("Use fxt::tuple_drop_last")]]
-    constexpr auto drop_last(Tuple&& tpl)
-        -> decltype(tuple_drop_last<X>(std::forward<Tuple>(tpl)))
-    {
-        return tuple_drop_last<X>(std::forward<Tuple>(tpl));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::tuple_drop_last")]]
-    constexpr auto drop_last() { return tuple_drop_last<X>(); }
 
     // ========================================================================
     // fxt::mtuple_drop — monadic lift of tuple_drop
@@ -226,19 +200,6 @@ namespace fxt
         };
     }
 
-    // Deprecated aliases
-    template<std::size_t X, typename Container>
-    [[deprecated("Use fxt::mtuple_drop")]]
-    constexpr auto mdrop(Container&& container)
-        -> decltype(mtuple_drop<X>(std::forward<Container>(container)))
-    {
-        return mtuple_drop<X>(std::forward<Container>(container));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::mtuple_drop")]]
-    constexpr auto mdrop() { return mtuple_drop<X>(); }
-
     // ========================================================================
     // fxt::mtuple_drop_last — monadic lift of tuple_drop_last
     // ========================================================================
@@ -284,18 +245,4 @@ namespace fxt
             return fxt::mtuple_drop_last<X>(std::forward<Container>(container));
         };
     }
-
-    // Deprecated aliases
-    template<std::size_t X, typename Container>
-    [[deprecated("Use fxt::mtuple_drop_last")]]
-    constexpr auto mdrop_last(Container&& container)
-        -> decltype(mtuple_drop_last<X>(std::forward<Container>(container)))
-    {
-        return mtuple_drop_last<X>(std::forward<Container>(container));
-    }
-
-    template<std::size_t X>
-    [[deprecated("Use fxt::mtuple_drop_last")]]
-    constexpr auto mdrop_last() { return mtuple_drop_last<X>(); }
-
 }    // namespace fxt

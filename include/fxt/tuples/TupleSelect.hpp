@@ -233,49 +233,4 @@ namespace fxt
             });
         };
     }
-
-    // ========================================================================
-    // Deprecated aliases
-    // ========================================================================
-
-    // select<Is...> (index-based)
-    template<std::size_t... Is, typename Tuple>
-    [[deprecated("Use fxt::tuple_select")]]
-    constexpr auto select(Tuple&& tpl)
-        -> decltype(tuple_select<Is...>(std::forward<Tuple>(tpl)))
-    {
-        return tuple_select<Is...>(std::forward<Tuple>(tpl));
-    }
-
-    template<std::size_t... Is>
-    [[deprecated("Use fxt::tuple_select")]]
-    constexpr auto select() { return tuple_select<Is...>(); }
-
-    // select<Ts...> (type-based, fxt::tuple only)
-    template<typename... Ts, typename TupleT>
-        requires impl::is_fxt_tuple_v<std::remove_cvref_t<TupleT>>
-              && (sizeof...(Ts) >= 1)
-    [[deprecated("Use fxt::tuple_select")]]
-    constexpr auto select(TupleT&& tpl)
-        -> decltype(tuple_select<Ts...>(std::forward<TupleT>(tpl)))
-    {
-        return tuple_select<Ts...>(std::forward<TupleT>(tpl));
-    }
-
-    template<typename... Ts>
-        requires (sizeof...(Ts) >= 1)
-    [[deprecated("Use fxt::tuple_select")]]
-    constexpr auto select() { return tuple_select<Ts...>(); }
-
-    // mselect<Is...> (index-based monadic)
-    template<std::size_t... Is>
-    [[deprecated("Use fxt::mtuple_select")]]
-    constexpr auto mselect() { return mtuple_select<Is...>(); }
-
-    // mselect<Ts...> (type-based monadic)
-    template<typename... Ts>
-        requires (sizeof...(Ts) >= 1)
-    [[deprecated("Use fxt::mtuple_select")]]
-    constexpr auto mselect() { return mtuple_select<Ts...>(); }
-
 }    // namespace fxt

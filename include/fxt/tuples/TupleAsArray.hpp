@@ -99,12 +99,6 @@ namespace fxt
     constexpr auto tuple_as_array(TTuple&& t)
     { return impl::as_array_impl<T>(std::forward<TTuple>(t), std::make_index_sequence<impl::as_array_size<TTuple>()> {}); }
 
-    // Deprecated two-argument forwarder covering all old as_array(t) call sites.
-    template<typename T, typename TTuple>
-    [[deprecated("Use fxt::tuple_as_array")]]
-    constexpr auto as_array(TTuple&& t) -> decltype(tuple_as_array<T>(std::forward<TTuple>(t)))
-    { return tuple_as_array<T>(std::forward<TTuple>(t)); }
-
     // ========================================================================
     // fxt::tuple_as_array (curried) — pipe-operator form
     // ========================================================================
@@ -127,11 +121,6 @@ namespace fxt
             requires tuple_like<std::remove_cvref_t<TTuple>>
         { return tuple_as_array<T>(std::forward<TTuple>(t)); };
     }
-
-    template<typename T>
-    [[deprecated("Use fxt::tuple_as_array")]]
-    constexpr auto as_array()
-    { return tuple_as_array<T>(); }
 
     // ========================================================================
     // fxt::mtuple_as_array — monadic as_array
@@ -231,10 +220,5 @@ namespace fxt
             });
         };
     }
-
-    template<typename T>
-    [[deprecated("Use fxt::mtuple_as_array")]]
-    constexpr auto mas_array()
-    { return mtuple_as_array<T>(); }
 
 }    // namespace fxt
