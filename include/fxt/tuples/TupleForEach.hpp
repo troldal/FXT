@@ -40,157 +40,128 @@
 
 /**
  * @file TupleForEach.hpp
- * @brief Iteration operations for tuple elements
+ * @brief Side-effect iteration over tuple elements: fxt::tuple_for_each and fxt::mtuple_for_each
  *
- * This file provides the tuple_foreach function for applying side-effects to each element
- * of a tuple. Unlike tuple_transform which returns a new tuple, tuple_foreach is used when
- * you want to perform operations for their side-effects (e.g., printing, logging, mutation).
+ * ## fxt::tuple_for_each
+ * Applies a callable to every element of a tuple for its side-effects. Works with both
+ * `fxt::tuple` (std::tuple) and `fxt::flat_tuple`. Elements are visited in order.
+ * Unlike `fxt::tuple_transform`, no new tuple is produced.
  *
- * ## Main Function
+ * @code
+ * auto t = fxt::make_tuple(1, 2.5, "hello");
+ * fxt::tuple_for_each(t, [](const auto& x) { std::cout << x << '\n'; });
  *
- * **tuple_foreach(tuple, callable)** - Applies a callable to each tuple element for side-effects
- * - Iterates through all elements in order from first to last
- * - Does not return a value (void return type)
- * - Perfect forwarding preserves value categories
- * - Works with both fxt::tuple and fxt::flat_tuple
+ * // Curried / pipeline form
+ * fxt::make_tuple(1, 2, 3)
+ *     | fxt::tuple_for_each([](auto x) { std::cout << x << ' '; });
+ * @endcode
  *
- * ## Use Cases
- * - Printing tuple elements
- * - Logging values
- * - Mutating external state
- * - Accumulating results into containers
- * - Performing I/O operations on each element
+ * ## fxt::mtuple_for_each
+ * Monadic lift of `tuple_for_each`: applies a callable to the elements of a tuple
+ * held inside an `expected`- or `optional`-like container for its side-effects, then
+ * passes the monad through unchanged so the pipeline can continue.
+ * If the monad is empty / holds an error the callable is never invoked.
+ *
+ * @code
+ * auto exp = fxt::expected<fxt::tuple<int, double>, std::string>{
+ *     fxt::make_tuple(42, 3.14)};
+ *
+ * exp | fxt::mtuple_for_each([](const auto& x) { std::cout << x << ' '; })
+ *     | fxt::mtuple_apply_append([](int a, double b) { return a + b; });
+ * @endcode
  *
  * @see fxt::tuple_transform
+ * @see fxt::for_each        (ranges/ForEach.hpp — range-based counterpart)
  */
 
 #pragma once
 
-#include <utility>
+#include "Apply.hpp"
 
 namespace fxt
 {
+    // ========================================================================
+    // fxt::tuple_for_each — side-effect iteration
+    // ========================================================================
+
     /**
-     * @brief Apply a callable to each element of a tuple for side-effects
+     * @brief Apply @p fn to each element of @p tp for its side-effects.
      *
-     * Iterates through each element in the tuple and applies the given callable to it.
-     * This function is designed for performing side-effects and does not return a value.
-     * Elements are processed in order from first to last. Perfect forwarding is used
-     * to preserve the value category of the tuple and its elements.
-     *
-     * Unlike tuple_transform, which creates a new tuple with transformed values,
-     * tuple_foreach is used when you want to perform operations for their side-effects
-     * such as printing, logging, or modifying external state.
-     *
-     * @tparam TupleT The tuple type (deduced, can be fxt::tuple or fxt::flat_tuple)
-     * @tparam Fn The callable type (deduced)
-     * @param tp The input tuple (lvalue or rvalue reference)
-     * @param fn The callable to apply to each element
-     *
-     * @note This function returns void. Use tuple_transform if you need to create
-     *       a new tuple with transformed values.
-     *
-     * @section Usage
-     * @code
-     * // Print each element
-     * auto t = fxt::make_tuple(1, 2.5, "hello");
-     * fxt::tuple_foreach(t, [](const auto& x) {
-     *     std::cout << x << std::endl;
-     * });
-     * // Output:
-     * // 1
-     * // 2.5
-     * // hello
-     *
-     * // Accumulate into a vector
-     * std::vector<int> vec;
-     * auto t2 = fxt::make_tuple(1, 2, 3, 4, 5);
-     * fxt::tuple_foreach(t2, [&vec](int x) {
-     *     vec.push_back(x * 2);
-     * });
-     * // vec now contains: {2, 4, 6, 8, 10}
-     *
-     * // Modify tuple elements (requires lvalue reference)
-     * auto t3 = fxt::make_tuple(1, 2, 3);
-     * fxt::tuple_foreach(t3, [](auto& x) {
-     *     x *= 2;
-     * });
-     * // t3 now contains: {2, 4, 6}
-     *
-     * // Use with side-effect operations
-     * int sum = 0;
-     * auto t4 = fxt::make_tuple(10, 20, 30);
-     * fxt::tuple_foreach(t4, [&sum](int x) {
-     *     sum += x;
-     * });
-     * // sum is now 60
-     * @endcode
+     * @tparam TupleT fxt::tuple or fxt::flat_tuple (deduced)
+     * @tparam Fn     Callable accepting each element type (deduced)
+     * @param  tp     Source tuple (any value category)
+     * @param  fn     Callable to invoke on each element
      */
-    // TODO: CONSISTENCY — this is `tuple_foreach` while the ranges counterpart is
-    //       `fxt::for_each` (ranges/ForEach.hpp); pick one spelling (for_each) for both.
-    //       There is also no monadic counterpart (mtuple_foreach) even though every other
-    //       tuple operation has an m-prefixed version — completeness gap.
-    // TODO: COMPLETENESS — this header uses fxt::apply but includes neither Apply.hpp nor
-    //       the tuple headers; it only compiles when included after them (fxt.hpp ordering).
-    //       Add the missing #include "Apply.hpp".
     template<typename TupleT, typename Fn>
-    void tuple_foreach(TupleT&& tp, Fn&& fn)
+    void tuple_for_each(TupleT&& tp, Fn&& fn)
     {
-        fxt::apply([&fn]<typename... T>(T&&... args) { (fn(std::forward<T>(args)), ...); }, std::forward<TupleT>(tp));
+        fxt::apply(
+            [&fn]<typename... T>(T&&... args) { (fn(std::forward<T>(args)), ...); },
+            std::forward<TupleT>(tp));
     }
 
     /**
-     * @brief Apply a callable to each element of a tuple for side-effects (curried version for pipeline)
+     * @brief Curried `tuple_for_each` for pipeline usage.
      *
-     * Returns a lambda that applies the given callable to each element of a tuple passed to it.
-     * This overload enables pipeline-style usage with the pipe operator.
-     * The returned lambda performs side-effects and does not return a value.
+     * Returns an adaptor that, when piped a tuple, applies @p fn to every element
+     * for its side-effects. The adaptor captures @p fn by value and is reusable.
      *
-     * @tparam Fn The callable type (deduced)
-     * @param fn The callable to apply to each element
-     * @return A lambda that takes a tuple and applies the callable to each element
-     *
-     * @section Usage
      * @code
-     * // Pipeline usage for printing
-     * auto t = fxt::make_tuple(1, 2, 3);
-     * t | fxt::tuple_foreach([](const auto& x) {
-     *     std::cout << x << " ";
-     * });
-     * // Output: 1 2 3
-     *
-     * // Pipeline with state capture
-     * int sum = 0;
-     * auto t2 = fxt::make_tuple(10, 20, 30);
-     * t2 | fxt::tuple_foreach([&sum](int x) {
-     *     sum += x;
-     * });
-     * // sum is now 60
-     *
-     * // Chaining with other operations
-     * auto t3 = fxt::make_tuple(1, 2, 3, 4, 5)
-     *     | fxt::drop<2>()
-     *     | fxt::tuple_transform([](auto x) { return x * 2; });
-     *
-     * t3 | fxt::tuple_foreach([](auto x) {
-     *     std::cout << x << std::endl;
-     * });
-     * // Output:
-     * // 6
-     * // 8
-     * // 10
+     * fxt::make_tuple(1, 2, 3) | fxt::tuple_for_each([](auto x) { std::cout << x; });
      * @endcode
      */
-    // TODO: NAMING — `tuple_foreach` already conforms to the `tuple_` prefix rule
-    //       (see the convention in Tuple.hpp), but its word form differs from
-    //       `fxt::for_each` in ranges/ForEach.hpp. For parity, consider renaming to
-    //       `tuple_for_each` (keep `tuple_foreach` as a [[deprecated]] alias for one
-    //       release). A monadic lift, if added, would be `mtuple_for_each`.
     template<typename Fn>
-    constexpr auto tuple_foreach(Fn&& fn)
+    constexpr auto tuple_for_each(Fn&& fn)
     {
         return [fn = std::forward<Fn>(fn)]<typename TupleT>(TupleT&& tp) {
-            fxt::tuple_foreach(std::forward<TupleT>(tp), fn);
+            fxt::tuple_for_each(std::forward<TupleT>(tp), fn);
+        };
+    }
+
+    // Deprecated aliases — spelling reconciled with fxt::for_each (ranges/ForEach.hpp).
+    template<typename TupleT, typename Fn>
+    [[deprecated("Use fxt::tuple_for_each")]]
+    void tuple_foreach(TupleT&& tp, Fn&& fn)
+    {
+        fxt::tuple_for_each(std::forward<TupleT>(tp), std::forward<Fn>(fn));
+    }
+
+    template<typename Fn>
+    [[deprecated("Use fxt::tuple_for_each")]]
+    constexpr auto tuple_foreach(Fn&& fn)
+    {
+        return fxt::tuple_for_each(std::forward<Fn>(fn));
+    }
+
+    // ========================================================================
+    // fxt::mtuple_for_each — monadic lift
+    // ========================================================================
+
+    /**
+     * @brief Monadic lift of `tuple_for_each`.
+     *
+     * Returns an adaptor that, when piped a monad-of-tuple, applies @p fn to every
+     * element of the contained tuple for its side-effects, then passes the monad
+     * through unchanged so the pipeline can continue.
+     *
+     * - If the monad is empty / holds an error the callable is never invoked and
+     *   the error / nullopt propagates.
+     * - Elements are passed to @p fn as `const T&`; @p fn should not assume it can
+     *   move elements out.
+     *
+     * @code
+     * fxt::expected<fxt::tuple<int, double>, std::string>{fxt::make_tuple(1, 2.0)}
+     *     | fxt::mtuple_for_each([](const auto& x) { std::cout << x << ' '; });
+     * @endcode
+     */
+    template<typename Fn>
+    constexpr auto mtuple_for_each(Fn&& fn)
+    {
+        return [fn = std::forward<Fn>(fn)]<typename TMonad>(TMonad&& monad) {
+            return std::forward<TMonad>(monad).transform([&fn](const auto& t) {
+                fxt::tuple_for_each(t, fn);
+                return t;
+            });
         };
     }
 

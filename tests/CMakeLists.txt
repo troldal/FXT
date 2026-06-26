@@ -49,6 +49,7 @@ add_executable(fxt_tests
         SequenceTests.cpp
         SequenceTupleTests.cpp
         ForEachTests.cpp
+        TupleForEachTests.cpp
 )
 
 target_link_libraries(fxt_tests
