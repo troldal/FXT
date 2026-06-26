@@ -38,359 +38,244 @@
 
 */
 
+/**
+ * @file Select.hpp
+ * @brief Arbitrary-index / arbitrary-type element projection for tuples
+ *
+ * ## Plain-tuple operations
+ *
+ * **tuple_select<Is...>(tpl)** — build a new tuple from elements at indices `Is`
+ * - Direct call: `fxt::tuple_select<0, 2>(tpl)`
+ * - Curried:     `tpl | fxt::tuple_select<0, 2>()`
+ *
+ * **tuple_select<Ts...>(tpl)** — build a new fxt::tuple from elements of types `Ts`
+ * (each type must appear exactly once; works with fxt::tuple only, not flat_tuple)
+ * - Direct call: `fxt::tuple_select<int, std::string>(tpl)`
+ * - Curried:     `tpl | fxt::tuple_select<int, std::string>()`
+ *
+ * ## Monadic lifts (fxt::expected / fxt::optional)
+ *
+ * **mtuple_select<Is...>()** / **mtuple_select<Ts...>()**
+ * - Curried pipe form only: `container | fxt::mtuple_select<0, 2>()`
+ * - Implemented via `.transform()` — works with any monad-like type, supports
+ *   rvalue pipelines, and handles both fxt::tuple and fxt::flat_tuple.
+ *
+ * @see fxt::tuple_take, fxt::tuple_drop
+ */
 
 #pragma once
 
 #include "../monads/Expected.hpp"
 #include "../monads/Optional.hpp"
-#include "../utils/Overload.hpp"
 #include "FlatTuple.hpp"
 #include "TupleAppend.hpp"
 #include <tuple>
+#include <utility>
 
 namespace fxt
 {
+    // ========================================================================
+    // fxt::tuple_select — index-based projection
+    // ========================================================================
 
     /**
-     * @brief Extract multiple elements from a tuple inside a monadic container by index
+     * @brief Build a new tuple from elements at the specified indices.
      *
-     * Creates a function that extracts multiple elements at the specified indices from a tuple
-     * contained within an fxt::expected or fxt::optional object, or directly from fxt::tuple
-     * or fxt::flat_tuple. The extracted elements are combined into a new tuple of the same type,
-     * preserving the container type (expected/optional) or tuple type (fxt::tuple/fxt::flat_tuple).
+     * @tparam Is  Indices to select (must be valid for the input tuple size)
+     * @tparam Tuple  fxt::tuple or fxt::flat_tuple (deduced)
+     * @param  tpl    Source tuple (any value category)
      *
-     * @tparam Is The indices of the elements to extract from the tuple
-     * @return A function that transforms a monadic container<tuple> or tuple to extract elements at specified indices
-     *
-     * @throws static_assert If no indices are provided
-     *
-     * @example
-     *   // With expected containing fxt::tuple
-     *   auto exp = fxt::expected<fxt::tuple<int, double, std::string>, Error>{fxt::make_tuple(1, 2.0, "three")};
-     *   auto result = exp | fxt::mselect<0, 2>();  // result contains fxt::tuple<int, std::string>{1, "three"}
-     *
-     *   // With expected containing fxt::flat_tuple
-     *   auto exp2 = fxt::expected<fxt::flat_tuple<int, double, std::string>, Error>{fxt::make_flat_tuple(1, 2.0, "three")};
-     *   auto result2 = exp2 | fxt::mselect<0, 2>();  // result contains fxt::flat_tuple<int, std::string>{1, "three"}
-     *
-     *   // With optional containing fxt::tuple
-     *   auto opt = fxt::optional<fxt::tuple<int, double, std::string>>{fxt::make_tuple(1, 2.0, "three")};
-     *   auto result3 = opt | fxt::mselect<0, 2>();  // result contains fxt::tuple<int, std::string>{1, "three"}
-     *
-     *   // With optional containing fxt::flat_tuple
-     *   auto opt2 = fxt::optional<fxt::flat_tuple<int, double, std::string>>{fxt::make_flat_tuple(1, 2.0, "three")};
-     *   auto result4 = opt2 | fxt::mselect<0, 2>();  // result contains fxt::flat_tuple<int, std::string>{1, "three"}
-     *
-     *   // Direct with fxt::tuple
-     *   auto t = fxt::make_tuple(1, 2.0, "three");
-     *   auto result5 = t | fxt::mselect<0, 2>();  // result is fxt::tuple<int, std::string>{1, "three"}
-     *
-     *   // Direct with fxt::flat_tuple
-     *   auto ft = fxt::make_flat_tuple(1, 2.0, "three");
-     *   auto result6 = ft | fxt::mselect<0, 2>();  // result is fxt::flat_tuple<int, std::string>{1, "three"}
-     */
-    // TODO: ERGONOMICS — the monadic overloads in this overload set only accept
-    //       const-lvalue monads of exactly fxt::expected/fxt::optional holding exactly
-    //       fxt::tuple/fxt::flat_tuple, so rvalue pipelines copy and other expected-like
-    //       types don't match; a transform-based implementation constrained on monad_like +
-    //       tuple_like (like mtake/mdrop) would be shorter and more general.
-    // TODO: CONSISTENCY — mselect bundles monadic AND plain-tuple handling in one adaptor,
-    //       whereas the rest of the library separates them (select vs mselect, take vs
-    //       mtake). The plain-tuple overloads here duplicate fxt::select below.
-    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, rename the
-    //       fxt-original ops to carry the `tuple_` prefix: select -> tuple_select
-    //       and mselect -> mtuple_select (keep old names as [[deprecated]] aliases
-    //       for one release).
-    template<size_t... Is>
-    auto mselect()
-    {
-        static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
-
-        return overload{
-            // Handle expected-like containers with fxt::tuple
-            []<typename... TArgs, typename TError>(const fxt::expected<fxt::tuple<TArgs...>, TError>& container) {
-                return container.transform([](const fxt::tuple<TArgs...>& t) {
-                    return fxt::make_tuple(fxt::get<Is>(t)...);
-                });
-            },
-            // Handle expected-like containers with fxt::flat_tuple
-            []<typename... TArgs, typename TError>(const fxt::expected<fxt::flat_tuple<TArgs...>, TError>& container) {
-                return container.transform([](const fxt::flat_tuple<TArgs...>& t) {
-                    return fxt::make_flat_tuple(fxt::get<Is>(t)...);
-                });
-            },
-            // Handle optional-like containers with fxt::tuple
-            []<typename... TArgs>(const fxt::optional<fxt::tuple<TArgs...>>& container) {
-                return container.transform([](const fxt::tuple<TArgs...>& t) {
-                    return fxt::make_tuple(fxt::get<Is>(t)...);
-                });
-            },
-            // Handle optional-like containers with fxt::flat_tuple
-            []<typename... TArgs>(const fxt::optional<fxt::flat_tuple<TArgs...>>& container) {
-                return container.transform([](const fxt::flat_tuple<TArgs...>& t) {
-                    return fxt::make_flat_tuple(fxt::get<Is>(t)...);
-                });
-            },
-            // Handle fxt::tuple (lvalue reference)
-            []<typename... TArgs>(fxt::tuple<TArgs...>& tuple) {
-                return fxt::make_tuple(fxt::get<Is>(tuple)...);
-            },
-            // Handle fxt::tuple (const lvalue reference)
-            []<typename... TArgs>(const fxt::tuple<TArgs...>& tuple) {
-                return fxt::make_tuple(fxt::get<Is>(tuple)...);
-            },
-            // Handle fxt::tuple (rvalue reference)
-            []<typename... TArgs>(fxt::tuple<TArgs...>&& tuple) {
-                return fxt::make_tuple(fxt::get<Is>(std::move(tuple))...);
-            },
-            // Handle fxt::flat_tuple (lvalue reference)
-            []<typename... TArgs>(fxt::flat_tuple<TArgs...>& tuple) {
-                return fxt::make_flat_tuple(fxt::get<Is>(tuple)...);
-            },
-            // Handle fxt::flat_tuple (const lvalue reference)
-            []<typename... TArgs>(const fxt::flat_tuple<TArgs...>& tuple) {
-                return fxt::make_flat_tuple(fxt::get<Is>(tuple)...);
-            },
-            // Handle fxt::flat_tuple (rvalue reference)
-            []<typename... TArgs>(fxt::flat_tuple<TArgs...>&& tuple) {
-                return fxt::make_flat_tuple(fxt::get<Is>(std::move(tuple))...);
-            }
-        };
-    }
-
-    /**
-     * @brief Extract multiple elements from a tuple inside a monadic container by type
-     *
-     * Creates a function that extracts multiple elements of the specified types from a tuple
-     * contained within an fxt::expected or fxt::optional object, or directly from fxt::tuple.
-     * The extracted elements are combined into a new tuple of the same type,
-     * preserving the container type (expected/optional) or tuple type (fxt::tuple).
-     *
-     * Note: This function only works with fxt::tuple, not fxt::flat_tuple, because
-     * fxt::flat_tuple does not support get by type.
-     *
-     * @tparam Ts The types of the elements to extract from the tuple
-     * @return A function that transforms a monadic container<tuple> or tuple to extract elements of specified types
-     *
-     * @throws static_assert If no types are provided
-     * @note The tuple must contain exactly one element of each specified type, otherwise std::get will fail
-     *
-     * @example
-     *   // With expected
-     *   auto exp = fxt::expected<fxt::tuple<int, double, std::string>, Error>{fxt::make_tuple(1, 2.0, "three")};
-     *   auto result = exp | fxt::mselect<int, std::string>();  // result contains fxt::tuple<int, std::string>{1, "three"}
-     *
-     *   // With optional
-     *   auto opt = fxt::optional<fxt::tuple<int, double, std::string>>{fxt::make_tuple(1, 2.0, "three")};
-     *   auto result = opt | fxt::mselect<int, std::string>();  // result contains fxt::tuple<int, std::string>{1, "three"}
-     *
-     *   // With fxt::tuple (note: uses std::get by type)
-     *   auto t = fxt::make_tuple(1, 2.0, "three");
-     *   auto result = t | fxt::mselect<int, const char*>();  // result is fxt::tuple<int, const char*>
-     */
-    template<typename... Ts>
-    auto mselect()
-    {
-        static_assert(sizeof...(Ts) >= 1, "At least one type must be provided");
-
-        return overload{
-            // Handle expected-like containers with fxt::tuple
-            []<typename... TArgs, typename TError>(const fxt::expected<fxt::tuple<TArgs...>, TError>& container) {
-                return container.transform([](const fxt::tuple<TArgs...>& t) {
-                    return fxt::make_tuple(std::get<Ts>(t)...);
-                });
-            },
-            // Handle optional-like containers with fxt::tuple
-            []<typename... TArgs>(const fxt::optional<fxt::tuple<TArgs...>>& container) {
-                return container.transform([](const fxt::tuple<TArgs...>& t) {
-                    return fxt::make_tuple(std::get<Ts>(t)...);
-                });
-            },
-            // Handle fxt::tuple (lvalue reference) - uses std::get by type
-            []<typename... TArgs>(fxt::tuple<TArgs...>& tuple) {
-                return fxt::make_tuple(std::get<Ts>(tuple)...);
-            },
-            // Handle fxt::tuple (const lvalue reference)
-            []<typename... TArgs>(const fxt::tuple<TArgs...>& tuple) {
-                return fxt::make_tuple(std::get<Ts>(tuple)...);
-            },
-            // Handle fxt::tuple (rvalue reference)
-            []<typename... TArgs>(fxt::tuple<TArgs...>&& tuple) {
-                return fxt::make_tuple(std::get<Ts>(std::move(tuple))...);
-            }
-            // Note: fxt::flat_tuple does not support get by type, only by index
-        };
-    }
-
-    // ===== Direct select functions (non-monadic) =====
-
-    /**
-     * @brief Extract multiple elements from a tuple by index (direct call)
-     *
-     * This function extracts multiple elements at the specified indices from fxt::tuple
-     * or fxt::flat_tuple and returns a new tuple of the same type with the selected elements.
-     * Perfect forwarding is preserved for the tuple elements.
-     *
-     * @tparam Is The indices of the elements to extract from the tuple
-     * @tparam Tuple The tuple type (deduced)
-     * @param tpl The input tuple (lvalue or rvalue reference)
-     * @return A new tuple of the same type containing only the selected elements
-     *
-     * @throws static_assert If no indices are provided
-     *
-     * @section Usage
      * @code
-     * // Direct call with fxt::tuple
-     * auto t = fxt::make_tuple(1, 2.0, "three", 'f', true);
-     * auto result = fxt::select<0, 2, 4>(t);
-     * // result is fxt::tuple<int, const char*, bool>{1, "three", true}
+     * auto t  = fxt::make_tuple(1, 2.0, "three", 'f');
+     * auto r  = fxt::tuple_select<0, 2>(t);   // fxt::tuple<int, const char*>{1, "three"}
      *
-     * // Direct call with fxt::flat_tuple
      * auto ft = fxt::make_flat_tuple(1.0, 2.0, 3.0, 4.0);
-     * auto result2 = fxt::select<0, 3>(ft);
-     * // result2 is fxt::flat_tuple<double, double>{1.0, 4.0}
+     * auto r2 = fxt::tuple_select<0, 3>(ft);  // fxt::flat_tuple<double, double>{1.0, 4.0}
      * @endcode
      */
-    template<size_t... Is, typename Tuple>
+    template<std::size_t... Is, typename Tuple>
         requires (impl::is_fxt_tuple_v<std::remove_cvref_t<Tuple>> ||
                   impl::is_flat_tuple_v<std::remove_cvref_t<Tuple>>)
-    constexpr auto select(Tuple&& tpl)
+    constexpr auto tuple_select(Tuple&& tpl)
     {
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
-
         if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<Tuple>>) {
             return fxt::make_tuple(fxt::get<Is>(std::forward<Tuple>(tpl))...);
-        } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<Tuple>>) {
+        } else {
             return fxt::make_flat_tuple(fxt::get<Is>(std::forward<Tuple>(tpl))...);
         }
     }
 
-    /**
-     * @brief Extract multiple elements from a tuple by index (curried version for pipeline)
-     *
-     * Returns a lambda that extracts multiple elements at the specified indices from a tuple.
-     * This overload enables pipeline-style usage with the pipe operator.
-     * Works with both fxt::tuple and fxt::flat_tuple, preserving the input type.
-     *
-     * @tparam Is The indices of the elements to extract from the tuple
-     * @return A lambda that takes a tuple and returns a new tuple with the selected elements
-     *
-     * @throws static_assert If no indices are provided
-     *
-     * @section Usage
-     * @code
-     * // Pipe operator with fxt::tuple
-     * auto t = fxt::make_tuple(1, 2, 3, 4, 5);
-     * auto result = t | fxt::select<0, 2, 4>();
-     * // result is fxt::tuple<int, int, int>{1, 3, 5}
-     *
-     * // Pipe operator with fxt::flat_tuple
-     * auto ft = fxt::make_flat_tuple(1.0, 2.0, 3.0, 4.0);
-     * auto result2 = ft | fxt::select<1, 3>();
-     * // result2 is fxt::flat_tuple<double, double>{2.0, 4.0}
-     *
-     * // Chaining with other operations
-     * auto result3 = fxt::make_tuple(10, 20, 30, 40, 50)
-     *              | fxt::drop<1>()
-     *              | fxt::select<0, 2>();
-     * // result3 is fxt::tuple<int, int>{20, 40}
-     * @endcode
-     */
-    template<size_t... Is>
-    constexpr auto select()
+    /** @brief Curried `tuple_select<Is...>` for pipeline usage. */
+    template<std::size_t... Is>
+    constexpr auto tuple_select()
     {
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
-
         return []<typename Tuple>(Tuple&& tpl) {
-            return fxt::select<Is...>(std::forward<Tuple>(tpl));
+            return fxt::tuple_select<Is...>(std::forward<Tuple>(tpl));
         };
     }
 
+    // ========================================================================
+    // fxt::tuple_select — type-based projection
+    // ========================================================================
+
     /**
-     * @brief Extract multiple elements from an fxt::tuple by type (direct call)
+     * @brief Build a new tuple from elements of the specified types.
      *
-     * This function extracts multiple elements of the specified types from fxt::tuple
-     * and returns a new fxt::tuple with the selected elements. Uses std::get by type,
-     * so each type must appear exactly once in the tuple.
+     * Each type must appear exactly once in the source tuple.
+     * Works with both fxt::tuple and fxt::flat_tuple; the output kind matches the input.
+     * Uniqueness is enforced by `fxt::get<T>` — a duplicate type is a compile error.
      *
-     * Note: This function only works with fxt::tuple, not fxt::flat_tuple, because
-     * fxt::flat_tuple does not support get by type.
-     *
-     * @tparam Ts The types of the elements to extract from the tuple
-     * @tparam Args The tuple element types (deduced)
-     * @param tpl The input fxt::tuple (lvalue or rvalue reference)
-     * @return A new fxt::tuple containing only the selected elements
-     *
-     * @throws static_assert If no types are provided
-     *
-     * @section Usage
      * @code
-     * // Direct call with fxt::tuple
-     * auto t = fxt::make_tuple(42, 3.14, "hello", 'x');
-     * auto result = fxt::select<int, char>(t);
-     * // result is fxt::tuple<int, char>{42, 'x'}
+     * auto t  = fxt::make_tuple(42, 3.14, 'x');
+     * auto r  = fxt::tuple_select<int, char>(t);    // fxt::tuple<int, char>{42, 'x'}
      *
-     * // With rvalue
-     * auto result2 = fxt::select<double, const char*>(fxt::make_tuple(1, 2.5, "test"));
-     * // result2 is fxt::tuple<double, const char*>{2.5, "test"}
+     * auto ft = fxt::make_flat_tuple(1, 2.5, std::string("hi"));
+     * auto r2 = fxt::tuple_select<double, int>(ft); // fxt::flat_tuple<double, int>{2.5, 1}
+     * auto r3 = ft | fxt::tuple_select<std::string, int>();
      * @endcode
      */
-    template<typename... Ts, typename... Args>
-    constexpr auto select(fxt::tuple<Args...>& tpl)
+    template<typename... Ts, typename TupleT>
+        requires (impl::is_fxt_tuple_v<std::remove_cvref_t<TupleT>> ||
+                  impl::is_flat_tuple_v<std::remove_cvref_t<TupleT>>)
+              && (sizeof...(Ts) >= 1)
+    constexpr auto tuple_select(TupleT&& tpl)
     {
-        static_assert(sizeof...(Ts) >= 1, "At least one type must be provided");
-        return fxt::make_tuple(std::get<Ts>(tpl)...);
+        if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TupleT>>) {
+            return fxt::make_flat_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
+        } else {
+            return fxt::make_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
+        }
     }
 
-    template<typename... Ts, typename... Args>
-    constexpr auto select(const fxt::tuple<Args...>& tpl)
+    /** @brief Curried type-based `tuple_select<Ts...>` for pipeline usage. */
+    template<typename... Ts>
+        requires (sizeof...(Ts) >= 1)
+    constexpr auto tuple_select()
     {
-        static_assert(sizeof...(Ts) >= 1, "At least one type must be provided");
-        return fxt::make_tuple(std::get<Ts>(tpl)...);
+        return []<typename TupleT>(TupleT&& tpl) {
+            if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TupleT>>) {
+                return fxt::make_flat_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
+            } else {
+                return fxt::make_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
+            }
+        };
     }
 
-    template<typename... Ts, typename... Args>
-    constexpr auto select(fxt::tuple<Args...>&& tpl)
-    {
-        static_assert(sizeof...(Ts) >= 1, "At least one type must be provided");
-        return fxt::make_tuple(std::get<Ts>(std::move(tpl))...);
-    }
+    // ========================================================================
+    // fxt::mtuple_select — monadic index-based projection
+    // ========================================================================
 
     /**
-     * @brief Extract multiple elements from an fxt::tuple by type (curried version for pipeline)
+     * @brief Monadic lift of `tuple_select<Is...>` — projects elements inside a monad.
      *
-     * Returns a lambda that extracts multiple elements of the specified types from an fxt::tuple.
-     * This overload enables pipeline-style usage with the pipe operator.
-     * Uses std::get by type, so each type must appear exactly once in the tuple.
+     * Uses `.transform()` so it works with any monad-like type and supports rvalue pipelines.
+     * For plain-tuple projection use `fxt::tuple_select`.
      *
-     * Note: This function only works with fxt::tuple, not fxt::flat_tuple, because
-     * fxt::flat_tuple does not support get by type.
-     *
-     * @tparam Ts The types of the elements to extract from the tuple
-     * @return A lambda that takes an fxt::tuple and returns a new tuple with the selected elements
-     *
-     * @throws static_assert If no types are provided
-     *
-     * @section Usage
      * @code
-     * // Pipe operator with fxt::tuple
-     * auto t = fxt::make_tuple(42, 3.14, "hello", 'x');
-     * auto result = t | fxt::select<int, double>();
-     * // result is fxt::tuple<int, double>{42, 3.14}
+     * auto exp = fxt::expected<fxt::tuple<int, double, std::string>, Error>{
+     *     fxt::make_tuple(1, 2.0, "three")};
+     * auto r = exp | fxt::mtuple_select<0, 2>();
+     * // fxt::expected<fxt::tuple<int, std::string>, Error>{1, "three"}
+     * @endcode
+     */
+    template<std::size_t... Is>
+    constexpr auto mtuple_select()
+    {
+        static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
+        return []<typename TMonad>(TMonad&& monad) {
+            return std::forward<TMonad>(monad).transform([](auto&& tpl) {
+                using TupleT = std::remove_cvref_t<decltype(tpl)>;
+                if constexpr (impl::is_fxt_tuple_v<TupleT>) {
+                    return fxt::make_tuple(fxt::get<Is>(std::forward<decltype(tpl)>(tpl))...);
+                } else {
+                    return fxt::make_flat_tuple(fxt::get<Is>(std::forward<decltype(tpl)>(tpl))...);
+                }
+            });
+        };
+    }
+
+    // ========================================================================
+    // fxt::mtuple_select — monadic type-based projection
+    // ========================================================================
+
+    /**
+     * @brief Monadic lift of `tuple_select<Ts...>` — projects elements by type inside a monad.
      *
-     * // Chaining with other operations
-     * auto result2 = fxt::make_tuple(1, 2.5, "test", true)
-     *              | fxt::select<double, bool>();
-     * // result2 is fxt::tuple<double, bool>{2.5, true}
+     * Works with both fxt::tuple and fxt::flat_tuple inside the monad; the output kind matches
+     * the inner tuple type. Each selected type must appear exactly once.
+     *
+     * @code
+     * auto exp = fxt::expected<fxt::tuple<int, double, std::string>, Error>{
+     *     fxt::make_tuple(1, 2.0, "three")};
+     * auto r = exp | fxt::mtuple_select<int, std::string>();
+     * // fxt::expected<fxt::tuple<int, std::string>, Error>{1, "three"}
+     *
+     * auto opt = fxt::optional<fxt::flat_tuple<int, double, std::string>>{
+     *     fxt::make_flat_tuple(7, 3.14, std::string("hi"))};
+     * auto r2 = opt | fxt::mtuple_select<double, int>();
+     * // fxt::optional<fxt::flat_tuple<double, int>>{3.14, 7}
      * @endcode
      */
     template<typename... Ts>
         requires (sizeof...(Ts) >= 1)
-    constexpr auto select()
+    constexpr auto mtuple_select()
     {
-        return []<typename... Args>(auto&& tpl) -> fxt::tuple<Ts...> {
-            return fxt::make_tuple(std::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
+        return []<typename TMonad>(TMonad&& monad) {
+            return std::forward<TMonad>(monad).transform([](auto&& tpl) {
+                using TupleT = std::remove_cvref_t<decltype(tpl)>;
+                if constexpr (impl::is_flat_tuple_v<TupleT>) {
+                    return fxt::make_flat_tuple(fxt::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
+                } else {
+                    return fxt::make_tuple(fxt::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
+                }
+            });
         };
     }
+
+    // ========================================================================
+    // Deprecated aliases
+    // ========================================================================
+
+    // select<Is...> (index-based)
+    template<std::size_t... Is, typename Tuple>
+    [[deprecated("Use fxt::tuple_select")]]
+    constexpr auto select(Tuple&& tpl)
+        -> decltype(tuple_select<Is...>(std::forward<Tuple>(tpl)))
+    {
+        return tuple_select<Is...>(std::forward<Tuple>(tpl));
+    }
+
+    template<std::size_t... Is>
+    [[deprecated("Use fxt::tuple_select")]]
+    constexpr auto select() { return tuple_select<Is...>(); }
+
+    // select<Ts...> (type-based, fxt::tuple only)
+    template<typename... Ts, typename TupleT>
+        requires impl::is_fxt_tuple_v<std::remove_cvref_t<TupleT>>
+              && (sizeof...(Ts) >= 1)
+    [[deprecated("Use fxt::tuple_select")]]
+    constexpr auto select(TupleT&& tpl)
+        -> decltype(tuple_select<Ts...>(std::forward<TupleT>(tpl)))
+    {
+        return tuple_select<Ts...>(std::forward<TupleT>(tpl));
+    }
+
+    template<typename... Ts>
+        requires (sizeof...(Ts) >= 1)
+    [[deprecated("Use fxt::tuple_select")]]
+    constexpr auto select() { return tuple_select<Ts...>(); }
+
+    // mselect<Is...> (index-based monadic)
+    template<std::size_t... Is>
+    [[deprecated("Use fxt::mtuple_select")]]
+    constexpr auto mselect() { return mtuple_select<Is...>(); }
+
+    // mselect<Ts...> (type-based monadic)
+    template<typename... Ts>
+        requires (sizeof...(Ts) >= 1)
+    [[deprecated("Use fxt::mtuple_select")]]
+    constexpr auto mselect() { return mtuple_select<Ts...>(); }
 
 }    // namespace fxt

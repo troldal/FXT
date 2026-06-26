@@ -189,7 +189,7 @@ TEST_CASE("mtransform_tuple with fxt::expected<fxt::tuple> - pipe operator", "[m
         auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::make_tuple(1, 2, 3)};
         auto result = exp
             | fxt::mtuple_transform([](auto x) { return x * 2; })
-            | fxt::mselect<0, 2>();
+            | fxt::mtuple_select<0, 2>();
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(result.value()) == 2);
@@ -290,7 +290,7 @@ TEST_CASE("mtransform_tuple with fxt::optional<fxt::tuple> - pipe operator", "[m
         auto opt = fxt::optional<fxt::tuple<int, int, int, int>>{fxt::make_tuple(2, 4, 6, 8)};
         auto result = opt
             | fxt::mtuple_transform([](auto x) { return x / 2; })
-            | fxt::mselect<1, 3>();
+            | fxt::mtuple_select<1, 3>();
 
         REQUIRE(result.has_value());
         REQUIRE(fxt::get<0>(result.value()) == 2);
