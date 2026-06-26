@@ -67,7 +67,6 @@
 #pragma once
 
 #include <utility>
-#include <functional>
 
 namespace fxt
 {

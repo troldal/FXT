@@ -73,9 +73,7 @@
 
 #include <tuple>
 #include <utility>
-#include "Tuple.hpp"
 #include "FlatTuple.hpp"
-#include "TupleSize.hpp"
 #include "TupleAppend.hpp"
 
 namespace fxt
@@ -256,15 +254,15 @@ namespace fxt
     template<std::size_t X, typename Container>
     constexpr auto mdrop(Container&& container)
     {
-        return std::forward<Container>(container).transform([](auto&& tpl) {
-            constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<decltype(tpl)>>;
+        return std::forward<Container>(container).transform([]<typename TValue>(TValue&& tpl) {
+            constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
             static_assert(X <= tupleSize, "Cannot drop more elements than the tuple size");
 
             return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<decltype(tpl)>>) {
-                    return fxt::make_tuple(fxt::get<Indices + X>(std::forward<decltype(tpl)>(tpl))...);
-                } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<decltype(tpl)>>) {
-                    return fxt::make_flat_tuple(fxt::get<Indices + X>(std::forward<decltype(tpl)>(tpl))...);
+                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<TValue>>) {
+                    return fxt::make_tuple(fxt::get<Indices + X>(std::forward<TValue>(tpl))...);
+                } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TValue>>) {
+                    return fxt::make_flat_tuple(fxt::get<Indices + X>(std::forward<TValue>(tpl))...);
                 }
             }(std::make_index_sequence<tupleSize - X>{});
         });
@@ -341,15 +339,15 @@ namespace fxt
     template<std::size_t X, typename Container>
     constexpr auto mdrop_last(Container&& container)
     {
-        return std::forward<Container>(container).transform([](auto&& tpl) {
-            constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<decltype(tpl)>>;
+        return std::forward<Container>(container).transform([]<typename TValue>(TValue&& tpl) {
+            constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
             static_assert(X <= tupleSize, "Cannot drop more elements than the tuple size");
 
             return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<decltype(tpl)>>) {
-                    return fxt::make_tuple(fxt::get<Indices>(std::forward<decltype(tpl)>(tpl))...);
-                } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<decltype(tpl)>>) {
-                    return fxt::make_flat_tuple(fxt::get<Indices>(std::forward<decltype(tpl)>(tpl))...);
+                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<TValue>>) {
+                    return fxt::make_tuple(fxt::get<Indices>(std::forward<TValue>(tpl))...);
+                } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TValue>>) {
+                    return fxt::make_flat_tuple(fxt::get<Indices>(std::forward<TValue>(tpl))...);
                 }
             }(std::make_index_sequence<tupleSize - X>{});
         });

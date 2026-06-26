@@ -107,11 +107,7 @@
 
 #include "Apply.hpp"
 #include "TupleAppend.hpp"
-#include "Tuple.hpp"
 #include "FlatTuple.hpp"
-#include "../concepts/IsExpected.hpp"
-#include "../concepts/IsOptional.hpp"
-#include "../utils/Unit.hpp"
 #include <concepts>
 #include <type_traits>
 #include <utility>
@@ -296,7 +292,7 @@ namespace fxt
         TFunction function;
 
         // Case 1: monadic<tuple> + monadic return → and_then, then append inner value
-        template<typename TArg, typename TTuple = typename std::remove_cvref_t<TArg>::value_type>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
                   && impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>
@@ -304,14 +300,14 @@ namespace fxt
         {
             return std::forward<TArg>(arg).and_then([this](const TTuple& tuple) {
                 auto result = fxt::apply(function, tuple);
-                return result.transform([&tuple](auto&& value) {
-                    return fxt::tuple_append(tuple, std::forward<decltype(value)>(value));
+                return result.transform([&tuple]<typename TValue>(TValue&& value) {
+                    return fxt::tuple_append(tuple, std::forward<TValue>(value));
                 });
             });
         }
 
         // Case 2: monadic<tuple> + void return → transform, keep tuple unchanged
-        template<typename TArg, typename TTuple = typename std::remove_cvref_t<TArg>::value_type>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
                   && std::same_as<typename impl::tuple_elements<std::remove_cvref_t<TTuple>>::template invoke_result_t<TFunction>, void>
@@ -324,7 +320,7 @@ namespace fxt
         }
 
         // Case 3: monadic<tuple> + plain return → transform, append result to tuple
-        template<typename TArg, typename TTuple = typename std::remove_cvref_t<TArg>::value_type>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
                   && (!impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>)

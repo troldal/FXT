@@ -107,11 +107,7 @@
 #pragma once
 
 #include "Apply.hpp"
-#include "Tuple.hpp"
 #include "FlatTuple.hpp"
-#include "../concepts/IsExpected.hpp"
-#include "../concepts/IsOptional.hpp"
-#include "../utils/Unit.hpp"
 #include <concepts>
 #include <type_traits>
 #include <utility>
@@ -139,7 +135,7 @@ namespace fxt
     constexpr auto tuple_apply_replace(F&& f, TTuple&& t)
     {
         using CleanTuple = std::remove_cvref_t<TTuple>;
-        using result_type = typename impl::tuple_elements<CleanTuple>::template invoke_result_t<F>;
+        using result_type = impl::tuple_elements<CleanTuple>::template invoke_result_t<F>;
         if constexpr (std::is_void_v<result_type>) {
             fxt::apply(std::forward<F>(f), std::forward<TTuple>(t));
             if constexpr (impl::is_flat_tuple_v<CleanTuple>) {
@@ -208,7 +204,7 @@ namespace fxt
         TFunction function;
 
         // Case 1: monadic<tuple> + monadic return → and_then, wrap inner value in tuple
-        template<typename TArg, typename TTuple = typename std::remove_cvref_t<TArg>::value_type>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
                   && impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>
@@ -216,25 +212,25 @@ namespace fxt
         {
             return std::forward<TArg>(arg).and_then([this](auto&& tuple) {
                 auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
-                return result.transform([](auto&& value) {
+                return result.transform([]<typename TValue>(TValue&& value) {
                     if constexpr (impl::is_flat_tuple_v<TTuple>) {
-                        return fxt::make_flat_tuple(std::forward<decltype(value)>(value));
+                        return fxt::make_flat_tuple(std::forward<TValue>(value));
                     } else {
-                        return fxt::make_tuple(std::forward<decltype(value)>(value));
+                        return fxt::make_tuple(std::forward<TValue>(value));
                     }
                 });
             });
         }
 
         // Case 2: monadic<tuple> + void return → transform, return empty tuple
-        template<typename TArg, typename TTuple = typename std::remove_cvref_t<TArg>::value_type>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
                   && std::same_as<typename impl::tuple_elements<std::remove_cvref_t<TTuple>>::template invoke_result_t<TFunction>, void>
         auto operator()(TArg&& arg) const
         {
-            return std::forward<TArg>(arg).transform([this](auto&& tuple) {
-                fxt::apply(function, std::forward<decltype(tuple)>(tuple));
+            return std::forward<TArg>(arg).transform([this]<typename TValue>(TValue&& tuple) {
+                fxt::apply(function, std::forward<TValue>(tuple));
                 if constexpr (impl::is_flat_tuple_v<TTuple>) {
                     return fxt::flat_tuple<>{};
                 } else {
@@ -244,15 +240,15 @@ namespace fxt
         }
 
         // Case 3: monadic<tuple> + plain return → transform, wrap value in tuple
-        template<typename TArg, typename TTuple = typename std::remove_cvref_t<TArg>::value_type>
+        template<typename TArg, typename TTuple = std::remove_cvref_t<TArg>::value_type>
             requires impl::monadic_container<std::remove_cvref_t<TArg>>
                   && tuple_like<std::remove_cvref_t<TTuple>>
                   && (!impl::tuple_elements<std::remove_cvref_t<TTuple>>::template returns_monadic_v<TFunction>)
                   && (!std::same_as<typename impl::tuple_elements<std::remove_cvref_t<TTuple>>::template invoke_result_t<TFunction>, void>)
         auto operator()(TArg&& arg) const
         {
-            return std::forward<TArg>(arg).transform([this](auto&& tuple) {
-                auto result = fxt::apply(function, std::forward<decltype(tuple)>(tuple));
+            return std::forward<TArg>(arg).transform([this]<typename TValue>(TValue&& tuple) {
+                auto result = fxt::apply(function, std::forward<TValue>(tuple));
                 if constexpr (impl::is_flat_tuple_v<TTuple>) {
                     return fxt::make_flat_tuple(std::move(result));
                 } else {
