@@ -1,7 +1,7 @@
 ﻿//
-// Demo: fxt::mzip
+// Demo: fxt::mtuple_zip
 //
-// fxt::mzip combines N monadic values (all fxt::optional, or all fxt::expected
+// fxt::mtuple_zip combines N monadic values (all fxt::optional, or all fxt::expected
 // with the same error type) into a single monad containing an fxt::tuple of
 // their unwrapped values. It short-circuits on the first empty/error input.
 //
@@ -16,7 +16,7 @@
 //
 // becomes:
 //
-//     auto fullName = fxt::mzip(firstName, lastName, title)
+//     auto fullName = fxt::mtuple_zip(firstName, lastName, title)
 //                   | fxt::mtuple_apply([](auto f, auto l, auto t) {
 //                         return std::format("{} {} {}", t, f, l);
 //                     });
@@ -43,7 +43,7 @@ void example_linq_style_expected()
     auto lastName  = E{ "Doe" };
     auto title     = E{ "Dr." };
 
-    auto fullName = fxt::mzip(firstName, lastName, title)
+    auto fullName = fxt::mtuple_zip(firstName, lastName, title)
                   | fxt::mtuple_apply([](const std::string& f,
                                    const std::string& l,
                                    const std::string& t) {
@@ -71,7 +71,7 @@ void example_heterogeneous_types()
     auto c = fxt::expected<std::string, std::string>{ "hello" };
 
     // mzip alone produces a monad<tuple<...>>
-    auto zipped = fxt::mzip(a, b, c);
+    auto zipped = fxt::mtuple_zip(a, b, c);
 
     if (zipped) {
         std::cout << "   mzip(a, b, c) = ("
@@ -96,7 +96,7 @@ void example_short_circuit_expected()
     auto b = E{ fxt::unexpected{ std::string{ "b failed" } } };
     auto c = E{ fxt::unexpected{ std::string{ "c failed" } } };
 
-    auto result = fxt::mzip(a, b, c)
+    auto result = fxt::mtuple_zip(a, b, c)
                 | fxt::mtuple_apply([](int x, int y, int z) { return x + y + z; });
 
     if (!result) {
@@ -117,7 +117,7 @@ void example_short_circuit_optional()
     auto b = fxt::optional<int>{ 20 };
     auto c = fxt::optional<int>{ 30 };
 
-    auto sum = fxt::mzip(a, b, c)
+    auto sum = fxt::mtuple_zip(a, b, c)
              | fxt::mtuple_apply([](int x, int y, int z) { return x + y + z; });
 
     if (sum) {
@@ -125,7 +125,7 @@ void example_short_circuit_optional()
     }
 
     auto bEmpty = fxt::optional<int>{};
-    auto sum2   = fxt::mzip(a, bEmpty, c)
+    auto sum2   = fxt::mtuple_zip(a, bEmpty, c)
                 | fxt::mtuple_apply([](int x, int y, int z) { return x + y + z; });
 
     if (!sum2) {
@@ -145,7 +145,7 @@ void example_single_argument()
     auto a = fxt::expected<int, std::string>{ 7 };
 
     // mzip with a single argument lifts the value into a 1-tuple inside the monad.
-    auto lifted = fxt::mzip(a);
+    auto lifted = fxt::mtuple_zip(a);
 
     if (lifted) {
         std::cout << "   mzip(expected<int>{7}) -> expected<tuple<int>> containing ("
@@ -167,7 +167,7 @@ void example_compose_with_mtuple_append()
     auto z = fxt::expected<int, std::string>{ 3 };
 
     // Start with mzip, then keep appending more values (plain or monadic).
-    auto result = fxt::mzip(x, y)
+    auto result = fxt::mtuple_zip(x, y)
                 | fxt::mtuple_append(z)
                 | fxt::mtuple_append(100, 200);
 
@@ -215,7 +215,7 @@ void example_realistic_pipeline()
     auto height = parseInt("1080") | fxt::and_then(positive);
     auto depth  = parseInt("24")   | fxt::and_then(positive);
 
-    auto pixels = fxt::mzip(width, height, depth)
+    auto pixels = fxt::mtuple_zip(width, height, depth)
                 | fxt::mtuple_apply([](int w, int h, int d) {
                       return static_cast<long long>(w) * h * (d / 8);
                   });
@@ -226,7 +226,7 @@ void example_realistic_pipeline()
 
     // Now make one of them fail.
     auto badHeight = parseInt("-5") | fxt::and_then(positive);
-    auto failed    = fxt::mzip(width, badHeight, depth)
+    auto failed    = fxt::mtuple_zip(width, badHeight, depth)
                    | fxt::mtuple_apply([](int w, int h, int d) {
                          return static_cast<long long>(w) * h * (d / 8);
                      });
@@ -242,7 +242,7 @@ void example_realistic_pipeline()
 
 int main()
 {
-    std::cout << "\n=== fxt::mzip Demo ===\n\n";
+    std::cout << "\n=== fxt::mtuple_zip Demo ===\n\n";
 
     example_linq_style_expected();
     example_heterogeneous_types();

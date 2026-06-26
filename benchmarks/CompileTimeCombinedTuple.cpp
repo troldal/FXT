@@ -9,7 +9,7 @@ int main() {
     //    | fxt::transform_tuple([](auto x) { return x * 2; })
     //    | fxt::tuple_take<8>
     //    | fxt::transform_tuple([](auto x) { return x + 1; })
-    //    | fxt::drop<2>
+    //    | fxt::tuple_drop<2>
     //    | fxt::transform_tuple([](auto x) { return x * x; });
 
     // Append and transform

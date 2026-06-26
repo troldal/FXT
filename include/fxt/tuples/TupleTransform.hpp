@@ -92,7 +92,7 @@
  * // Chaining operations
  * auto result5 = fxt::tuple{1, 2, 3, 4}
  *     | fxt::tuple_transform([](auto x) { return x * 2; })
- *     | fxt::drop<1>()
+ *     | fxt::tuple_drop<1>()
  *     | fxt::tuple_transform([](auto x) { return x + 1; });
  * // result5 is fxt::tuple<int, int, int>{5, 7, 9}
  * @endcode

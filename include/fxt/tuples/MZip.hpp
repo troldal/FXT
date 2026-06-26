@@ -42,7 +42,7 @@
  * @file MZip.hpp
  * @brief Monadic zip: combine N monadic values into a single monad holding a tuple.
  *
- * fxt::mzip takes N monadic values (all fxt::optional, or all fxt::expected with
+ * fxt::mtuple_zip takes N monadic values (all fxt::optional, or all fxt::expected with
  * the same error type) and returns a single monad containing an fxt::tuple of
  * their unwrapped values. Short-circuits on the first empty/error monad.
  *
@@ -51,8 +51,8 @@
  * @code
  * // from f in firstName, from l in lastName, from t in title
  * // select std::format("{} {} {}", t, f, l)
- * auto fullName = fxt::mzip(firstName, lastName, title)
- *               | fxt::mapply([](auto f, auto l, auto t) {
+ * auto fullName = fxt::mtuple_zip(firstName, lastName, title)
+ *               | fxt::mtuple_apply([](auto f, auto l, auto t) {
  *                     return std::format("{} {} {}", t, f, l);
  *                 });
  * @endcode
@@ -90,19 +90,15 @@ namespace fxt
      * auto b = fxt::expected<double,      std::string>{2.5};
      * auto c = fxt::expected<std::string, std::string>{"three"};
      *
-     * auto zipped = fxt::mzip(a, b, c);
+     * auto zipped = fxt::mtuple_zip(a, b, c);
      * // zipped is fxt::expected<fxt::tuple<int, double, std::string>, std::string>
      * // containing (1, 2.5, "three")
      * @endcode
      */
-    // TODO: NAMING — per the fxt/tuples convention in Tuple.hpp, monadic lifts use
-    //       the `mtuple_` form: rename mzip -> mtuple_zip (keep mzip as a
-    //       [[deprecated]] alias for one release). There is no non-monadic zip; if
-    //       one is added later it should be named tuple_zip.
     template<typename First, typename... Rest>
         requires fxt::monad_like<std::remove_cvref_t<First>>
               && (fxt::monad_like<std::remove_cvref_t<Rest>> && ...)
-    constexpr auto mzip(First&& first, Rest&&... rest)
+    constexpr auto mtuple_zip(First&& first, Rest&&... rest)
     {
         // Wrap the first monad's value into a single-element fxt::tuple.
         auto seed = std::forward<First>(first).transform(
@@ -117,6 +113,14 @@ namespace fxt
             // monadic-value appending with proper short-circuit semantics.
             return fxt::mtuple_append(std::move(seed), std::forward<Rest>(rest)...);
         }
+    }
+
+    template<typename First, typename... Rest>
+    [[deprecated("Use fxt::mtuple_zip")]]
+    constexpr auto mzip(First&& first, Rest&&... rest)
+        -> decltype(mtuple_zip(std::forward<First>(first), std::forward<Rest>(rest)...))
+    {
+        return mtuple_zip(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
 
 }    // namespace fxt

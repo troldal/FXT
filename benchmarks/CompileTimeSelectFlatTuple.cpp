@@ -16,9 +16,9 @@ int main() {
     auto tk3 = fxt::tuple_take<3>(t);
 
     // Drop operations
-    auto dr1 = fxt::drop<5>(t);
-    auto dr2 = fxt::drop<10>(t);
-    auto dr3 = fxt::drop<3>(t);
+    auto dr1 = fxt::tuple_drop<5>(t);
+    auto dr2 = fxt::tuple_drop<10>(t);
+    auto dr3 = fxt::tuple_drop<3>(t);
 
     // Combined operations
     auto combined = fxt::tuple_take<10>(t) | fxt::tuple_transform([](auto x) { return x * 2; });

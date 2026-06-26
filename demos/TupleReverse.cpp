@@ -142,7 +142,7 @@ void example_flat_tuple_pipe() {
     std::cout << "   Initial: (1, 2, 3, 4, 5, 6)\n";
 
     auto result2 = flat2
-        | fxt::drop<2>()
+        | fxt::tuple_drop<2>()
         | fxt::tuple_reverse();
 
     std::cout << "   After | drop<2>() | tuple_reverse(): (6, 5, 4, 3)\n";
@@ -164,7 +164,7 @@ void example_complex_chaining() {
     std::cout << "   Initial tuple: (1, 2, 3, 4, 5, 6, 7, 8)\n";
 
     auto result = initial
-        | fxt::drop<2>()           // Drop first 2: (3, 4, 5, 6, 7, 8)
+        | fxt::tuple_drop<2>()           // Drop first 2: (3, 4, 5, 6, 7, 8)
         | fxt::tuple_take<4>()           // Take first 4: (3, 4, 5, 6)
         | fxt::tuple_reverse();    // Reverse: (6, 5, 4, 3)
 

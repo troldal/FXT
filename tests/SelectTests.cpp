@@ -1209,7 +1209,7 @@ TEST_CASE("select - chaining with other operations on fxt::tuple", "[select][tup
     SECTION("chain drop and select on tuple")
     {
         auto t = fxt::make_tuple(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        auto result = t | fxt::drop<2>() | fxt::tuple_select<0, 2, 4>();
+        auto result = t | fxt::tuple_drop<2>() | fxt::tuple_select<0, 2, 4>();
 
         REQUIRE(std::get<0>(result) == 3);
         REQUIRE(std::get<1>(result) == 5);
@@ -1219,7 +1219,7 @@ TEST_CASE("select - chaining with other operations on fxt::tuple", "[select][tup
     SECTION("chain select and drop_last on tuple")
     {
         auto t = fxt::make_tuple(10, 20, 30, 40, 50, 60, 70);
-        auto result = t | fxt::tuple_select<1, 3, 5, 6>() | fxt::drop_last<1>();
+        auto result = t | fxt::tuple_select<1, 3, 5, 6>() | fxt::tuple_drop_last<1>();
 
         REQUIRE(std::get<0>(result) == 20);
         REQUIRE(std::get<1>(result) == 40);
@@ -1241,7 +1241,7 @@ TEST_CASE("select - chaining with other operations on fxt::flat_tuple", "[select
     SECTION("chain drop and select on flat_tuple")
     {
         auto ft = fxt::make_flat_tuple(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);
-        auto result = ft | fxt::drop<3>() | fxt::tuple_select<0, 2, 4>();
+        auto result = ft | fxt::tuple_drop<3>() | fxt::tuple_select<0, 2, 4>();
 
         REQUIRE(fxt::get<0>(result) == 40);
         REQUIRE(fxt::get<1>(result) == 60);
@@ -1251,7 +1251,7 @@ TEST_CASE("select - chaining with other operations on fxt::flat_tuple", "[select
     SECTION("chain select and drop on flat_tuple")
     {
         auto ft = fxt::make_flat_tuple(5, 10, 15, 20, 25, 30);
-        auto result = ft | fxt::tuple_select<0, 2, 4, 5>() | fxt::drop<1>();
+        auto result = ft | fxt::tuple_select<0, 2, 4, 5>() | fxt::tuple_drop<1>();
 
         REQUIRE(fxt::get<0>(result) == 15);
         REQUIRE(fxt::get<1>(result) == 25);

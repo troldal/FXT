@@ -595,14 +595,14 @@ int main()
     std::cout << "Original fxt::tuple: (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)" << std::endl;
 
     // Chain drop and select
-    auto t6_chain1 = t6 | fxt::drop<2>() | fxt::tuple_select<0, 2, 4>();
+    auto t6_chain1 = t6 | fxt::tuple_drop<2>() | fxt::tuple_select<0, 2, 4>();
     std::cout << "After drop<2>() | select<0, 2, 4>(): ("
               << std::get<0>(t6_chain1) << ", "
               << std::get<1>(t6_chain1) << ", "
               << std::get<2>(t6_chain1) << ")" << std::endl;
 
     // Chain select and drop_last
-    auto t6_chain2 = t6 | fxt::tuple_select<1, 3, 5, 7, 9>() | fxt::drop_last<2>();
+    auto t6_chain2 = t6 | fxt::tuple_select<1, 3, 5, 7, 9>() | fxt::tuple_drop_last<2>();
     std::cout << "After select<1, 3, 5, 7, 9>() | drop_last<2>(): ("
               << std::get<0>(t6_chain2) << ", "
               << std::get<1>(t6_chain2) << ", "
@@ -618,14 +618,14 @@ int main()
     std::cout << "Original flat_tuple: (10, 20, 30, 40, 50, 60, 70, 80, 90, 100)" << std::endl;
 
     // Chain drop and select
-    auto ft6_chain1 = ft6 | fxt::drop<3>() | fxt::tuple_select<0, 2, 4>();
+    auto ft6_chain1 = ft6 | fxt::tuple_drop<3>() | fxt::tuple_select<0, 2, 4>();
     std::cout << "After drop<3>() | select<0, 2, 4>(): ("
               << fxt::get<0>(ft6_chain1) << ", "
               << fxt::get<1>(ft6_chain1) << ", "
               << fxt::get<2>(ft6_chain1) << ")" << std::endl;
 
     // Chain select and drop
-    auto ft6_chain2 = ft6 | fxt::tuple_select<0, 2, 4, 6, 8>() | fxt::drop<1>();
+    auto ft6_chain2 = ft6 | fxt::tuple_select<0, 2, 4, 6, 8>() | fxt::tuple_drop<1>();
     std::cout << "After select<0, 2, 4, 6, 8>() | drop<1>(): ("
               << fxt::get<0>(ft6_chain2) << ", "
               << fxt::get<1>(ft6_chain2) << ", "

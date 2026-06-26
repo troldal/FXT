@@ -72,7 +72,7 @@ int main() {
     print_tuple(tuple1);
     std::cout << "\n";
 
-    auto drop1 = fxt::drop<2>(tuple1);
+    auto drop1 = fxt::tuple_drop<2>(tuple1);
     std::cout << "   After drop<2>: ";
     print_tuple(drop1);
     std::cout << "\n\n";
@@ -84,7 +84,7 @@ int main() {
     print_tuple(tuple2);
     std::cout << "\n";
 
-    auto drop_last2 = fxt::drop_last<2>(tuple2);
+    auto drop_last2 = fxt::tuple_drop_last<2>(tuple2);
     std::cout << "   After drop_last<2>: ";
     print_tuple(drop_last2);
     std::cout << "\n\n";
@@ -96,7 +96,7 @@ int main() {
     print_tuple(mixed);
     std::cout << "\n";
 
-    auto mixed_drop = fxt::drop<2>(mixed);
+    auto mixed_drop = fxt::tuple_drop<2>(mixed);
     std::cout << "   After drop<2>: ";
     print_tuple(mixed_drop);
     std::cout << "\n\n";
@@ -115,7 +115,7 @@ int main() {
     print_fxt_tuple(t1);
     std::cout << "\n";
 
-    auto t1_drop = fxt::drop<2>(t1);
+    auto t1_drop = fxt::tuple_drop<2>(t1);
     std::cout << "   After drop<2>: ";
     print_fxt_tuple(t1_drop);
     std::cout << "\n\n";
@@ -127,7 +127,7 @@ int main() {
     print_fxt_tuple(t2);
     std::cout << "\n";
 
-    auto t2_drop_last = fxt::drop_last<2>(t2);
+    auto t2_drop_last = fxt::tuple_drop_last<2>(t2);
     std::cout << "   After drop_last<2>: ";
     print_fxt_tuple(t2_drop_last);
     std::cout << "\n\n";
@@ -139,7 +139,7 @@ int main() {
     print_fxt_tuple(t3);
     std::cout << "\n";
 
-    auto no_drop = fxt::drop<0>(t3);
+    auto no_drop = fxt::tuple_drop<0>(t3);
     std::cout << "   After drop<0>: ";
     print_fxt_tuple(no_drop);
     std::cout << "\n\n";
@@ -158,7 +158,7 @@ int main() {
     print_flat_tuple(ft1);
     std::cout << "\n";
 
-    auto ft1_drop = fxt::drop<2>(ft1);
+    auto ft1_drop = fxt::tuple_drop<2>(ft1);
     std::cout << "   After drop<2>: ";
     print_flat_tuple(ft1_drop);
     std::cout << "\n\n";
@@ -170,7 +170,7 @@ int main() {
     print_flat_tuple(ft2);
     std::cout << "\n";
 
-    auto ft2_drop_last = fxt::drop_last<2>(ft2);
+    auto ft2_drop_last = fxt::tuple_drop_last<2>(ft2);
     std::cout << "   After drop_last<2>: ";
     print_flat_tuple(ft2_drop_last);
     std::cout << "\n\n";
@@ -189,8 +189,8 @@ int main() {
     print_fxt_tuple(t4);
     std::cout << "\n";
 
-    auto t4_result = t4 | fxt::drop<2>();
-    std::cout << "   t | fxt::drop<2>(): ";
+    auto t4_result = t4 | fxt::tuple_drop<2>();
+    std::cout << "   t | fxt::tuple_drop<2>(): ";
     print_fxt_tuple(t4_result);
     std::cout << "\n\n";
 
@@ -201,8 +201,8 @@ int main() {
     print_fxt_tuple(t5);
     std::cout << "\n";
 
-    auto t5_result = t5 | fxt::drop_last<2>();
-    std::cout << "    t | fxt::drop_last<2>(): ";
+    auto t5_result = t5 | fxt::tuple_drop_last<2>();
+    std::cout << "    t | fxt::tuple_drop_last<2>(): ";
     print_fxt_tuple(t5_result);
     std::cout << "\n\n";
 
@@ -213,7 +213,7 @@ int main() {
     print_fxt_tuple(t6);
     std::cout << "\n";
 
-    auto t6_result = t6 | fxt::drop<2>() | fxt::drop_last<3>();
+    auto t6_result = t6 | fxt::tuple_drop<2>() | fxt::tuple_drop_last<3>();
     std::cout << "    t | drop<2>() | drop_last<3>(): ";
     print_fxt_tuple(t6_result);
     std::cout << " (elements 3-7)\n\n";
@@ -225,7 +225,7 @@ int main() {
     print_flat_tuple(ft3);
     std::cout << "\n";
 
-    auto ft3_result = ft3 | fxt::drop<2>() | fxt::drop_last<2>();
+    auto ft3_result = ft3 | fxt::tuple_drop<2>() | fxt::tuple_drop_last<2>();
     std::cout << "    ft | drop<2>() | drop_last<2>(): ";
     print_flat_tuple(ft3_result);
     std::cout << "\n\n";
@@ -246,7 +246,7 @@ int main() {
     print_expected(exp1);
     std::cout << "\n";
 
-    auto exp1_result = fxt::mdrop<2>(exp1);
+    auto exp1_result = fxt::mtuple_drop<2>(exp1);
     std::cout << "    After mdrop<2>: ";
     print_expected(exp1_result);
     std::cout << "\n\n";
@@ -260,7 +260,7 @@ int main() {
     print_expected(exp2);
     std::cout << "\n";
 
-    auto exp2_result = fxt::mdrop_last<2>(exp2);
+    auto exp2_result = fxt::mtuple_drop_last<2>(exp2);
     std::cout << "    After mdrop_last<2>: ";
     print_expected(exp2_result);
     std::cout << "\n\n";
@@ -274,7 +274,7 @@ int main() {
     print_expected(exp3);
     std::cout << "\n";
 
-    auto exp3_result = fxt::mdrop<2>(exp3);
+    auto exp3_result = fxt::mtuple_drop<2>(exp3);
     std::cout << "    After mdrop<2>: ";
     print_expected(exp3_result);
     std::cout << " (error preserved)\n\n";
@@ -295,7 +295,7 @@ int main() {
     print_expected(exp_ft1);
     std::cout << "\n";
 
-    auto exp_ft1_result = fxt::mdrop<2>(exp_ft1);
+    auto exp_ft1_result = fxt::mtuple_drop<2>(exp_ft1);
     std::cout << "    After mdrop<2>: ";
     print_expected(exp_ft1_result);
     std::cout << "\n\n";
@@ -309,7 +309,7 @@ int main() {
     print_expected(exp_ft2);
     std::cout << "\n";
 
-    auto exp_ft2_result = fxt::mdrop_last<2>(exp_ft2);
+    auto exp_ft2_result = fxt::mtuple_drop_last<2>(exp_ft2);
     std::cout << "    After mdrop_last<2>: ";
     print_expected(exp_ft2_result);
     std::cout << "\n\n";
@@ -330,8 +330,8 @@ int main() {
     print_expected(exp4);
     std::cout << "\n";
 
-    auto exp4_result = exp4 | fxt::mdrop<2>();
-    std::cout << "    exp | fxt::mdrop<2>(): ";
+    auto exp4_result = exp4 | fxt::mtuple_drop<2>();
+    std::cout << "    exp | fxt::mtuple_drop<2>(): ";
     print_expected(exp4_result);
     std::cout << "\n\n";
 
@@ -344,8 +344,8 @@ int main() {
     print_expected(exp5);
     std::cout << "\n";
 
-    auto exp5_result = exp5 | fxt::mdrop_last<2>();
-    std::cout << "    exp | fxt::mdrop_last<2>(): ";
+    auto exp5_result = exp5 | fxt::mtuple_drop_last<2>();
+    std::cout << "    exp | fxt::mtuple_drop_last<2>(): ";
     print_expected(exp5_result);
     std::cout << "\n\n";
 
@@ -358,7 +358,7 @@ int main() {
     print_expected(exp6);
     std::cout << "\n";
 
-    auto exp6_result = exp6 | fxt::mdrop<2>() | fxt::mdrop_last<2>();
+    auto exp6_result = exp6 | fxt::mtuple_drop<2>() | fxt::mtuple_drop_last<2>();
     std::cout << "    exp | mdrop<2>() | mdrop_last<2>(): ";
     print_expected(exp6_result);
     std::cout << " (elements 3-6)\n\n";
@@ -372,7 +372,7 @@ int main() {
     print_expected(exp7);
     std::cout << "\n";
 
-    auto exp7_result = exp7 | fxt::mdrop<1>() | fxt::mdrop_last<1>();
+    auto exp7_result = exp7 | fxt::mtuple_drop<1>() | fxt::mtuple_drop_last<1>();
     std::cout << "    exp | mdrop<1>() | mdrop_last<1>(): ";
     print_expected(exp7_result);
     std::cout << " (error propagates)\n\n";
@@ -395,14 +395,14 @@ int main() {
     print_fxt_tuple(direct_tuple);
     std::cout << "\n";
     std::cout << "    Direct tuple | drop<2>(): ";
-    print_fxt_tuple(direct_tuple | fxt::drop<2>());
+    print_fxt_tuple(direct_tuple | fxt::tuple_drop<2>());
     std::cout << "\n\n";
 
     std::cout << "    Monadic tuple: ";
     print_expected(monadic_tuple);
     std::cout << "\n";
     std::cout << "    Monadic tuple | mdrop<2>(): ";
-    print_expected(monadic_tuple | fxt::mdrop<2>());
+    print_expected(monadic_tuple | fxt::mtuple_drop<2>());
     std::cout << "\n\n";
 
     // ========================================================================
@@ -429,8 +429,8 @@ int main() {
     std::cout << "\n";
 
     // Extract payload by dropping header fields and checksum
-    auto without_header = message | fxt::drop<3>();  // Skip header, version, type
-    auto payload = without_header | fxt::drop_last<1>();  // Skip checksum
+    auto without_header = message | fxt::tuple_drop<3>();  // Skip header, version, type
+    auto payload = without_header | fxt::tuple_drop_last<1>();  // Skip checksum
     std::cout << "    Extracted payload (data only): ";
     print_fxt_tuple(payload);
     std::cout << "\n\n";
@@ -443,7 +443,7 @@ int main() {
     std::cout << "\n";
 
     // Drop first 2 elements, then drop last 2 elements
-    auto middle = data | fxt::drop<2>() | fxt::drop_last<2>();
+    auto middle = data | fxt::tuple_drop<2>() | fxt::tuple_drop_last<2>();
     std::cout << "    Middle elements (drop<2> then drop_last<2>): ";
     print_fxt_tuple(middle);
     std::cout << "\n\n";
@@ -460,8 +460,8 @@ int main() {
     auto t7 = fxt::make_tuple(10, 20, 30);
     auto exp8 = fxt::expected<fxt::tuple<int, int, int>, std::string>{fxt::make_tuple(10, 20, 30)};
 
-    auto t7_empty = fxt::drop<3>(t7);
-    auto exp8_empty = exp8 | fxt::mdrop<3>();
+    auto t7_empty = fxt::tuple_drop<3>(t7);
+    auto exp8_empty = exp8 | fxt::mtuple_drop<3>();
     std::cout << "    drop<3> on 3-element tuple: ";
     print_fxt_tuple(t7_empty);
     std::cout << " (empty)\n";
@@ -476,14 +476,14 @@ int main() {
 
     std::cout << "    Tuple chain: ";
     print_fxt_tuple(complex_tuple);
-    auto complex_result1 = complex_tuple | fxt::drop<2>() | fxt::drop_last<2>();
+    auto complex_result1 = complex_tuple | fxt::tuple_drop<2>() | fxt::tuple_drop_last<2>();
     std::cout << " -> drop<2>() -> drop_last<2>() = ";
     print_fxt_tuple(complex_result1);
     std::cout << "\n";
 
     std::cout << "    FlatTuple chain: ";
     print_flat_tuple(complex_ft);
-    auto complex_result2 = complex_ft | fxt::drop<2>() | fxt::drop_last<2>();
+    auto complex_result2 = complex_ft | fxt::tuple_drop<2>() | fxt::tuple_drop_last<2>();
     std::cout << " -> drop<2>() -> drop_last<2>() = ";
     print_flat_tuple(complex_result2);
     std::cout << "\n\n";

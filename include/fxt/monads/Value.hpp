@@ -54,7 +54,7 @@ namespace fxt
      * to obtain the adaptor — write `fxt::value()`, not `fxt::value`, in expressions.
      *
      * Note: `fxt::value` follows the same nullary-factory convention as `fxt::join()`,
-     * `fxt::to_optional()`, `fxt::take<N>()`, and `fxt::drop<N>()`. These all differ
+     * `fxt::to_optional()`, `fxt::take<N>()`, and `fxt::tuple_drop<N>()`. These all differ
      * from adaptors such as `fxt::and_then(f)` and `fxt::transform(f)`, which accept
      * a function argument and immediately return the adaptor without a trailing `()`.
      *
