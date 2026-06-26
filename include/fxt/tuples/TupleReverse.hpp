@@ -272,7 +272,7 @@ namespace fxt
      * // Chaining with other monadic operations
      * auto exp2 = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::tuple{1, 2, 3}};
      * auto result5 = exp2
-     *     | fxt::mtransform_tuple([](auto x) { return x * 2; })
+     *     | fxt::mtuple_transform([](auto x) { return x * 2; })
      *     | fxt::mtuple_reverse();
      * // result5 is fxt::expected<fxt::tuple<int, int, int>, Error> containing {6, 4, 2}
      * @endcode

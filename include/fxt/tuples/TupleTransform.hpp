@@ -130,30 +130,26 @@ namespace fxt
      * @code
      * // Direct call with fxt::tuple
      * auto t = fxt::make_tuple(1, 2, 3);
-     * auto result = fxt::transform_tuple([](auto x) { return x * 2; }, t);
+     * auto result = fxt::tuple_transform([](auto x) { return x * 2; }, t);
      * // result is fxt::tuple<int, int, int>{2, 4, 6}
      *
      * // Direct call with fxt::flat_tuple
      * auto ft = fxt::make_flat_tuple(1.0, 2.0, 3.0);
-     * auto result2 = fxt::transform_tuple([](auto x) { return x + 1.0; }, ft);
+     * auto result2 = fxt::tuple_transform([](auto x) { return x + 1.0; }, ft);
      * // result2 is fxt::flat_tuple<double, double, double>{2.0, 3.0, 4.0}
      *
      * // With different return types
      * auto t2 = fxt::make_tuple(1, 2, 3);
-     * auto result3 = fxt::transform_tuple([](auto x) { return std::to_string(x); }, t2);
+     * auto result3 = fxt::tuple_transform([](auto x) { return std::to_string(x); }, t2);
      * // result3 is fxt::tuple<std::string, std::string, std::string>
      * @endcode
      */
-    // TODO: DOCS — the examples in this file's doc comments call `fxt::transform_tuple` /
-    //       `fxt::mtransform_tuple`, but the functions are named tuple_transform /
-    //       mtuple_transform. The stale names also appear in examples in FlatTuple.hpp,
-    //       Take.hpp, Drop.hpp, TupleAppend.hpp and TuplePrepend.hpp — fix them everywhere,
-    //       or provide aliases under the documented names.
-    // TODO: CONSISTENCY — argument order is (f, tuple) here, while apply_append/apply_replace
-    //       use (f, tuple) but tuple_append/tuple_cat use (tuple, values...). Within the
-    //       m-prefixed family, mtuple_transform(f, container) takes the function first while
-    //       mtuple_append(container, values...) takes the container first — consider a
-    //       uniform parameter order for direct-call forms.
+    // Argument order follows std::apply(f, t) — function first, then the container.
+    // tuple_append / mtuple_append use the opposite order (tuple/container first) because
+    // their primary form is the curried adaptor built around the appended values, not
+    // around the container; the direct-call mirrors that choice. The two conventions
+    // are deliberately kept consistent within their own families rather than forced
+    // into a single global rule.
     template<typename F, typename Tuple>
         requires tuple_like<std::remove_cvref_t<Tuple>>
     constexpr auto tuple_transform(F&& f, Tuple&& tpl)
@@ -184,18 +180,18 @@ namespace fxt
      * @code
      * // Pipe operator with fxt::tuple
      * auto t = fxt::make_tuple(1, 2, 3);
-     * auto result = t | fxt::transform_tuple([](auto x) { return x * 2; });
+     * auto result = t | fxt::tuple_transform([](auto x) { return x * 2; });
      * // result is fxt::tuple<int, int, int>{2, 4, 6}
      *
      * // Pipe operator with fxt::flat_tuple
      * auto ft = fxt::make_flat_tuple(1.0, 2.0, 3.0);
-     * auto result2 = ft | fxt::transform_tuple([](auto x) { return x + 1.0; });
+     * auto result2 = ft | fxt::tuple_transform([](auto x) { return x + 1.0; });
      * // result2 is fxt::flat_tuple<double, double, double>{2.0, 3.0, 4.0}
      *
      * // Chaining with other operations
      * auto t2 = fxt::make_tuple(1, 2, 3, 4);
      * auto result3 = t2
-     *     | fxt::transform_tuple([](auto x) { return x * 2; })
+     *     | fxt::tuple_transform([](auto x) { return x * 2; })
      *     | fxt::take<2>();
      * // result3 is fxt::tuple<int, int>{2, 4}
      * @endcode
@@ -209,7 +205,7 @@ namespace fxt
     }
 
     // ========================================================================
-    // fxt::mtransform_tuple - Monadic transform for tuples
+    // fxt::mtuple_transform - Monadic transform for tuples
     // ========================================================================
 
     /**
@@ -229,17 +225,17 @@ namespace fxt
      * @code
      * // With fxt::expected containing fxt::tuple
      * auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::make_tuple(1, 2, 3)};
-     * auto result = fxt::mtransform_tuple([](auto x) { return x * 2; }, exp);
+     * auto result = fxt::mtuple_transform([](auto x) { return x * 2; }, exp);
      * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 4, 6}
      *
      * // With fxt::optional containing fxt::flat_tuple
      * auto opt = fxt::optional<fxt::flat_tuple<double, double>>{fxt::make_flat_tuple(1.0, 2.0)};
-     * auto result2 = fxt::mtransform_tuple([](auto x) { return x + 1.0; }, opt);
+     * auto result2 = fxt::mtuple_transform([](auto x) { return x + 1.0; }, opt);
      * // result2 is fxt::optional<fxt::flat_tuple<double, double>> containing {2.0, 3.0}
      *
      * // With different return types
      * auto exp2 = fxt::expected<fxt::tuple<int, int>, Error>{fxt::make_tuple(1, 2)};
-     * auto result3 = fxt::mtransform_tuple([](auto x) { return std::to_string(x); }, exp2);
+     * auto result3 = fxt::mtuple_transform([](auto x) { return std::to_string(x); }, exp2);
      * // result3 is fxt::expected<fxt::tuple<std::string, std::string>, Error>
      * @endcode
      */
@@ -266,29 +262,29 @@ namespace fxt
      * @code
      * // Pipe operator with fxt::expected containing fxt::tuple
      * auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::make_tuple(1, 2, 3)};
-     * auto result = exp | fxt::mtransform_tuple([](auto x) { return x * 2; });
+     * auto result = exp | fxt::mtuple_transform([](auto x) { return x * 2; });
      * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 4, 6}
      *
      * // Pipe operator with fxt::optional containing fxt::flat_tuple
      * auto opt = fxt::optional<fxt::flat_tuple<double, double>>{fxt::make_flat_tuple(1.0, 2.0)};
-     * auto result2 = opt | fxt::mtransform_tuple([](auto x) { return x + 1.0; });
+     * auto result2 = opt | fxt::mtuple_transform([](auto x) { return x + 1.0; });
      * // result2 is fxt::optional<fxt::flat_tuple<double, double>> containing {2.0, 3.0}
      *
      * // Chaining with other monadic operations
      * auto exp2 = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::make_tuple(1, 2, 3)};
      * auto result3 = exp2
-     *     | fxt::mtransform_tuple([](auto x) { return x * 2; })
+     *     | fxt::mtuple_transform([](auto x) { return x * 2; })
      *     | fxt::mselect<0, 2>();
      * // result3 is fxt::expected<fxt::tuple<int, int>, Error> containing {2, 6}
      *
      * // Error propagation
      * auto exp_err = fxt::expected<fxt::tuple<int, int>, Error>{fxt::unexpected{Error{}}};
-     * auto result4 = exp_err | fxt::mtransform_tuple([](auto x) { return x * 2; });
+     * auto result4 = exp_err | fxt::mtuple_transform([](auto x) { return x * 2; });
      * // result4 is fxt::expected<fxt::tuple<int, int>, Error> containing the error
      *
      * // None propagation
      * auto opt_none = fxt::optional<fxt::tuple<int, int>>{};
-     * auto result5 = opt_none | fxt::mtransform_tuple([](auto x) { return x * 2; });
+     * auto result5 = opt_none | fxt::mtuple_transform([](auto x) { return x * 2; });
      * // result5 is fxt::optional<fxt::tuple<int, int>> containing nullopt
      * @endcode
      */

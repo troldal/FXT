@@ -299,7 +299,7 @@ namespace fxt
      * auto exp2 = fxt::expected<fxt::tuple<int, int, int, int, int>, Error>{fxt::make_tuple(1, 2, 3, 4, 5)};
      * auto result4 = exp2
      *     | fxt::mdrop<2>()
-     *     | fxt::mtransform_tuple([](auto x) { return x * 2; });
+     *     | fxt::mtuple_transform([](auto x) { return x * 2; });
      * // result4 is fxt::expected<fxt::tuple<int, int, int>, Error> containing {6, 8, 10}
      * @endcode
      */

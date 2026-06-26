@@ -415,7 +415,7 @@ namespace fxt
      *
      * // Chaining with other monadic operations
      * auto result4 = exp
-     *     | fxt::mtransform_tuple([](auto x) { return x * 2; })
+     *     | fxt::mtuple_transform([](auto x) { return x * 2; })
      *     | fxt::mtuple_prepend(5, 6);
      * // result4 is fxt::expected<fxt::tuple<int, int, int, int>, Error> containing {5, 6, 2, 4}
      *
