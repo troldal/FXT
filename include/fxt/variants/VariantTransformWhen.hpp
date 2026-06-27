@@ -63,7 +63,8 @@ namespace fxt
      * @tparam F The transformation function type (deduced)
      * @param variant The variant to check and potentially transform
      * @param func The transformation function to apply if the variant holds type T
-     * @return The variant (potentially transformed, forwarded with the same value category)
+     * @return The variant (potentially transformed). Lvalue inputs are returned by reference;
+     *         rvalue inputs are returned by value to prevent dangling references in pipelines.
      *
      * @section Direct Usage
      * @code
@@ -83,10 +84,12 @@ namespace fxt
     template<typename T, typename TVariant, typename F>
         requires fxt::variant_like<std::remove_cvref_t<TVariant>> &&
                  std::invocable<F, T>
-    constexpr decltype(auto) transform_when(TVariant&& variant, F&& func)
+    constexpr auto transform_when(TVariant&& variant, F&& func)
+        -> std::conditional_t<std::is_lvalue_reference_v<TVariant>,
+                               TVariant,
+                               std::remove_cvref_t<TVariant>>
     {
         if (std::holds_alternative<T>(variant)) {
-            // Transform the value and assign it back
             std::get<T>(variant) = std::invoke(std::forward<F>(func), std::get<T>(std::forward<TVariant>(variant)));
         }
         return std::forward<TVariant>(variant);
@@ -123,7 +126,9 @@ namespace fxt
     constexpr auto transform_when(F&& func)
     {
         return [f = std::forward<F>(func)]<typename TVariant>(TVariant&& variant)
-            -> decltype(auto)
+            -> std::conditional_t<std::is_lvalue_reference_v<TVariant>,
+                                  TVariant,
+                                  std::remove_cvref_t<TVariant>>
             requires fxt::variant_like<std::remove_cvref_t<TVariant>> &&
                      std::invocable<F, T>
         {
@@ -150,7 +155,8 @@ namespace fxt
      * @tparam F The transformation function type (deduced)
      * @param monad The monadic container holding a variant
      * @param func The transformation function to apply if the variant holds type T
-     * @return The monadic container (potentially transformed, forwarded with the same value category)
+     * @return The monadic container (potentially transformed). Lvalue inputs are returned by
+     *         reference; rvalue inputs are returned by value to prevent dangling references.
      *
      * @section Direct Usage
      * @code
@@ -172,7 +178,10 @@ namespace fxt
         requires fxt::monad_like<std::remove_cvref_t<TMonad>> &&
                  fxt::variant_like<typename std::remove_cvref_t<TMonad>::value_type> &&
                  std::invocable<F, T>
-    constexpr decltype(auto) mtransform_when(TMonad&& monad, F&& func)
+    constexpr auto mtransform_when(TMonad&& monad, F&& func)
+        -> std::conditional_t<std::is_lvalue_reference_v<TMonad>,
+                               TMonad,
+                               std::remove_cvref_t<TMonad>>
     {
         if (monad.has_value()) {
             auto& variant = *monad;
@@ -219,7 +228,9 @@ namespace fxt
     constexpr auto mtransform_when(F&& func)
     {
         return [f = std::forward<F>(func)]<typename TMonad>(TMonad&& monad)
-            -> decltype(auto)
+            -> std::conditional_t<std::is_lvalue_reference_v<TMonad>,
+                                  TMonad,
+                                  std::remove_cvref_t<TMonad>>
             requires fxt::monad_like<std::remove_cvref_t<TMonad>> &&
                      fxt::variant_like<typename std::remove_cvref_t<TMonad>::value_type> &&
                      std::invocable<F, T>

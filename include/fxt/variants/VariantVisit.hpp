@@ -46,31 +46,7 @@
 
 namespace fxt
 {
-    /**
-     * @brief Visit a variant with the given visitor (alias for std::visit)
-     *
-     * This function is a direct alias for std::visit, providing a consistent
-     * interface within the fxt namespace for variant visitation.
-     *
-     * @tparam TVisitor The visitor callable type (deduced)
-     * @tparam TVariant The variant type (deduced)
-     * @param visitor A callable that can handle all alternatives in the variant
-     * @param variant The variant to visit
-     * @return The result of invoking the visitor with the variant's active alternative
-     *
-     * @code
-     * fxt::variant<int, double, std::string> v{42};
-     * auto result = fxt::visit([](auto&& val) {
-     *     return std::to_string(val);
-     * }, v);
-     * @endcode
-     */
-    template<typename TVisitor, typename TVariant>
-        requires fxt::variant_like<std::remove_cvref_t<TVariant>>
-    constexpr decltype(auto) visit(TVisitor&& visitor, TVariant&& variant)
-    {
-        return std::visit(std::forward<TVisitor>(visitor), std::forward<TVariant>(variant));
-    }
+    using std::visit;
 
     /**
      * @brief Returns a lambda that visits a variant with the given visitor (for use with pipe operator)
@@ -95,7 +71,7 @@ namespace fxt
         return [visitor = std::forward<TVisitor>(visitor)]<typename TVariant>(TVariant&& variant)
             requires fxt::variant_like<std::remove_cvref_t<TVariant>>
         {
-            return std::visit(visitor, std::forward<TVariant>(variant));
+            return fxt::visit(visitor, std::forward<TVariant>(variant));
         };
     }
 

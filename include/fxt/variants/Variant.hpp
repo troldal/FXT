@@ -46,6 +46,6 @@
 
 namespace fxt
 {
-        using std::variant;
+    using std::variant;
 }    // namespace fxt
 
