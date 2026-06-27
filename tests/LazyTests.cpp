@@ -313,22 +313,26 @@ TEST_CASE("fxt::lazy access methods", "[lazy][access]")
         REQUIRE(result == 300);
     }
 
-    SECTION("All access methods return same reference for lvalue")
+    SECTION("All access methods return the same value")
     {
-        fxt::lazy val = []{ return std::string("test"); };
+        int count = 0;
+        fxt::lazy val = [&count]{ ++count; return std::string("test"); };
 
-        const std::string& ref1 = val;
-        const std::string& ref2 = val.value();
+        std::string v1 = val;
+        std::string v2 = val.value();
+        std::string v3 = val();
 
-        // Same address means same object
-        REQUIRE(&ref1 == &ref2);
+        REQUIRE(v1 == "test");
+        REQUIRE(v2 == "test");
+        REQUIRE(v3 == "test");
+        // Callable must have been invoked exactly once despite three accesses
+        REQUIRE(count == 1);
     }
 
-    SECTION("Function call operator returns copy")
+    SECTION("Function call operator returns value")
     {
         fxt::lazy val = []{ return std::string("test"); };
-
-        std::string copy = val(); // Returns by value
+        std::string copy = val();
         REQUIRE(copy == "test");
     }
 }
@@ -379,13 +383,6 @@ TEST_CASE("fxt::lazy with different return types", "[lazy][types]")
         delete ptr;
     }
 
-    SECTION("std::unique_ptr type")
-    {
-        fxt::lazy val = []{ return std::make_unique<int>(99); };
-        // Note: Returns const reference to unique_ptr
-        const auto& ptr = val.value();
-        REQUIRE(*ptr == 99);
-    }
 }
 
 TEST_CASE("fxt::lazy thread safety", "[lazy][threading]")

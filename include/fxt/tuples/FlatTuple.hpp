@@ -130,6 +130,7 @@
 
 #include <compare>
 #include <concepts>
+#include <functional>
 #include <type_traits>
 #include <utility>
 

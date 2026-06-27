@@ -62,12 +62,18 @@
  * - **Value Semantics**: Behaves like the underlying value via implicit conversion
  * - **Shared State**: Copied lazy objects share computation via `std::shared_ptr`
  * - **Copyable/Movable**: Unlike `std::once_flag`, lazy objects can be copied and moved
+ * - **Resource Release**: The callable and any captured state are freed after evaluation
  *
  * ## Implementation Notes
  *
  * The implementation uses `std::shared_ptr` to store the callable and synchronization
  * state, enabling copy and move semantics while ensuring shared memoization. This is
  * necessary because `std::once_flag` itself is neither copyable nor movable.
+ *
+ * The shared state uses `std::variant<std::monostate, value_type, std::exception_ptr>`
+ * to track evaluation status: monostate = pending, value_type = success, exception_ptr
+ * = failure. The callable is stored in an `std::optional` and cleared after evaluation
+ * to release any captured resources.
  *
  * ## Example Usage
  *
@@ -76,23 +82,23 @@
  * fxt::lazy expensive = []{ return compute_pi(1000000); };
  *
  * // First access triggers computation
- * double pi = expensive;  // Computed now
- * double pi2 = expensive; // Returns cached value (no recomputation)
+ * double pi = expensive;   // Computed now, callable freed
+ * double pi2 = expensive;  // Returns cached value (no recomputation)
  *
  * // Copies share the same computation
  * auto copy = expensive;
- * double pi3 = copy;      // Returns the same cached value
+ * double pi3 = copy;       // Returns the same cached value
  * @endcode
  *
  * ## Credits
  *
  * The reference implementation is based on Ivan Čukić's presentation on
  * functional programming in C++. The implementation has been extended to
- * support copying, moving, exception handling, and enhanced thread safety.
+ * support copying, moving, exception handling, enhanced thread safety,
+ * and callable release after evaluation.
  *
  * @author Kenneth Troldal Balslev
  * @date 2025-10-15
- * @see Ivan Čukić's reference implementation (preserved in comments at end of file)
  */
 
 #pragma once
@@ -107,47 +113,28 @@
 
 namespace fxt
 {
-
     namespace impl
     {
         /**
          * @brief Concept to constrain callables for lazy evaluation
          *
          * A callable satisfies LazyInvocable if it can be invoked with no arguments
-         * and returns a non-void type. This ensures the lazy wrapper can store and
-         * return a meaningful value.
+         * and returns a copy-constructible object type. Specifically:
+         * - Reference and void return types are rejected (cannot be stored in the variant)
+         * - Move-only return types are rejected: lazy's contract is "compute once, give
+         *   everyone a copy"; a non-copyable value cannot be shared across instances
+         * - std::exception_ptr and std::monostate are rejected because they are the
+         *   other two alternatives in the result variant; duplicating them would make
+         *   variant access ambiguous
          *
          * @tparam Fn The callable type to check
          */
         template<typename Fn>
-        concept LazyInvocable = std::invocable<Fn> && (!std::is_void_v<std::invoke_result_t<Fn>>);
-
-        /**
-         * @brief Trait to construct monadic result type from monad template
-         *
-         * This trait takes a monad template (like fxt::optional or fxt::expected) without
-         * template arguments and produces the fully instantiated monad type with the
-         * appropriate value and error types.
-         */
-        template<template<typename...> typename Monad, typename T>
-        struct make_monad_result;
-
-        // Specialization for fxt::expected - uses fxt::failure as error type
-        template<typename T>
-        struct make_monad_result<expected, T>
-        {
-            using type = expected<T, failure>;
-        };
-
-        // Specialization for std::optional - single template parameter
-        template<typename T>
-        struct make_monad_result<std::optional, T>
-        {
-            using type = std::optional<T>;
-        };
-
-        template<template<typename...> typename Monad, typename T>
-        using make_monad_result_t = typename make_monad_result<Monad, T>::type;
+        concept LazyInvocable = std::invocable<Fn> &&
+                                std::is_object_v<std::invoke_result_t<Fn>> &&
+                                std::copy_constructible<std::decay_t<std::invoke_result_t<Fn>>> &&
+                                !std::is_same_v<std::decay_t<std::invoke_result_t<Fn>>, std::exception_ptr> &&
+                                !std::is_same_v<std::decay_t<std::invoke_result_t<Fn>>, std::monostate>;
     }
 
     /**
@@ -164,18 +151,22 @@ namespace fxt
      * - **Exception-safe**: Exceptions are captured and rethrown on access
      * - **Value semantics**: Behaves like the computed value (implicit conversion)
      * - **Shared computation**: Copied lazy objects share the same computation
+     * - **Resource release**: The callable is freed after first evaluation
      *
-     * @tparam Fn A callable type that takes no arguments and returns a non-void type
+     * @tparam Fn A callable type that takes no arguments and returns an object type
      *
      * @note The callable is invoked using `std::invoke`, so it can be a function
      *       pointer, function object, lambda, or member function pointer.
      *
+     * @note All accessors return by value. `value_type` is required to be
+     *       copy-constructible — move-only return types are rejected by the concept.
+     *
      * Example:
      * @code
      * fxt::lazy expensive = []{ return compute_pi(1000000); };
-     * // Not computed yet
+     * // Not computed yet; callable and any captures are alive
      *
-     * double pi = expensive;  // Computed now, cached
+     * double pi = expensive;  // Computed now; callable freed
      * double pi2 = expensive; // Returns cached value
      *
      * auto copy = expensive;  // Shares computation with original
@@ -185,31 +176,32 @@ namespace fxt
     class lazy
     {
     public:
-        /// The type of value returned by the callable
-        using value_type = std::invoke_result_t<Fn>;
+        /// The type of value returned by the callable (cv-qualifiers stripped for storage)
+        using value_type = std::decay_t<std::invoke_result_t<Fn>>;
 
     private:
         /**
          * @brief Internal state shared between lazy instances
          *
-         * This structure holds the callable, synchronization primitives, and
-         * the computed result. It is stored in a shared_ptr to enable copying
-         * and moving of lazy objects while sharing computation state.
+         * Holds the callable (until evaluated), the once_flag, and the result.
+         * The result variant encodes three states:
+         *   - monostate: not yet evaluated
+         *   - value_type: successfully evaluated and cached
+         *   - exception_ptr: evaluation threw; exception cached for rethrowing
+         *
+         * Stored in a shared_ptr to enable copying and moving of lazy objects
+         * while sharing computation state.
          */
         struct state
         {
-            /**
-             * @brief Constructs the state with a callable
-             * @param fn The callable to store
-             */
             explicit state(Fn fn) : function(std::move(fn)) {}
 
-            Fn                                                                  function; ///< The callable to invoke
-            mutable std::once_flag                                              once;     ///< Ensures single evaluation
-            mutable std::optional<std::variant<value_type, std::exception_ptr>> result;   ///< Cached result or exception
+            std::optional<Fn>                                             function; ///< Callable; reset after evaluation
+            std::once_flag                                                once;     ///< Ensures single evaluation
+            std::variant<std::monostate, value_type, std::exception_ptr> result;   ///< Pending / value / exception
         };
 
-        std::shared_ptr<state> m_state; ///< Shared state for computation
+        std::shared_ptr<state> m_state;
 
     public:
         /**
@@ -226,41 +218,33 @@ namespace fxt
         lazy(Fn fn) : m_state(std::make_shared<state>(std::move(fn))) {}    // NOLINT
 
         /**
-         * @brief Copy constructor (explicit)
+         * @brief Copy constructor
          *
          * Creates a new lazy object that shares the computation state with the
-         * original. Both objects will return the same cached result.
+         * original. Both objects will return the same cached result — sharing
+         * the memoized computation is the intended behaviour, analogous to
+         * copying a std::shared_ptr.
          *
          * @param other The lazy object to copy from
-         *
-         * @note Explicit to make copying uncommon operations visible. Use
-         *       regular assignment for implicit sharing when needed.
          */
-        // TODO: ERGONOMICS/DOCS — the copy and move constructors are `explicit`, which makes
-        //       copy-initialization ill-formed: the file's own example `auto copy = expensive;`
-        //       does not compile (must be `lazy copy{expensive};`), and returning a lazy from
-        //       a function by value is awkward. Explicit copy/move constructors are highly
-        //       unusual; drop `explicit` or fix the documentation.
-        explicit lazy(const lazy& other)       = default;    // NOLINT
+        lazy(const lazy& other)            = default;
 
         /**
          * @brief Copy assignment operator
          * @param other The lazy object to copy from
          * @return Reference to this object
          */
-        lazy& operator=(const lazy& other)     = default;
+        lazy& operator=(const lazy& other ) = default;
 
         /**
-         * @brief Move constructor (explicit)
+         * @brief Move constructor
          *
          * Transfers ownership of the computation state. The moved-from object
          * will throw `std::runtime_error` if accessed.
          *
          * @param other The lazy object to move from
-         *
-         * @note Explicit to make move operations visible in code.
          */
-        explicit lazy(lazy&& other) noexcept   = default;    // NOLINT
+        lazy(lazy&& other) noexcept        = default;
 
         /**
          * @brief Move assignment operator
@@ -270,60 +254,64 @@ namespace fxt
         lazy& operator=(lazy&& other) noexcept = default;
 
         /**
-         * @brief Implicit conversion to the computed value
+         * @brief Implicit conversion to a copy of the computed value
          *
-         * Evaluates the callable if not already done, and returns a const reference
-         * to the cached result. This operator allows lazy objects to be used
-         * transparently as their underlying value type.
-         *
-         * @return Const reference to the computed value
-         * @throws Any exception thrown by the callable
-         * @throws std::runtime_error if the lazy object has been moved from
-         *
-         * @note This is thread-safe: multiple threads can call this simultaneously,
-         *       but the callable will be invoked exactly once.
-         */
-        operator const value_type&() const    // NOLINT
-        {
-            evaluate();
-            if (auto* val = std::get_if<value_type>(&*m_state->result)) return *val;
-            std::rethrow_exception(std::get<std::exception_ptr>(*m_state->result));
-        }
-
-        /**
-         * @brief Explicit access to the computed value
-         *
-         * Provides an explicit way to access the value without relying on
-         * implicit conversion. Semantically equivalent to the conversion operator.
-         *
-         * @return Const reference to the computed value
-         * @throws Any exception thrown by the callable
-         * @throws std::runtime_error if the lazy object has been moved from
-         */
-        [[nodiscard]] const value_type& value() const { return static_cast<const value_type&>(*this); }
-
-        /**
-         * @brief Force evaluation and return a copy of the value
-         *
-         * Evaluates the callable if needed and returns a copy (not a reference)
-         * of the result. Useful when you need to move the value out or explicitly
-         * force evaluation.
+         * Evaluates the callable if not already done and returns a copy of the
+         * cached result. Safe to use with temporaries — `const auto& r = lazy{...}`
+         * binds to the returned copy (lifetime extension applies).
          *
          * @return Copy of the computed value
          * @throws Any exception thrown by the callable
          * @throws std::runtime_error if the lazy object has been moved from
          *
-         * @note The function call operator provides explicit evaluation semantics
+         * @note Thread-safe: multiple threads may call this simultaneously;
+         *       the callable is invoked exactly once.
          */
-        [[nodiscard]] value_type operator()() const { return static_cast<const value_type&>(*this); }
+        operator value_type() const { return get_result(); }    // NOLINT
+
+        /**
+         * @brief Explicit access to a copy of the computed value
+         *
+         * @return Copy of the computed value
+         * @throws Any exception thrown by the callable
+         * @throws std::runtime_error if the lazy object has been moved from
+         */
+        [[nodiscard]] value_type value() const { return get_result(); }
+
+        /**
+         * @brief Evaluate and return a copy of the value via call syntax
+         *
+         * Syntactic alternative to implicit conversion; useful when the conversion
+         * would be ambiguous or when explicit evaluation intent is preferred.
+         *
+         * @return Copy of the computed value
+         * @throws Any exception thrown by the callable
+         * @throws std::runtime_error if the lazy object has been moved from
+         */
+        [[nodiscard]] value_type operator()() const { return get_result(); }
 
     private:
         /**
-         * @brief Ensures the callable has been evaluated
+         * @brief Shared implementation for all accessors
+         *
+         * Evaluates if needed and returns a const reference to the cached result,
+         * rethrowing any stored exception. The public accessors copy from this
+         * reference when value_type is copy-constructible.
+         */
+        [[nodiscard]] const value_type& get_result() const
+        {
+            evaluate();
+            if (auto* val = std::get_if<value_type>(&m_state->result)) return *val;
+            std::rethrow_exception(std::get<std::exception_ptr>(m_state->result));
+        }
+
+        /**
+         * @brief Ensures the callable has been evaluated exactly once
          *
          * Uses `std::call_once` to guarantee thread-safe single evaluation.
-         * If the callable throws an exception, it is captured and stored for
-         * rethrowing on access.
+         * Captures any exception thrown by the callable (or by move-constructing
+         * the result into the cache) and stores it for rethrowing on access.
+         * The callable is released after evaluation to free captured resources.
          *
          * @throws std::runtime_error if the lazy object has been moved from
          */
@@ -334,11 +322,12 @@ namespace fxt
             }
             std::call_once(m_state->once, [this]() {
                 try {
-                    m_state->result.emplace(std::invoke(m_state->function));
+                    m_state->result = std::invoke(*m_state->function);
                 }
                 catch (...) {
-                    m_state->result.emplace(std::current_exception());
+                    m_state->result = std::current_exception();
                 }
+                m_state->function.reset();
             });
         }
     };
@@ -353,93 +342,5 @@ namespace fxt
      */
     template<impl::LazyInvocable Fn>
     lazy(Fn) -> lazy<Fn>;
-
-
-
-    // ===== Reference implementation by Ivan Čukić. Is not copyable or movable
-
-    // template<typename Fn>
-    // class lazy
-    // {
-    // public:
-    //     using value_type = std::invoke_result_t<Fn>;
-    //
-    //     operator const value_type&() const {
-    //         std::call_once(m_once, [&]() { m_data = m_function(); });
-    //         return m_data.value();
-    //     }
-    //
-    // private:
-    //     Fn m_function;
-    //     mutable std::once_flag m_once;
-    //     mutable std::optional<value_type> m_data;
-    //
-    // };
-    //
-    // template<typename Fn>
-    // lazy(Fn) -> lazy<Fn>;
-
-
-    // ===== Implementation for static storage of callable. This enables independently created
-    // ===== fxt::lazy objects to point to the same state data, but requires that the callable
-    // ===== does not contain state.
-
-    // template<typename Fn>
-    // concept StatelessLazyInvocable = LazyInvocable<Fn> && std::is_empty_v<Fn>;
-
-    // template<StatelessLazyInvocable Fn>
-    // class lazy
-    // {
-    // public:
-    //     using value_type = std::invoke_result_t<Fn>;
-    //
-    // private:
-    //     struct state
-    //     {
-    //         Fn function;
-    //         mutable std::once_flag once;
-    //         mutable std::optional<std::variant<value_type, std::exception_ptr>> result;
-    //     };
-    //
-    //     // Static state shared by all instances of lazy<Fn>
-    //     static state& get_state() {
-    //         static state s{Fn{}};  // Default-construct the callable
-    //         return s;
-    //     }
-    //
-    // public:
-    //     // Store function instance (needed if Fn captures state)
-    //     lazy(Fn fn) : m_fn(std::move(fn)) {}
-    //
-    //     explicit lazy(const lazy&) = default;
-    //     lazy& operator=(const lazy&) = default;
-    //     explicit lazy(lazy&&) noexcept = default;
-    //     lazy& operator=(lazy&&) noexcept = default;
-    //
-    //     operator const value_type&() const
-    //     {
-    //         auto& s = get_state();
-    //         std::call_once(s.once, [this, &s]() {
-    //             try {
-    //                 s.result.emplace(std::invoke(m_fn));
-    //             }
-    //             catch (...) {
-    //                 s.result.emplace(std::current_exception());
-    //             }
-    //         });
-    //
-    //         if (auto* val = std::get_if<value_type>(&*s.result))
-    //             return *val;
-    //         std::rethrow_exception(std::get<std::exception_ptr>(*s.result));
-    //     }
-    //
-    //     [[nodiscard]] const value_type& value() const {
-    //         return static_cast<const value_type&>(*this);
-    //     }
-    //
-    // private:
-    //     Fn m_fn;  // Store instance (may have captured state)
-    // };
-
 
 }  // namespace fxt
