@@ -134,7 +134,7 @@ target_link_libraries(fxt_type_enum_demo PRIVATE fxt::fxt)
 add_executable(fxt_tuple_conversion_demo TupleConversion.cpp)
 target_link_libraries(fxt_tuple_conversion_demo PRIVATE fxt::fxt)
 
-add_executable(fxt_mzip_demo MZip.cpp)
+add_executable(fxt_mzip_demo Zip.cpp)
 target_link_libraries(fxt_mzip_demo PRIVATE fxt::fxt)
 
 add_executable(fxt_with_demo With.cpp)
