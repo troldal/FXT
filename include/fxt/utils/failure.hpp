@@ -129,7 +129,7 @@ namespace fxt
          * @return The error message as a string
          * @note This function never throws, it catches all exceptions internally
          */
-        static std::string exception_message(std::exception_ptr exception) noexcept    // NOLINT
+        static std::string exception_message(std::exception_ptr exception)    // NOLINT
         {
             try {
                 if (exception) std::rethrow_exception(exception);
@@ -163,10 +163,10 @@ namespace fxt
         /**
          * @brief Constructs a Failure from an exception pointer
          * @param exception The exception pointer to store
+         * @note The message is extracted lazily on first access; this constructor does not allocate.
          */
         failure(std::exception_ptr exception)    // NOLINT
-            : m_message(exception_message(exception)),
-              m_exception(exception)
+            : m_exception(std::move(exception))
         {}
 
         failure(const failure& other)
@@ -192,8 +192,8 @@ namespace fxt
 
         failure& operator=(std::exception_ptr exception)    // NOLINT
         {
-            m_message = exception_message(exception);
-            m_exception = exception;
+            m_message = std::nullopt;
+            m_exception = std::move(exception);
             return *this;
         }
 
@@ -257,15 +257,16 @@ namespace fxt
          * @brief Checks if the Failure represents an actual error condition
          * @return true if there is either a message or an exception, false otherwise
          */
-        [[nodiscard]] explicit operator bool() const noexcept { return !m_message.empty() || m_exception != nullptr; }
+        [[nodiscard]] explicit operator bool() const noexcept { return !message_view().empty() || m_exception != nullptr; }
 
         /**
          * @brief Gets the error message
          * @return The error message as a string
          */
-        [[nodiscard]] std::string message() const noexcept
+        [[nodiscard]] std::string message() const
         {
-            return m_message;
+            ensure_message_nothrow();
+            return m_message.value_or(std::string{});
         }
 
         /**
@@ -274,7 +275,12 @@ namespace fxt
          * @note The returned view is only valid as long as this failure object is alive
          *       and not modified
          */
-        [[nodiscard]] std::string_view message_view() const noexcept { return m_message; }
+        [[nodiscard]] std::string_view message_view() const noexcept
+        {
+            ensure_message_nothrow();
+            if (m_message.has_value()) return *m_message;
+            return {};
+        }
 
         /**
          * @brief Gets the error message as a C-string (exception-like interface)
@@ -283,7 +289,8 @@ namespace fxt
          */
         [[nodiscard]] const char* what() const noexcept
         {
-            return m_message.c_str();
+            ensure_message_nothrow();
+            return m_message.has_value() ? m_message->c_str() : "";
         }
 
         /**
@@ -370,7 +377,7 @@ namespace fxt
          */
         [[nodiscard]] auto operator<=>(const failure& other) const noexcept
         {
-            return message() <=> other.message();
+            return message_view() <=> other.message_view();
         }
 
         /**
@@ -380,7 +387,7 @@ namespace fxt
          */
         [[nodiscard]] bool operator==(const failure& other) const noexcept
         {
-            return message() == other.message();
+            return message_view() == other.message_view();
         }
 
         /**
@@ -391,7 +398,7 @@ namespace fxt
          */
         friend std::ostream& operator<<(std::ostream& os, const failure& f)
         {
-            os << f.message();
+            os << f.message_view();
             return os;
         }
 
@@ -401,9 +408,21 @@ namespace fxt
         friend struct std::hash<fxt::failure>;
 
     private:
-        std::string                                  m_message {};        ///< The error message
+        mutable std::optional<std::string>           m_message {};        ///< Lazily populated error message
         std::exception_ptr                           m_exception {};      ///< The stored exception pointer
         std::unique_ptr<detail::context_holder_base> m_context {};        ///< Optional type-erased context storage
+
+        void ensure_message_nothrow() const noexcept
+        {
+            if (!m_message.has_value() && m_exception) {
+                try {
+                    m_message = exception_message(m_exception);
+                }
+                catch (...) {
+                    // bad_alloc: leave m_message as nullopt; callers fall back to ""
+                }
+            }
+        }
     };
 
 }    // namespace fxt
@@ -417,22 +436,6 @@ struct std::hash<fxt::failure>
 {
     [[nodiscard]] std::size_t operator()(const fxt::failure& f) const noexcept
     {
-        std::size_t h1 = std::hash<std::string>{}(f.message());
-
-        // TODO: BUG — `&exc` takes the address of the LOCAL copy of the exception_ptr,
-        //       not of the exception object. The hash therefore depends on a stack address
-        //       and is neither stable nor consistent with operator== (which compares
-        //       message() only). Two equal failures can hash differently, breaking the
-        //       unordered-container contract. Hash the message only (matching operator==)
-        //       and drop the exception component.
-        std::size_t h2 = 0;
-        auto exc = f.exception();
-        if (exc) {
-            // Hash the pointer by converting to size_t
-            h2 = std::hash<std::size_t>{}(reinterpret_cast<std::size_t>(&exc));
-        }
-
-        // Combine hashes using a common technique (boost::hash_combine style)
-        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+        return std::hash<std::string_view>{}(f.message_view());
     }
 };
