@@ -52,7 +52,7 @@
  * // from f in firstName, from l in lastName, from t in title
  * // select std::format("{} {} {}", t, f, l)
  * auto fullName = fxt::mtuple_zip(firstName, lastName, title)
- *               | fxt::mtuple_apply([](auto f, auto l, auto t) {
+ *               | fxt::mapply([](auto f, auto l, auto t) {
  *                     return std::format("{} {} {}", t, f, l);
  *                 });
  * @endcode
@@ -64,7 +64,7 @@
 #pragma once
 
 #include "../concepts/IsMonad.hpp"
-#include "TupleAppend.hpp"
+#include "../tuples/TupleAppend.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -98,7 +98,7 @@ namespace fxt
     template<typename First, typename... Rest>
         requires fxt::monad_like<std::remove_cvref_t<First>>
               && (fxt::monad_like<std::remove_cvref_t<Rest>> && ...)
-    constexpr auto mtuple_zip(First&& first, Rest&&... rest)
+    constexpr auto zip(First&& first, Rest&&... rest)
     {
         // Wrap the first monad's value into a single-element fxt::tuple.
         auto seed = std::forward<First>(first).transform(
@@ -115,13 +115,4 @@ namespace fxt
         }
     }
 
-    template<typename First, typename... Rest>
-    [[deprecated("Use fxt::mtuple_zip")]]
-    constexpr auto mzip(First&& first, Rest&&... rest)
-        -> decltype(mtuple_zip(std::forward<First>(first), std::forward<Rest>(rest)...))
-    {
-        return mtuple_zip(std::forward<First>(first), std::forward<Rest>(rest)...);
-    }
-
 }    // namespace fxt
-

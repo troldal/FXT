@@ -73,7 +73,7 @@
 #include "fxt/tuples/TupleDrop.hpp"
 #include "fxt/tuples/FlatTuple.hpp"
 #include "fxt/tuples/Get.hpp"
-#include "fxt/tuples/MZip.hpp"
+#include "fxt/monads/Zip.hpp"
 #include "fxt/tuples/TupleSelect.hpp"
 #include "fxt/tuples/TupleTake.hpp"
 #include "fxt/tuples/Tuple.hpp"

@@ -226,7 +226,7 @@ namespace fxt
      * @return A pipe adaptor that, when applied to a monad-of-tuple, returns a monad of
      *         the function's result type (or monad-of-unit for void functions).
      *
-     * @code
+     * @code{.cpp}
      * // Case 3 — plain return: tuple replaced by function result
      * auto r1 = fxt::expected<std::tuple<int, int>, std::string>{std::make_tuple(3, 4)}
      *         | fxt::mtuple_apply([](int a, int b) { return a + b; });
@@ -256,9 +256,6 @@ namespace fxt
         }
     };
 
-    inline constexpr apply_fn mtuple_apply{};
-
-    [[deprecated("Use fxt::mtuple_apply")]]
     inline constexpr apply_fn mapply{};
 
 }    // namespace fxt

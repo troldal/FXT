@@ -158,7 +158,7 @@ TEST_CASE("mtuple_for_each - passes monad through so pipeline can continue", "[m
 
     auto result = exp
         | fxt::mtuple_for_each([](int) {})        // side-effect step
-        | fxt::mtuple_apply([](int a, int b) { return a + b; });
+        | fxt::mapply([](int a, int b) { return a + b; });
 
     REQUIRE(result.has_value());
     REQUIRE(*result == 7);
@@ -171,7 +171,7 @@ TEST_CASE("mtuple_for_each - error propagates through pipeline", "[mtuple_for_ea
 
     auto result = exp
         | fxt::mtuple_for_each([](int) {})
-        | fxt::mtuple_apply([](int a, int b) { return a + b; });
+        | fxt::mapply([](int a, int b) { return a + b; });
 
     REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error() == "error");
