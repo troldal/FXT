@@ -31,6 +31,7 @@ addressed. They are struck through in their original sections below.
 | `~400 lines of commented-out code` (§3 table) | `Lazy.hpp` cleaned this session; `Tuple.hpp`, `Optional.hpp`, `Expected.hpp`, `Get.hpp`, `Apply.hpp`, `ApplyReplace.hpp`, `TuplePipe.hpp`, `IsOptional.hpp` were already clean. |
 | `broken tap` (Priority 1) | `tap` already returns the container (not `void`); the "returns void" description was stale. The tap/tee duplication (see §3) remains open. |
 | `flat_tuple` `if constexpr` dispatch branches (§3.1 remaining concern) | Added `tuple_kind<Tuple>`, `tuple_rebind_t<Tuple, NewTs...>`, and `make_tuple_like<Tuple>(args...)` to `IsTuple.hpp`. All `if constexpr (is_fxt_tuple_v) / else (is_flat_tuple_v)` dispatch branches eliminated from `TupleAppend`, `TuplePrepend`, `TupleReverse`, `TupleTake`, `TupleDrop`, `TupleSelect`, `TupleTransform`, and `ApplyReplace`. Adding a third tuple kind now requires only a `tuple_kind` specialisation — no algorithm changes. |
+| `m`-prefix family: generate, don't hand-write (§3.2) | Added `fxt::lifted(adaptor)` in `monads/Lifted.hpp`. Added nullary `fxt::get<I>()` / `fxt::get<T>()` adaptor forms to `Get.hpp`. Reduced 10 m-functions (`mindex`, `mvisit`, `mget<I/T>`, `mtuple_select`, `mtuple_transform`, `mtuple_reverse`, `mtuple_take`, `mtuple_take_last`, `mtuple_drop`, `mtuple_drop_last`) to one-liners over `lifted`. The remaining 11 bespoke m-functions (`mwhen`, `mtransform_when`, `mholds_alternative`, `mtuple_append`, `mtuple_prepend`, `mtuple_cat` two-monad, `mtuple_for_each`, `mtuple_as_array`, `mapply`, `mwith`, `mzip`) have semantics that genuinely exceed a plain `.transform()` and are kept as-is. |
 
 ---
 
@@ -149,32 +150,33 @@ implementation was substantially refactored:
   been eliminated. Adding a new tuple kind requires only a `tuple_kind`
   specialisation — no algorithm changes.
 
-### 3.2 The `m`-prefix family: generate, don't hand-write
+### 3.2 The `m`-prefix family: ✓ resolved
 
-Every tuple/variant operation is duplicated by hand into an `m`-version that is
-literally `container.transform([](auto&& x){ return op(x); })`. That is ~15
-hand-rolled wrappers (mtake, mdrop, mtuple_reverse, mtuple_transform, mselect,
-mget, mindex, mvisit, mas_array, ...), each with its own doc block and its own
-chance of divergence (several have already diverged: const-only parameters,
-missing rvalue support).
+`fxt::lifted(adaptor)` has been added in `monads/Lifted.hpp`. It is the single
+implementation of the pattern `M&& m -> m.transform(adaptor)` shared by all
+trivially-liftable m-functions.
 
-**Proposal:** one lifting combinator:
+Ten m-functions are now one-liners over `lifted`:
 
-```cpp
-// monad | fxt::lifted(fxt::take<2>())  — or even auto-lift inside operator|
-template<typename Adaptor>
-constexpr auto lifted(Adaptor a) {
-    return [a = std::move(a)]<monad_like M>(M&& m) {
-        return std::forward<M>(m).transform(a);
-    };
-}
-```
+| m-function | delegates to |
+|---|---|
+| `mindex` | `lifted(index())` |
+| `mvisit(f)` | `lifted(visit(f))` |
+| `mget<I/T>()` | `lifted(get<I/T>())` |
+| `mtuple_select<Is/Ts...>()` | `lifted(tuple_select<...>())` |
+| `mtuple_transform(f)` | `lifted(tuple_transform(f))` |
+| `mtuple_reverse` | `lifted(tuple_reverse())` |
+| `mtuple_take<X>` / `mtuple_take_last<X>` | `lifted(tuple_take<X>())` / `lifted(tuple_take_last<X>())` |
+| `mtuple_drop<X>` / `mtuple_drop_last<X>` | `lifted(tuple_drop<X>())` / `lifted(tuple_drop_last<X>())` |
 
-Then `mX()` becomes `lifted(X())` (keep the popular `mX` names as one-line
-aliases if desired). This removes hundreds of lines, makes the m-family
-impossible to get out of sync, and automatically extends to any future adaptor.
-Only the operations with genuinely monadic semantics (`mwith`, `mtuple_append`
-with monadic values, `mzip`, `mapply` with monadic return) need bespoke code.
+Nullary `fxt::get<I>()` and `fxt::get<T>()` adaptor forms were added to
+`Get.hpp` as part of this change.
+
+The remaining 11 bespoke m-functions (`mwhen`, `mtransform_when`,
+`mholds_alternative`, `mtuple_append`, `mtuple_prepend`, `mtuple_cat`
+two-monad form, `mtuple_for_each`, `mtuple_as_array`, `mapply`, `mwith`,
+`mzip`) have semantics that genuinely exceed a plain `.transform()` and are
+kept as hand-written implementations.
 
 ### 3.3 One adaptor-invocation convention
 
@@ -294,6 +296,6 @@ containers belongs here too.
 3. **§3 surface reduction** (tap/tee, mappend, dead code, flat_tuple decision)
    — do this *before* 1.0, while breaking changes are free.
 4. **§5.6 doc-snippet tests** — locks in the cleanup.
-5. **§3.2 lifted() + §5.2/5.3 completeness** — the feature work.
+5. ~~**§3.2 lifted()**~~ ✓ — **§5.2/5.3 completeness** — the feature work.
 6. **§4 scope split** (`enums/` extraction) — whenever a second consumer
    appears or the dependency on fixed_string becomes annoying.

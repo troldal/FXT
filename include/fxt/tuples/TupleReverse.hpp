@@ -111,6 +111,7 @@
 #include "Get.hpp"
 #include "FlatTuple.hpp"
 #include "../concepts/IsTuple.hpp"
+#include "../monads/Lifted.hpp"
 #include <utility>
 
 namespace fxt
@@ -227,55 +228,18 @@ namespace fxt
     template<typename Container>
     constexpr auto mtuple_reverse(Container&& container)
     {
-        return std::forward<Container>(container).transform([]<typename TValue>(TValue&& tpl) {
-            constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
-
-            return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-                return impl::make_tuple_like<TValue>(
-                    fxt::get<tupleSize - 1 - Indices>(std::forward<TValue>(tpl))...);
-            }(std::make_index_sequence<tupleSize>{});
-        });
+        return lifted(tuple_reverse())(std::forward<Container>(container));
     }
 
     /**
-     * @brief Reverse the order of elements in a tuple inside a monad (curried version for pipeline)
+     * @brief Returns a pipe adaptor that reverses a tuple inside a monad.
      *
-     * Returns a lambda that reverses the order of elements in a tuple inside a monad.
-     * This overload enables pipeline-style usage with the pipe operator.
-     * Works with both fxt::tuple and fxt::flat_tuple, preserving the tuple type.
-     *
-     * @return A lambda that takes a monad<tuple> and returns a monad<reversed_tuple>
-     *
-     * @section Usage
      * @code
-     * // Pipe operator with fxt::expected and fxt::tuple
      * auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::tuple{1, 2, 3}};
      * auto result = exp | fxt::mtuple_reverse();
-     * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {3, 2, 1}
-     *
-     * // Pipe operator with fxt::optional and fxt::flat_tuple
-     * auto opt = fxt::optional<fxt::flat_tuple<double, double, double>>{fxt::flat_tuple{1.0, 2.0, 3.0}};
-     * auto result2 = opt | fxt::mtuple_reverse();
-     * // result2 is fxt::optional<fxt::flat_tuple<double, double, double>> containing {3.0, 2.0, 1.0}
-     *
-     * // Nullopt propagation with fxt::optional
-     * auto opt_null = fxt::optional<fxt::tuple<int, int>>{std::nullopt};
-     * auto result4 = opt_null | fxt::mtuple_reverse();
-     * // result4 is std::nullopt
-     *
-     * // Chaining with other monadic operations
-     * auto exp2 = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::tuple{1, 2, 3}};
-     * auto result5 = exp2
-     *     | fxt::mtuple_transform([](auto x) { return x * 2; })
-     *     | fxt::mtuple_reverse();
-     * // result5 is fxt::expected<fxt::tuple<int, int, int>, Error> containing {6, 4, 2}
+     * // fxt::expected<fxt::tuple<int, int, int>, Error> containing {3, 2, 1}
      * @endcode
      */
-    constexpr auto mtuple_reverse()
-    {
-        return []<typename Container>(Container&& container) {
-            return fxt::mtuple_reverse(std::forward<Container>(container));
-        };
-    }
+    constexpr auto mtuple_reverse() { return lifted(tuple_reverse()); }
 
 }    // namespace fxt

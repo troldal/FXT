@@ -41,6 +41,7 @@
 #pragma once
 
 #include "FlatTuple.hpp"
+#include "../monads/Lifted.hpp"
 #include <tuple>
 #include <utility>
 
@@ -120,53 +121,41 @@ namespace fxt
     }
 
     // ========================================================================
+    // Nullary get<I>() / get<T>() — tuple-element adaptors for use with lifted
+    // ========================================================================
+
+    /** @brief Returns an adaptor that extracts element I from any tuple-like. */
+    template<std::size_t I>
+    constexpr auto get()
+    {
+        return []<typename T>(T&& t) { return fxt::get<I>(std::forward<T>(t)); };
+    }
+
+    /** @brief Returns an adaptor that extracts the unique element of type T from any tuple-like. */
+    template<typename T>
+    constexpr auto get()
+    {
+        return []<typename Tuple>(Tuple&& t) { return fxt::get<T>(std::forward<Tuple>(t)); };
+    }
+
+    // ========================================================================
     // fxt::mget — element extraction from a monad-of-tuple
     // ========================================================================
 
     /**
-     * @brief Extract the element at index I from a tuple inside a monadic container.
-     *
-     * Returns a callable that, when applied to an `expected`- or `optional`-like
-     * container holding a tuple, extracts element I and re-wraps it in a new
-     * container of the same kind. Supports both lvalue and rvalue monads so the
-     * element can be moved out of a temporary pipeline.
-     *
-     * @tparam I Zero-based index of the element to extract
-     * @return A pipe-adaptor callable
+     * @brief Returns a pipe adaptor that extracts element I from a tuple inside a monad.
      *
      * @code
      * auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>
      *                {std::make_tuple(1, 2.0, "three")};
      * auto r = exp | fxt::mget<0>();  // fxt::expected<int, Error>{1}
-     *
-     * auto opt = fxt::optional<std::tuple<int, double>>{std::make_tuple(42, 3.14)};
-     * auto r2 = opt | fxt::mget<1>();  // fxt::optional<double>{3.14}
      * @endcode
      */
     template<std::size_t I>
-    constexpr auto mget()
-    {
-        // The inner callback returns by value: fxt::get yields int& / int&& depending
-        // on the monad's value category, and decaying to a prvalue both satisfies
-        // expected/optional (whose value type must be a non-reference) and lets an
-        // rvalue pipeline move the element out instead of copying it.
-        return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([]<typename TValue>(TValue&& t) {
-                return fxt::get<I>(std::forward<TValue>(t));
-            });
-        };
-    }
+    constexpr auto mget() { return lifted(fxt::get<I>()); }
 
     /**
-     * @brief Extract the element of type T from a tuple inside a monadic container.
-     *
-     * Returns a callable that, when applied to an `expected`- or `optional`-like
-     * container holding a tuple, extracts the unique element of type T and re-wraps
-     * it. The tuple must contain exactly one element of type T. Supports both lvalue
-     * and rvalue monads.
-     *
-     * @tparam T Type of the element to extract (must appear exactly once in the tuple)
-     * @return A pipe-adaptor callable
+     * @brief Returns a pipe adaptor that extracts the unique element of type T from a tuple inside a monad.
      *
      * @code
      * auto exp = fxt::expected<std::tuple<int, double, std::string>, Error>
@@ -175,15 +164,6 @@ namespace fxt
      * @endcode
      */
     template<typename T>
-    constexpr auto mget()
-    {
-        return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([]<typename TValue>(TValue&& t) {
-                // fxt::get<T> resolves to std::get<T> for std::tuple and to the
-                // flat_tuple overload otherwise, so mget<T> works for both.
-                return fxt::get<T>(std::forward<TValue>(t));
-            });
-        };
-    }
+    constexpr auto mget() { return lifted(fxt::get<T>()); }
 
 }    // namespace fxt

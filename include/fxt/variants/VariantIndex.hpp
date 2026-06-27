@@ -41,6 +41,7 @@
 #pragma once
 
 #include "../concepts/IsVariant.hpp"
+#include "../monads/Lifted.hpp"
 namespace fxt
 {
     /**
@@ -122,35 +123,18 @@ namespace fxt
      * @endcode
      */
     template<typename TMonad>
-        requires requires(TMonad&& monad) {
-            { std::forward<TMonad>(monad).transform(index()) };
-        }
     constexpr auto mindex(TMonad&& monad)
     {
-        return std::forward<TMonad>(monad).transform(index());
+        return lifted(index())(std::forward<TMonad>(monad));
     }
 
     /**
-     * @brief Returns a lambda that gets the index of a variant in a monad (for use with pipe operator)
-     *
-     * This overload returns a lambda that can be used with the pipe operator,
-     * enabling functional composition with monadic variants.
-     *
-     * @return A lambda that takes a monad containing a variant and returns a monad containing its index
+     * @brief Returns a pipe adaptor that maps a monadic variant to the index of its held alternative.
      *
      * @code
      * fxt::optional<fxt::variant<int, double, std::string>> opt{fxt::variant<int, double, std::string>{3.14}};
      * auto idx_opt = opt | fxt::mindex();  // Returns fxt::optional<std::size_t> containing 1
      * @endcode
      */
-    inline constexpr auto mindex()
-    {
-        return []<typename TMonad>(TMonad&& monad)
-            requires requires {
-                { std::forward<TMonad>(monad).transform(index()) };
-            }
-        {
-            return std::forward<TMonad>(monad).transform(index());
-        };
-    }
+    inline constexpr auto mindex() { return lifted(index()); }
 }

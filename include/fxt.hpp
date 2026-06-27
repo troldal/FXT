@@ -52,6 +52,7 @@
 #include "fxt/monads/AndThen.hpp"
 #include "fxt/monads/Expected.hpp"
 #include "fxt/monads/Join.hpp"
+#include "fxt/monads/Lifted.hpp"
 #include "fxt/monads/LogicalOr.hpp"
 #include "fxt/monads/Match.hpp"
 #include "fxt/monads/Optional.hpp"

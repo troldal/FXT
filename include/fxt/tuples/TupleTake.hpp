@@ -67,6 +67,7 @@
 #include <utility>
 #include "FlatTuple.hpp"
 #include "TupleAppend.hpp"
+#include "../monads/Lifted.hpp"
 
 namespace fxt
 {
@@ -164,31 +165,12 @@ namespace fxt
     template<std::size_t X, typename Container>
     constexpr auto mtuple_take(Container&& container)
     {
-        return std::forward<Container>(container).transform([]<typename TValue>(TValue&& tpl) {
-            constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
-            static_assert(X <= N, "Cannot take more elements than the tuple size");
-            return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                return impl::make_tuple_like<TValue>(fxt::get<Is>(std::forward<TValue>(tpl))...);
-            }(std::make_index_sequence<X>{});
-        });
+        return lifted(tuple_take<X>())(std::forward<Container>(container));
     }
 
-    /**
-     * @brief Curried `mtuple_take` for pipeline usage.
-     *
-     * @code
-     * auto exp = fxt::expected<fxt::tuple<int,int,int,int>, Error>{fxt::make_tuple(1,2,3,4)};
-     * auto r   = exp | fxt::mtuple_take<2>();
-     * // fxt::expected<fxt::tuple<int,int>, Error>{1, 2}
-     * @endcode
-     */
+    /** @brief Returns a pipe adaptor: keep the first X elements of a tuple inside a monad. */
     template<std::size_t X>
-    constexpr auto mtuple_take()
-    {
-        return []<typename Container>(Container&& container) {
-            return fxt::mtuple_take<X>(std::forward<Container>(container));
-        };
-    }
+    constexpr auto mtuple_take() { return lifted(tuple_take<X>()); }
 
     // ========================================================================
     // fxt::mtuple_take_last — monadic lift of tuple_take_last
@@ -206,13 +188,7 @@ namespace fxt
     template<std::size_t X, typename Container>
     constexpr auto mtuple_take_last(Container&& container)
     {
-        return std::forward<Container>(container).transform([]<typename TValue>(TValue&& tpl) {
-            constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
-            static_assert(X <= N, "Cannot take more elements than the tuple size");
-            return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                return impl::make_tuple_like<TValue>(fxt::get<Is + (N - X)>(std::forward<TValue>(tpl))...);
-            }(std::make_index_sequence<X>{});
-        });
+        return lifted(tuple_take_last<X>())(std::forward<Container>(container));
     }
 
     /**
@@ -224,12 +200,8 @@ namespace fxt
      * // fxt::expected<fxt::tuple<int,int>, Error>{3, 4}
      * @endcode
      */
+    /** @brief Returns a pipe adaptor: keep the last X elements of a tuple inside a monad. */
     template<std::size_t X>
-    constexpr auto mtuple_take_last()
-    {
-        return []<typename Container>(Container&& container) {
-            return fxt::mtuple_take_last<X>(std::forward<Container>(container));
-        };
-    }
+    constexpr auto mtuple_take_last() { return lifted(tuple_take_last<X>()); }
 
 }    // namespace fxt

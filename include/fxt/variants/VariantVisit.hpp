@@ -42,6 +42,7 @@
 
 #include "../concepts/IsVariant.hpp"
 #include "../concepts/IsMonad.hpp"
+#include "../monads/Lifted.hpp"
 #include <variant>
 
 namespace fxt
@@ -97,37 +98,23 @@ namespace fxt
      * @endcode
      */
     template<typename TVisitor, typename TMonad>
-        requires monad_like<std::remove_cvref_t<TMonad>>
     constexpr auto mvisit(TVisitor&& visitor, TMonad&& monad)
     {
-        return std::forward<TMonad>(monad).transform(visit(std::forward<TVisitor>(visitor)));
+        return lifted(visit(std::forward<TVisitor>(visitor)))(std::forward<TMonad>(monad));
     }
 
     /**
-     * @brief Returns a lambda that visits a variant in a monad with the given visitor (for use with pipe operator)
-     *
-     * This overload takes a visitor and returns a lambda that can be used with the pipe operator,
-     * enabling functional composition with monadic variants.
-     *
-     * @tparam TVisitor The visitor callable type (deduced)
-     * @param visitor A callable that can handle all alternatives in the variant
-     * @return A lambda that takes a monad containing a variant and applies the visitor to it
+     * @brief Returns a pipe adaptor that applies a visitor to a variant inside a monad.
      *
      * @code
      * fxt::optional<fxt::variant<int, double, std::string>> opt{fxt::variant<int, double, std::string>{3.14}};
-     * auto result = opt | fxt::mvisit([](auto&& val) {
-     *     return std::to_string(val);
-     * });
+     * auto result = opt | fxt::mvisit([](auto&& val) { return std::to_string(val); });
      * // result is fxt::optional<std::string> containing "3.14"
      * @endcode
      */
     template<typename TVisitor>
     constexpr auto mvisit(TVisitor&& visitor)
     {
-        return [visitor = std::forward<TVisitor>(visitor)]<typename TMonad>(TMonad&& monad)
-            requires monad_like<std::remove_cvref_t<TMonad>>
-        {
-            return std::forward<TMonad>(monad).transform(visit(visitor));
-        };
+        return lifted(visit(std::forward<TVisitor>(visitor)));
     }
 }

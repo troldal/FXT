@@ -66,6 +66,7 @@
 #pragma once
 
 #include "../monads/Expected.hpp"
+#include "../monads/Lifted.hpp"
 #include "../monads/Optional.hpp"
 #include "FlatTuple.hpp"
 #include "TupleAppend.hpp"
@@ -172,12 +173,7 @@ namespace fxt
     constexpr auto mtuple_select()
     {
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
-        return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([](auto&& tpl) {
-                return impl::make_tuple_like<decltype(tpl)>(
-                    fxt::get<Is>(std::forward<decltype(tpl)>(tpl))...);
-            });
-        };
+        return lifted(tuple_select<Is...>());
     }
 
     // ========================================================================
@@ -206,11 +202,6 @@ namespace fxt
         requires (sizeof...(Ts) >= 1)
     constexpr auto mtuple_select()
     {
-        return []<typename TMonad>(TMonad&& monad) {
-            return std::forward<TMonad>(monad).transform([](auto&& tpl) {
-                return impl::make_tuple_like<decltype(tpl)>(
-                    fxt::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
-            });
-        };
+        return lifted(tuple_select<Ts...>());
     }
 }    // namespace fxt

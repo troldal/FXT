@@ -108,6 +108,7 @@
 
 #include "FlatTuple.hpp"
 #include "../concepts/IsTuple.hpp"
+#include "../monads/Lifted.hpp"
 #include <utility>
 #include <type_traits>
 
@@ -239,58 +240,22 @@ namespace fxt
     template<typename F, typename Container>
     constexpr auto mtuple_transform(F&& f, Container&& container)
     {
-        return std::forward<Container>(container).transform([f = std::forward<F>(f)](auto&& tpl) {
-            return fxt::tuple_transform(f, std::forward<decltype(tpl)>(tpl));
-        });
+        return lifted(tuple_transform(std::forward<F>(f)))(std::forward<Container>(container));
     }
 
     /**
-     * @brief Transform each element of a tuple inside a monad by applying a callable (curried version)
+     * @brief Returns a pipe adaptor that transforms each element of a tuple inside a monad.
      *
-     * Returns a lambda that transforms each element of a tuple inside a monad.
-     * This overload enables pipeline-style usage with the pipe operator.
-     * Works with fxt::expected or fxt::optional containing either fxt::tuple or fxt::flat_tuple.
-     *
-     * @tparam F The callable type (deduced)
-     * @param f The callable to apply to each tuple element
-     * @return A lambda that takes a monad<tuple> and returns a monad<transformed_tuple>
-     *
-     * @section Usage
      * @code
-     * // Pipe operator with fxt::expected containing fxt::tuple
      * auto exp = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::make_tuple(1, 2, 3)};
      * auto result = exp | fxt::mtuple_transform([](auto x) { return x * 2; });
      * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 4, 6}
-     *
-     * // Pipe operator with fxt::optional containing fxt::flat_tuple
-     * auto opt = fxt::optional<fxt::flat_tuple<double, double>>{fxt::make_flat_tuple(1.0, 2.0)};
-     * auto result2 = opt | fxt::mtuple_transform([](auto x) { return x + 1.0; });
-     * // result2 is fxt::optional<fxt::flat_tuple<double, double>> containing {2.0, 3.0}
-     *
-     * // Chaining with other monadic operations
-     * auto exp2 = fxt::expected<fxt::tuple<int, int, int>, Error>{fxt::make_tuple(1, 2, 3)};
-     * auto result3 = exp2
-     *     | fxt::mtuple_transform([](auto x) { return x * 2; })
-     *     | fxt::mselect<0, 2>();
-     * // result3 is fxt::expected<fxt::tuple<int, int>, Error> containing {2, 6}
-     *
-     * // Error propagation
-     * auto exp_err = fxt::expected<fxt::tuple<int, int>, Error>{fxt::unexpected{Error{}}};
-     * auto result4 = exp_err | fxt::mtuple_transform([](auto x) { return x * 2; });
-     * // result4 is fxt::expected<fxt::tuple<int, int>, Error> containing the error
-     *
-     * // None propagation
-     * auto opt_none = fxt::optional<fxt::tuple<int, int>>{};
-     * auto result5 = opt_none | fxt::mtuple_transform([](auto x) { return x * 2; });
-     * // result5 is fxt::optional<fxt::tuple<int, int>> containing nullopt
      * @endcode
      */
     template<typename F>
     constexpr auto mtuple_transform(F&& f)
     {
-        return [f = std::forward<F>(f)]<typename Container>(Container&& container) {
-            return fxt::mtuple_transform(f, std::forward<Container>(container));
-        };
+        return lifted(tuple_transform(std::forward<F>(f)));
     }
 
 } // namespace fxt
