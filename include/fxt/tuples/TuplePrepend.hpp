@@ -236,14 +236,17 @@ namespace fxt
                 constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
                 constexpr std::size_t M = sizeof...(Us) + 1;
 
-                // Unpack the captured tuple and pass to prepend_impl_variadic
-                return [&t, &values, N]<std::size_t... I>(std::index_sequence<I...>) {
+                // Pass std::make_index_sequence<N>{} as an argument to avoid capturing N,
+                // which MSVC rejects when used in make_index_sequence inside the lambda.
+                return [&t, &values]<std::size_t... J, std::size_t... I>(
+                    std::index_sequence<J...>, std::index_sequence<I...>)
+                {
                     return impl::prepend_impl_variadic(
                         std::forward<Tuple>(t),
-                        std::make_index_sequence<N>{},
+                        std::index_sequence<J...>{},
                         std::move(fxt::get<I>(values))...
                     );
-                }(std::make_index_sequence<M>{});
+                }(std::make_index_sequence<N>{}, std::make_index_sequence<M>{});
             };
         }
     }

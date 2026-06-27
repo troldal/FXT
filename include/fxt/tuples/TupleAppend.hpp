@@ -242,18 +242,22 @@ namespace fxt
                         std::forward<U>(u), std::forward<Us>(us)...}]<class Tuple>(Tuple&& t) mutable {
                 constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
                 constexpr std::size_t M = sizeof...(Us) + 1;
-                return [&t, &values]<std::size_t... I>(std::index_sequence<I...>) {
+                // Pass std::make_index_sequence<N>{} as an argument to avoid capturing N,
+                // which MSVC rejects when there is no default capture mode.
+                return [&t, &values]<std::size_t... J, std::size_t... I>(
+                    std::index_sequence<J...>, std::index_sequence<I...>)
+                {
                     if constexpr (std::is_copy_constructible_v<std::decay_t<U>> &&
                                   (std::is_copy_constructible_v<std::decay_t<Us>> && ...)) {
                         return impl::append_impl_variadic(
-                            std::forward<Tuple>(t), std::make_index_sequence<N>{},
+                            std::forward<Tuple>(t), std::index_sequence<J...>{},
                             std::as_const(fxt::get<I>(values))...);
                     } else {
                         return impl::append_impl_variadic(
-                            std::forward<Tuple>(t), std::make_index_sequence<N>{},
+                            std::forward<Tuple>(t), std::index_sequence<J...>{},
                             std::move(fxt::get<I>(values))...);
                     }
-                }(std::make_index_sequence<M>{});
+                }(std::make_index_sequence<N>{}, std::make_index_sequence<M>{});
             };
         }
     }
