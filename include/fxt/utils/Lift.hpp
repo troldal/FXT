@@ -38,8 +38,9 @@
 
 */
 
-
 #pragma once
+
+#include <utility>
 
 /**
  * @brief Perfect forwarding macro that wraps std::forward with automatic type deduction.
@@ -53,20 +54,15 @@
  * @example
  * template<typename T>
  * void foo(T&& arg) {
- *     bar(FWD(arg));  // Equivalent to: bar(std::forward<decltype(arg)>(arg))
+ *     bar(FXT_FWD(arg));  // Equivalent to: bar(std::forward<decltype(arg)>(arg))
  * }
  */
-// TODO: SAFETY — FWD and LIFT are unprefixed object-like macro names defined for every
-//       includer of fxt.hpp; they leak into all downstream code and will silently collide
-//       with other libraries' FWD/LIFT macros (a common name in forwarding utilities).
-//       Prefix them (FXT_FWD / FXT_LIFT) and/or guard with #ifndef. Also: this header uses
-//       std::forward but does not #include <utility>.
-#define FWD(...) std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__)
+#define FXT_FWD(...) std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
 /**
  * @brief Lifts a function or callable into a generic lambda with perfect forwarding.
  *
- * The LIFT macro converts any function, method, or callable into a generic lambda that:
+ * The FXT_LIFT macro converts any function, method, or callable into a generic lambda that:
  * - Accepts any number and type of arguments via variadic templates
  * - Perfectly forwards all arguments using FWD
  * - Preserves the noexcept specification of the original callable
@@ -87,18 +83,18 @@
  *
  * @example
  * // Lifting an overloaded function
- * auto get_first = LIFT(std::get<0>);
+ * auto get_first = FXT_LIFT(std::get<0>);
  * auto result = tuple_opt | fxt::transform(get_first);
  *
  * @example
  * // Using with pipe operator for transformations
  * auto result = optional
- *     | fxt::transform(LIFT(std::toupper))
- *     | fxt::transform(LIFT(std::abs));
+ *     | fxt::transform(FXT_LIFT(std::toupper))
+ *     | fxt::transform(FXT_LIFT(std::abs));
  *
  * @example
  * // Lifting a template function
- * auto to_string = LIFT(std::to_string);
+ * auto to_string = FXT_LIFT(std::to_string);
  * auto str_opt = int_opt | fxt::transform(to_string);
  */
-#define LIFT(X) [](auto&&... args) noexcept(noexcept(X(FWD(args)...))) -> decltype(X(FWD(args)...)) { return X(FWD(args)...); }
+#define FXT_LIFT(X) [](auto&&... args) noexcept(noexcept(X(FXT_FWD(args)...))) -> decltype(X(FXT_FWD(args)...)) { return X(FXT_FWD(args)...); }
