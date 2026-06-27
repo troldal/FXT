@@ -39,6 +39,7 @@ add_executable(fxt_tests
         TuplePrependTests.cpp
         TupleReverseTests.cpp
         TupleSizeTests.cpp
+        VariantHoldsAlternativeTests.cpp
         VariantIndexTests.cpp
         VariantVisitTests.cpp
         VariantWhenTests.cpp
