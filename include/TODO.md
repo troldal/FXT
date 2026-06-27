@@ -7,6 +7,33 @@ that arguably do not belong here, and functionality that is missing.
 
 ---
 
+## Resolved (this refactor)
+
+The following items from this document (and associated inline TODOs) have been
+addressed. They are struck through in their original sections below.
+
+| Item | What was done |
+|------|---------------|
+| `failure` hash bug | `std::hash<fxt::failure>` now hashes `message_view()` only, consistent with `operator==`. |
+| `attempt` noexcept safety | `failure(exception_ptr)` is now non-allocating (message extracted lazily); `attempt`'s `noexcept` is now truthful. |
+| `VariantWhen.hpp` dangling reference | All four overloads (`when`/`mwhen`, direct + curried) now return by value for rvalue inputs via `std::conditional_t` trailing return type. Constraint tightened to `std::invocable<F, T&>`. |
+| `VariantTransformWhen.hpp` dangling reference | Same fix applied to all four `transform_when`/`mtransform_when` overloads. |
+| `VariantHoldsAlternative.hpp` missing pipe form | Added `holds_alternative<T>()`, `mholds_alternative<T>(monad)`, and `mholds_alternative<T>()` pipe form; tests and demo written. |
+| `Curry.hpp` `inline auto` → `inline constexpr auto` | Done; self-reference changed to `this auto const&`. |
+| `TupleAppend.hpp` / `TuplePrepend.hpp` MSVC `N` capture | Inner lambda now receives `std::make_index_sequence<N>{}` as an argument rather than capturing `N`, fixing MSVC C3493. |
+| `Lazy.hpp` — explicit copy/move constructors | `explicit` removed; `auto copy = expensive;` now compiles. |
+| `Lazy.hpp` — dead `make_monad_result` trait | Removed; it was unused and broke self-containment (referenced `fxt::expected`/`fxt::failure` without including them). |
+| `Lazy.hpp` — commented-out reference implementations | ~85 lines of dead code removed. |
+| `Lazy.hpp` — redundant `optional<variant<V,E>>` storage | Replaced with `variant<monostate, V, E>`. |
+| `Lazy.hpp` — callable never freed | `state::function` is now `optional<Fn>`; reset after `call_once` completes. |
+| `Lazy.hpp` — concept under-constrains | `LazyInvocable` now requires `copy_constructible` (move-only types rejected) and excludes `exception_ptr` / `monostate` return types. |
+| `Lazy.hpp` — dangling reference from `value()` | All accessors return `value_type` by value; `value()` and `operator const value_type&()` have been eliminated. |
+| `~400 lines of commented-out code` (§3 table) | `Lazy.hpp` cleaned this session; `Tuple.hpp`, `Optional.hpp`, `Expected.hpp`, `Get.hpp`, `Apply.hpp`, `ApplyReplace.hpp`, `TuplePipe.hpp`, `IsOptional.hpp` were already clean. |
+| `broken tap` (Priority 1) | `tap` already returns the container (not `void`); the "returns void" description was stale. The tap/tee duplication (see §3) remains open. |
+| `flat_tuple` `if constexpr` dispatch branches (§3.1 remaining concern) | Added `tuple_kind<Tuple>`, `tuple_rebind_t<Tuple, NewTs...>`, and `make_tuple_like<Tuple>(args...)` to `IsTuple.hpp`. All `if constexpr (is_fxt_tuple_v) / else (is_flat_tuple_v)` dispatch branches eliminated from `TupleAppend`, `TuplePrepend`, `TupleReverse`, `TupleTake`, `TupleDrop`, `TupleSelect`, `TupleTransform`, and `ApplyReplace`. Adding a third tuple kind now requires only a `tuple_kind` specialisation — no algorithm changes. |
+
+---
+
 ## 1. Library identity: adaptors over std types — embrace it
 
 `fxt::tuple`, `fxt::optional`, `fxt::expected`, `fxt::variant` and `fxt::get`/
@@ -90,34 +117,37 @@ ways to do the same thing. Pick winners:
 
 | Keep | Remove / fold in | Why |
 |------|------------------|-----|
-| `tee`, `tee_error`, `tee_none` (renamed `tap`?) | `Tap.hpp` entirely | Tap is a broken duplicate (returns void). One name, one file. |
+| `tee`, `tee_error`, `tee_none` (renamed `tap`?) | `Tap.hpp` entirely | `tap`/`tee` are duplicates; `Tap.hpp` also has the dangling-reference return bug (`std::forward` on rvalue container) that was fixed in `VariantWhen.hpp` but not here. One name, one file. |
 | `mtuple_append` | `mappend` (`Append.hpp`) | Same operation, two names; mappend's error-conversion feature can be folded into mtuple_append. |
 | `mapply` | The plain-tuple overloads inside `mselect` | `mselect`'s overload set mixes monadic and plain handling; `select`/`mselect` should mirror `take`/`mtake`. |
 | `tuple_transform` | doc-name `transform_tuple` | One spelling; fix the ~6 files whose examples use the other. |
 | `for_each` (ranges) + `tuple_for_each` | `tuple_foreach` spelling | One word-separation convention. |
 | named function (e.g. `or_value`/`either`) | `operator\|\|` overloads (`LogicalOr.hpp`) | Operator syntax that silently evaluates both sides is a trap; a named function makes the eager evaluation visible. |
-| — | ~400 lines of commented-out code | `Tuple.hpp`, `Get.hpp`, `Apply.hpp`, `ApplyReplace.hpp`, `TuplePipe.hpp`, `Expected.hpp`, `Optional.hpp`, `IsOptional.hpp`, `Lazy.hpp`. Git history preserves it. |
 
-### 3.1 `flat_tuple`: fix it or drop it
+### 3.1 `flat_tuple`: ✓ resolved
 
-`flat_tuple` promises "contiguous storage, better cache locality" but is
-implemented as `std::array<std::variant<indexed<I, Ts>...>, N>`: every slot is
-`max(sizeof(Ts)...)` plus a discriminator, access goes through a variant, there
-are no `tuple_size`/`tuple_element` specializations (no structured bindings, no
-`std::apply`), no comparisons, and `get` is neither constexpr nor noexcept.
-Meanwhile every tuple algorithm in the library carries a second overload or
-`if constexpr` branch to support it — it roughly **doubles the maintenance cost
-of the entire `tuples/` directory**.
+The previous criticism (variant-per-slot storage, no tuple protocol, no
+comparisons, non-constexpr/non-noexcept `get`) no longer applies. The
+implementation was substantially refactored:
 
-Options, in order of preference:
-
-1. **Drop it.** For homogeneous data, `std::array` + `as_array` already covers
-   the use case; for heterogeneous data, std::tuple's layout is fine.
-2. Reimplement honestly (aligned byte buffer + offset table), give it the full
-   tuple protocol, and benchmark to justify its existence (`benchmarks/` exists).
-3. Keep, but quarantine: make the generic algorithms dispatch through
-   `fxt::get`/`fxt::tuple_size_v` only (most already do), delete the
-   per-type duplicate overloads in `Apply.hpp`/`ApplyAppend.hpp`/`TupleCat.hpp`.
+- **Storage**: each element `Ts[I]` lives in a `flat_leaf<I, T>` base class.
+  Memory layout is identical to `struct { T0 e0; T1 e1; ... }` — no variant,
+  no discriminator, no `max(sizeof(Ts)...)` overhead.
+- **Access**: `static_cast` to the appropriate base — O(1), `constexpr`,
+  `noexcept`, no runtime branching.
+- **Instantiation depth**: O(1) via a single pack-expansion inheritance step
+  (vs. `std::tuple`'s O(N) recursive chain) — the stated design goal is
+  **compilation speed**, which is legitimate and measurable.
+- **Tuple protocol**: `std::tuple_size` and `std::tuple_element` are specialised
+  in `TupleSize.hpp` / `TupleElement.hpp`; structured bindings and `std::apply`
+  work.
+- **Comparisons**: `operator==` and `operator<=>` are implemented.
+- **`get`**: `constexpr` and `noexcept`.
+- **Algorithm dispatch**: `fxt::impl::tuple_kind<Tuple>` / `tuple_rebind_t` /
+  `make_tuple_like` added to `IsTuple.hpp`. All `if constexpr (is_fxt_tuple_v) /
+  else (is_flat_tuple_v)` branches in the eight affected algorithm headers have
+  been eliminated. Adding a new tuple kind requires only a `tuple_kind`
+  specialisation — no algorithm changes.
 
 ### 3.2 The `m`-prefix family: generate, don't hand-write
 
@@ -126,7 +156,7 @@ literally `container.transform([](auto&& x){ return op(x); })`. That is ~15
 hand-rolled wrappers (mtake, mdrop, mtuple_reverse, mtuple_transform, mselect,
 mget, mindex, mvisit, mas_array, ...), each with its own doc block and its own
 chance of divergence (several have already diverged: const-only parameters,
-missing rvalue support, the Case-2b bug in `Apply.hpp`).
+missing rvalue support).
 
 **Proposal:** one lifting combinator:
 
@@ -174,8 +204,8 @@ works without parentheses — matching `std::views::reverse` precedent.
   guards.
 - **`LogicalOr.hpp`** in its operator form — see §3 table.
 - **`utils/TypeValue.hpp`.** Tag-dispatch utility used by nothing else in the
-  library; docs refer to a type (`fxt::Type`) that doesn't exist. Either adopt
-  it somewhere (e.g. typed selection) or move it out.
+  library. The docs still refer to `fxt::Type<...>` which does not exist (the
+  actual type is `fxt::type_value`); fix or remove.
 
 A reasonable end-state: `fxt` = concepts + monads + tuples + variants + ranges +
 the FP utils (curry, overload, attempt/failure, unit), everything else split out.
@@ -235,9 +265,9 @@ containers belongs here too.
 ### 5.6 Quality infrastructure
 - **Compile the documentation.** A large fraction of the inline-TODO findings
   were doc examples that do not compile (`fxt::value` vs `fxt::value()`,
-  `fxt::append`, `transform_tuple`, `Index<>` vs `IndexOf<>`, lazy's
-  `auto copy = expensive;`). Extract `@code` blocks into a doc-snippet test
-  target so they can never rot again.
+  `fxt::append`, `transform_tuple`, `Index<>` vs `IndexOf<>`). Note: `lazy`'s
+  `auto copy = expensive;` now compiles correctly. Extract remaining `@code`
+  blocks into a doc-snippet test target so they can never rot again.
 - **Single-header / module distribution.** The 39-line license banner is
   duplicated in ~60 files (~2,300 lines); consider a one-line SPDX header
   (`// SPDX-License-Identifier: MIT`) per file with the full text in LICENSE,
@@ -254,8 +284,11 @@ containers belongs here too.
 
 ## 6. Suggested priority order
 
-1. **Fix the outright bugs** (broken `tap`, `failure` hash, `mapply` Case 2b,
-   single-use adaptors) — inline TODOs mark each site.
+1. ~~**Fix the outright bugs**~~ (`failure` hash ✓, `attempt` noexcept ✓,
+   `VariantWhen`/`VariantTransformWhen` dangling returns ✓, `flat_tuple` algorithm
+   dispatch branches ✓) — **Remaining:** tap/tee duplication (dangling-return bug
+   still present in `Tap.hpp`), `mapply` Case 2b (no inline TODO found — needs
+   investigation), `TypeValue.hpp` doc/name mismatch.
 2. **§2 pipe unification** — everything else (composition, bare nullary
    adaptors, removing global operators) builds on it.
 3. **§3 surface reduction** (tap/tee, mappend, dead code, flat_tuple decision)

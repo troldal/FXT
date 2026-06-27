@@ -99,11 +99,7 @@ namespace fxt
     constexpr auto tuple_select(Tuple&& tpl)
     {
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
-        if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<Tuple>>) {
-            return fxt::make_tuple(fxt::get<Is>(std::forward<Tuple>(tpl))...);
-        } else {
-            return fxt::make_flat_tuple(fxt::get<Is>(std::forward<Tuple>(tpl))...);
-        }
+        return impl::make_tuple_like<Tuple>(fxt::get<Is>(std::forward<Tuple>(tpl))...);
     }
 
     /** @brief Curried `tuple_select<Is...>` for pipeline usage. */
@@ -142,11 +138,7 @@ namespace fxt
               && (sizeof...(Ts) >= 1)
     constexpr auto tuple_select(TupleT&& tpl)
     {
-        if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TupleT>>) {
-            return fxt::make_flat_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
-        } else {
-            return fxt::make_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
-        }
+        return impl::make_tuple_like<TupleT>(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
     }
 
     /** @brief Curried type-based `tuple_select<Ts...>` for pipeline usage. */
@@ -155,11 +147,7 @@ namespace fxt
     constexpr auto tuple_select()
     {
         return []<typename TupleT>(TupleT&& tpl) {
-            if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TupleT>>) {
-                return fxt::make_flat_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
-            } else {
-                return fxt::make_tuple(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
-            }
+            return impl::make_tuple_like<TupleT>(fxt::get<Ts>(std::forward<TupleT>(tpl))...);
         };
     }
 
@@ -186,12 +174,8 @@ namespace fxt
         static_assert(sizeof...(Is) >= 1, "At least one index must be provided");
         return []<typename TMonad>(TMonad&& monad) {
             return std::forward<TMonad>(monad).transform([](auto&& tpl) {
-                using TupleT = std::remove_cvref_t<decltype(tpl)>;
-                if constexpr (impl::is_fxt_tuple_v<TupleT>) {
-                    return fxt::make_tuple(fxt::get<Is>(std::forward<decltype(tpl)>(tpl))...);
-                } else {
-                    return fxt::make_flat_tuple(fxt::get<Is>(std::forward<decltype(tpl)>(tpl))...);
-                }
+                return impl::make_tuple_like<decltype(tpl)>(
+                    fxt::get<Is>(std::forward<decltype(tpl)>(tpl))...);
             });
         };
     }
@@ -224,12 +208,8 @@ namespace fxt
     {
         return []<typename TMonad>(TMonad&& monad) {
             return std::forward<TMonad>(monad).transform([](auto&& tpl) {
-                using TupleT = std::remove_cvref_t<decltype(tpl)>;
-                if constexpr (impl::is_flat_tuple_v<TupleT>) {
-                    return fxt::make_flat_tuple(fxt::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
-                } else {
-                    return fxt::make_tuple(fxt::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
-                }
+                return impl::make_tuple_like<decltype(tpl)>(
+                    fxt::get<Ts>(std::forward<decltype(tpl)>(tpl))...);
             });
         };
     }

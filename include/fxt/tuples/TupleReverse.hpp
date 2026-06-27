@@ -150,11 +150,8 @@ namespace fxt
         constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
 
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-            if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<Tuple>>) {
-                return fxt::make_tuple(fxt::get<tupleSize - 1 - Indices>(std::forward<Tuple>(tpl))...);
-            } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<Tuple>>) {
-                return fxt::make_flat_tuple(fxt::get<tupleSize - 1 - Indices>(std::forward<Tuple>(tpl))...);
-            }
+            return impl::make_tuple_like<Tuple>(
+                fxt::get<tupleSize - 1 - Indices>(std::forward<Tuple>(tpl))...);
         }(std::make_index_sequence<tupleSize>{});
     }
 
@@ -234,11 +231,8 @@ namespace fxt
             constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
 
             return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<TValue>>) {
-                    return fxt::make_tuple(fxt::get<tupleSize - 1 - Indices>(std::forward<TValue>(tpl))...);
-                } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<TValue>>) {
-                    return fxt::make_flat_tuple(fxt::get<tupleSize - 1 - Indices>(std::forward<TValue>(tpl))...);
-                }
+                return impl::make_tuple_like<TValue>(
+                    fxt::get<tupleSize - 1 - Indices>(std::forward<TValue>(tpl))...);
             }(std::make_index_sequence<tupleSize>{});
         });
     }

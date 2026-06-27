@@ -157,11 +157,8 @@ namespace fxt
         constexpr std::size_t tupleSize = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
 
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-            if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<Tuple>>) {
-                return fxt::make_tuple(std::invoke(std::forward<F>(f), fxt::get<Indices>(std::forward<Tuple>(tpl)))...);
-            } else if constexpr (impl::is_flat_tuple_v<std::remove_cvref_t<Tuple>>) {
-                return fxt::make_flat_tuple(std::invoke(std::forward<F>(f), fxt::get<Indices>(std::forward<Tuple>(tpl)))...);
-            }
+            return impl::make_tuple_like<Tuple>(
+                std::invoke(std::forward<F>(f), fxt::get<Indices>(std::forward<Tuple>(tpl)))...);
         }(std::make_index_sequence<tupleSize>{});
     }
 

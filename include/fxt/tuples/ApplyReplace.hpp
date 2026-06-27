@@ -138,18 +138,10 @@ namespace fxt
         using result_type = impl::tuple_elements<CleanTuple>::template invoke_result_t<F>;
         if constexpr (std::is_void_v<result_type>) {
             fxt::apply(std::forward<F>(f), std::forward<TTuple>(t));
-            if constexpr (impl::is_flat_tuple_v<CleanTuple>) {
-                return fxt::flat_tuple<>{};
-            } else {
-                return fxt::tuple<>{};
-            }
+            return impl::make_tuple_like<CleanTuple>();
         } else {
             auto result = fxt::apply(std::forward<F>(f), std::forward<TTuple>(t));
-            if constexpr (impl::is_flat_tuple_v<CleanTuple>) {
-                return fxt::make_flat_tuple(std::move(result));
-            } else {
-                return fxt::make_tuple(std::move(result));
-            }
+            return impl::make_tuple_like<CleanTuple>(std::move(result));
         }
     }
 
@@ -213,11 +205,7 @@ namespace fxt
             return std::forward<TArg>(arg).and_then([this]<typename T0>(T0&& tuple) {
                 auto result = fxt::apply(function, std::forward<T0>(tuple));
                 return result.transform([]<typename TValue>(TValue&& value) {
-                    if constexpr (impl::is_flat_tuple_v<TTuple>) {
-                        return fxt::make_flat_tuple(std::forward<TValue>(value));
-                    } else {
-                        return fxt::make_tuple(std::forward<TValue>(value));
-                    }
+                    return impl::make_tuple_like<TTuple>(std::forward<TValue>(value));
                 });
             });
         }
@@ -231,11 +219,7 @@ namespace fxt
         {
             return std::forward<TArg>(arg).transform([this]<typename TValue>(TValue&& tuple) {
                 fxt::apply(function, std::forward<TValue>(tuple));
-                if constexpr (impl::is_flat_tuple_v<TTuple>) {
-                    return fxt::flat_tuple<>{};
-                } else {
-                    return fxt::tuple<>{};
-                }
+                return impl::make_tuple_like<TTuple>();
             });
         }
 
@@ -249,11 +233,7 @@ namespace fxt
         {
             return std::forward<TArg>(arg).transform([this]<typename TValue>(TValue&& tuple) {
                 auto result = fxt::apply(function, std::forward<TValue>(tuple));
-                if constexpr (impl::is_flat_tuple_v<TTuple>) {
-                    return fxt::make_flat_tuple(std::move(result));
-                } else {
-                    return fxt::make_tuple(std::move(result));
-                }
+                return impl::make_tuple_like<TTuple>(std::move(result));
             });
         }
     };

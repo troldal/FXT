@@ -119,42 +119,22 @@
 
 namespace fxt::impl
 {
-    // Generic append implementation that works for both tuple types - single value
+    // Generic append implementation — single value
     template<class Tuple, class U, std::size_t... I>
     auto append_impl(Tuple&& t, U&& u, std::index_sequence<I...>)
     {
-        // Determine the result tuple type based on input
-        if constexpr (is_fxt_tuple_v<Tuple>) {
-            // For fxt::tuple (std::tuple)
-            using ResultType = fxt::tuple<std::decay_t<std::tuple_element_t<I, std::remove_reference_t<Tuple>>>..., std::decay_t<U>>;
-            return ResultType(fxt::get<I>(std::forward<Tuple>(t))..., std::forward<U>(u));
-        } else if constexpr (is_flat_tuple_v<Tuple>) {
-            // For fxt::flat_tuple - extract element types from the tuple
-            using TupleType = std::remove_cvref_t<Tuple>;
-            using ResultType = decltype([&]<typename... Ts>(flat_tuple<Ts...>*) -> flat_tuple<std::decay_t<Ts>..., std::decay_t<U>> {
-                return std::declval<flat_tuple<std::decay_t<Ts>..., std::decay_t<U>>>();
-            }(static_cast<TupleType*>(nullptr)));
-            return ResultType(fxt::get<I>(std::forward<Tuple>(t))..., std::forward<U>(u));
-        }
+        return make_tuple_like<Tuple>(
+            fxt::get<I>(std::forward<Tuple>(t))...,
+            std::forward<U>(u));
     }
 
-    // Generic append implementation that works for both tuple types - multiple values
+    // Generic append implementation — multiple values
     template<class Tuple, class... Us, std::size_t... I>
     auto append_impl_variadic(Tuple&& t, std::index_sequence<I...>, Us&&... us)
     {
-        // Determine the result tuple type based on input
-        if constexpr (is_fxt_tuple_v<Tuple>) {
-            // For fxt::tuple (std::tuple)
-            using ResultType = fxt::tuple<std::decay_t<std::tuple_element_t<I, std::remove_reference_t<Tuple>>>..., std::decay_t<Us>...>;
-            return ResultType(fxt::get<I>(std::forward<Tuple>(t))..., std::forward<Us>(us)...);
-        } else if constexpr (is_flat_tuple_v<Tuple>) {
-            // For fxt::flat_tuple - extract element types from the tuple
-            using TupleType = std::remove_cvref_t<Tuple>;
-            using ResultType = decltype([&]<typename... Ts>(flat_tuple<Ts...>*) -> flat_tuple<std::decay_t<Ts>..., std::decay_t<Us>...> {
-                return std::declval<flat_tuple<std::decay_t<Ts>..., std::decay_t<Us>...>>();
-            }(static_cast<TupleType*>(nullptr)));
-            return ResultType(fxt::get<I>(std::forward<Tuple>(t))..., std::forward<Us>(us)...);
-        }
+        return make_tuple_like<Tuple>(
+            fxt::get<I>(std::forward<Tuple>(t))...,
+            std::forward<Us>(us)...);
     }
 
 }    // namespace fxt::impl

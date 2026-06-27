@@ -39,7 +39,7 @@
 */
 
 /**
- * @file Drop.hpp
+ * @file TupleDrop.hpp
  * @brief Tuple element removal: tuple_drop, tuple_drop_last and their monadic lifts
  *
  * ## Core operations
@@ -65,7 +65,6 @@
 
 #include <tuple>
 #include <utility>
-#include "FlatTuple.hpp"
 #include "TupleAppend.hpp"
 
 namespace fxt
@@ -95,11 +94,7 @@ namespace fxt
         constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
         static_assert(X <= N, "Cannot drop more elements than the tuple size");
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            if constexpr (impl::is_fxt_tuple_v<Tuple>) {
-                return fxt::make_tuple(fxt::get<Is + X>(std::forward<Tuple>(tpl))...);
-            } else {
-                return fxt::make_flat_tuple(fxt::get<Is + X>(std::forward<Tuple>(tpl))...);
-            }
+            return impl::make_tuple_like<Tuple>(fxt::get<Is + X>(std::forward<Tuple>(tpl))...);
         }(std::make_index_sequence<N - X>{});
     }
 
@@ -137,11 +132,7 @@ namespace fxt
         constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<Tuple>>;
         static_assert(X <= N, "Cannot drop more elements than the tuple size");
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            if constexpr (impl::is_fxt_tuple_v<Tuple>) {
-                return fxt::make_tuple(fxt::get<Is>(std::forward<Tuple>(tpl))...);
-            } else {
-                return fxt::make_flat_tuple(fxt::get<Is>(std::forward<Tuple>(tpl))...);
-            }
+            return impl::make_tuple_like<Tuple>(fxt::get<Is>(std::forward<Tuple>(tpl))...);
         }(std::make_index_sequence<N - X>{});
     }
 
@@ -174,11 +165,7 @@ namespace fxt
             constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
             static_assert(X <= N, "Cannot drop more elements than the tuple size");
             return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<TValue>>) {
-                    return fxt::make_tuple(fxt::get<Is + X>(std::forward<TValue>(tpl))...);
-                } else {
-                    return fxt::make_flat_tuple(fxt::get<Is + X>(std::forward<TValue>(tpl))...);
-                }
+                return impl::make_tuple_like<TValue>(fxt::get<Is + X>(std::forward<TValue>(tpl))...);
             }(std::make_index_sequence<N - X>{});
         });
     }
@@ -220,11 +207,7 @@ namespace fxt
             constexpr std::size_t N = fxt::tuple_size_v<std::remove_reference_t<TValue>>;
             static_assert(X <= N, "Cannot drop more elements than the tuple size");
             return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                if constexpr (impl::is_fxt_tuple_v<std::remove_cvref_t<TValue>>) {
-                    return fxt::make_tuple(fxt::get<Is>(std::forward<TValue>(tpl))...);
-                } else {
-                    return fxt::make_flat_tuple(fxt::get<Is>(std::forward<TValue>(tpl))...);
-                }
+                return impl::make_tuple_like<TValue>(fxt::get<Is>(std::forward<TValue>(tpl))...);
             }(std::make_index_sequence<N - X>{});
         });
     }

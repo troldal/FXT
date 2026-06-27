@@ -76,6 +76,41 @@ namespace fxt::impl
     inline constexpr bool is_tuple_like_v = is_fxt_tuple_v<T> || is_flat_tuple_v<T>;
 
     // ------------------------------------------------------------------
+    // tuple_kind<Tuple>: maps a concrete tuple type to a rebind alias.
+    //
+    // Specialize this for any new tuple-like type to opt into the generic
+    // algorithms (TupleAppend, TupleTake, TupleTransform, etc.) without
+    // adding new if constexpr branches.
+    // ------------------------------------------------------------------
+    template<typename Tuple>
+    struct tuple_kind;  // intentionally undefined — ill-formed for non-tuple types
+
+    template<typename... Ts>
+    struct tuple_kind<fxt::tuple<Ts...>> {
+        template<typename... NewTs>
+        using rebind = fxt::tuple<NewTs...>;
+    };
+
+    template<typename... Ts>
+    struct tuple_kind<flat_tuple<Ts...>> {
+        template<typename... NewTs>
+        using rebind = flat_tuple<NewTs...>;
+    };
+
+    // Produce a same-kind tuple type with a different element list.
+    template<typename Tuple, typename... NewTs>
+    using tuple_rebind_t =
+        typename tuple_kind<std::remove_cvref_t<Tuple>>::template rebind<NewTs...>;
+
+    // Construct a same-kind tuple from values; element types are decay_t of
+    // the argument types, matching the behaviour of make_tuple / make_flat_tuple.
+    template<typename Tuple, typename... Ts>
+    constexpr auto make_tuple_like(Ts&&... args)
+    {
+        return tuple_rebind_t<Tuple, std::decay_t<Ts>...>(std::forward<Ts>(args)...);
+    }
+
+    // ------------------------------------------------------------------
     // Generic tuple-protocol detection: anything with std::tuple_size,
     // std::tuple_element, and a working get<I> (member or ADL) for every
     // index — e.g. std::pair, std::array, std::ranges::subrange, and other
