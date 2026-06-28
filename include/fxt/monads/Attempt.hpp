@@ -71,9 +71,10 @@
  */
 
 #pragma once
-#include "Failure.hpp"
-#include "Unit.hpp"
 #include "../concepts/IsExpected.hpp"
+#include "../utils/Failure.hpp"
+#include "../utils/Unit.hpp"
+#include "Expected.hpp"
 #include <concepts>
 #include <functional>
 
