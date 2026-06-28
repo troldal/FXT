@@ -10,6 +10,7 @@ add_executable(fxt_tests
         AsArrayTests.cpp
         AttemptTests.cpp
         FailureTests.cpp
+        FilterTests.cpp
         FlatTupleTests.cpp
         GetTests.cpp
         ImmutableTests.cpp
