@@ -388,6 +388,138 @@ TEST_CASE("fxt::attempt is noexcept", "[attempt][expected][noexcept]")
     }
 }
 
+// ---------------------------------------------------------------------------
+// Pipe-adaptor overload: attempt(fn) — returns a closure for use with |
+// ---------------------------------------------------------------------------
+
+TEST_CASE("fxt::attempt pipe-adaptor: success path", "[attempt][adaptor]")
+{
+    SECTION("fn is called with the piped value")
+    {
+        auto result = fxt::attempt(divide, 20, 4)
+                    | fxt::attempt([](int x) { return x * 3; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 15);
+    }
+
+    SECTION("void-returning fn produces fxt::unit")
+    {
+        bool called = false;
+        auto result = fxt::attempt(divide, 10, 2)
+                    | fxt::attempt([&called](int) { called = true; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(called);
+        static_assert(std::is_same_v<decltype(*result), fxt::unit&>);
+    }
+
+    SECTION("chained attempt adaptors all succeed")
+    {
+        auto result = fxt::attempt(divide, 100, 5)
+                    | fxt::attempt([](int x) { return divide(x, 2); })
+                    | fxt::attempt([](int x) { return divide(x, 5); });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 2);    // (100/5)/2/5
+    }
+
+    SECTION("stored adaptor can be applied multiple times")
+    {
+        auto double_it = fxt::attempt([](int x) { return x * 2; });
+
+        auto r1 = fxt::attempt(divide, 10, 2) | double_it;
+        auto r2 = fxt::attempt(divide, 6,  3) | double_it;
+
+        REQUIRE(r1.has_value());
+        REQUIRE(*r1 == 10);
+        REQUIRE(r2.has_value());
+        REQUIRE(*r2 == 4);
+    }
+}
+
+TEST_CASE("fxt::attempt pipe-adaptor: error propagation", "[attempt][adaptor]")
+{
+    SECTION("existing failure propagates without calling fn")
+    {
+        bool called = false;
+        auto result = fxt::attempt(divide, 10, 0)
+                    | fxt::attempt([&called](int x) { called = true; return x; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error().message().find("Division by zero") != std::string::npos);
+        REQUIRE_FALSE(called);
+    }
+
+    SECTION("failure from first adaptor propagates through subsequent adaptors")
+    {
+        bool second_called = false;
+        auto result = fxt::attempt(divide, 100, 5)
+                    | fxt::attempt([](int x) { return divide(x, 0); })    // throws
+                    | fxt::attempt([&second_called](int x) {
+                          second_called = true;
+                          return x;
+                      });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE_FALSE(second_called);
+    }
+}
+
+TEST_CASE("fxt::attempt pipe-adaptor: exception handling", "[attempt][adaptor]")
+{
+    SECTION("exception thrown by fn is caught and returned as failure")
+    {
+        auto result = fxt::attempt(divide, 10, 2)
+                    | fxt::attempt([](int) -> int { throw std::runtime_error("adaptor error"); });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error().message().find("adaptor error") != std::string::npos);
+    }
+
+    SECTION("non-std::exception is caught")
+    {
+        auto result = fxt::attempt(divide, 10, 2)
+                    | fxt::attempt([](int) -> int { throw 99; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE_FALSE(result.error().message().empty());
+    }
+
+    SECTION("exception in adaptor does not propagate")
+    {
+        REQUIRE_NOTHROW(
+            fxt::attempt(divide, 10, 2)
+                | fxt::attempt([](int) -> int { throw std::runtime_error("boom"); })
+        );
+    }
+}
+
+TEST_CASE("fxt::attempt pipe-adaptor: interop with other adaptors", "[attempt][adaptor]")
+{
+    SECTION("combined with transform")
+    {
+        auto result = fxt::attempt(divide, 20, 4)
+                    | fxt::attempt([](int x) { return x * x; })
+                    | fxt::transform([](int x) { return std::to_string(x); });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == "25");
+    }
+
+    SECTION("combined with or_else for recovery")
+    {
+        auto result = fxt::attempt(divide, 10, 2)
+                    | fxt::attempt([](int) -> int { throw std::runtime_error("oops"); })
+                    | fxt::or_else([](const fxt::failure&) {
+                          return fxt::expected<int, fxt::failure>{ 0 };
+                      });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 0);
+    }
+}
+
 TEST_CASE("fxt::attempt with complex return types", "[attempt][expected]")
 {
     SECTION("Returns std::string")

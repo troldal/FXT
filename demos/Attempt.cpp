@@ -183,6 +183,88 @@ int main() {
     std::cout << "   Result with fallback: " << safe_result << std::endl;
     std::cout << std::endl;
 
+    // =========================================================================
+    // Pipe-adaptor overload: attempt(fn)
+    //
+    // When fn is not callable with zero arguments, attempt(fn) returns a pipe
+    // closure instead of invoking fn immediately.  The closure propagates
+    // existing errors unchanged and wraps any exception thrown by fn in
+    // fxt::failure — exactly as the free-function form does.
+    // =========================================================================
+
+    // ===== Motivation: verbose vs clean =====
+    std::cout << "9. Adaptor form replaces verbose and_then wrappers:" << std::endl;
+
+    // Verbose form (before the adaptor overload existed)
+    auto verbose = fxt::attempt(divide, 100, 4)
+        .and_then([](int x) { return fxt::attempt(divide, x, 5); });
+
+    // Clean form using the pipe-adaptor overload
+    auto clean = fxt::attempt(divide, 100, 4)
+               | fxt::attempt([](int x) { return divide(x, 5); });
+
+    std::cout << "   Verbose: " << (verbose ? std::to_string(*verbose) : verbose.error().message()) << std::endl;
+    std::cout << "   Clean:   " << (clean   ? std::to_string(*clean)   : clean.error().message())   << std::endl;
+    std::cout << std::endl;
+
+    // ===== Chaining multiple adaptor steps =====
+    std::cout << "10. Chaining several adaptor steps:" << std::endl;
+
+    auto chain = fxt::attempt(divide, 120, 3)     // 40
+               | fxt::attempt([](int x) { return divide(x, 2); })     // 20
+               | fxt::attempt([](int x) { return divide(x, 4); });    // 5
+
+    if (chain)
+        std::cout << "   120 / 3 / 2 / 4 = " << *chain << std::endl;
+    std::cout << std::endl;
+
+    // ===== Error propagation: step fails, subsequent steps are skipped =====
+    std::cout << "11. Error propagation through adaptor chain:" << std::endl;
+
+    bool step3_called = false;
+    auto failed_chain = fxt::attempt(divide, 10, 2)                          // 5
+                      | fxt::attempt([](int x) { return divide(x, 0); })     // throws!
+                      | fxt::attempt([&step3_called](int x) {
+                            step3_called = true;
+                            return x;
+                        });
+
+    std::cout << "   Result: error — " << failed_chain.error().message() << std::endl;
+    std::cout << "   Step 3 called: " << (step3_called ? "yes" : "no") << std::endl;
+    std::cout << std::endl;
+
+    // ===== Combined with transform and or_else =====
+    std::cout << "12. Adaptor interoperates with transform and or_else:" << std::endl;
+
+    auto mixed = fxt::attempt(divide, 20, 4)
+               | fxt::attempt([](int x) { return divide(x, 0); })    // throws
+               | fxt::or_else([](const fxt::failure& err) {
+                     std::cout << "   Caught: " << err.message() << " — recovering\n";
+                     return fxt::expected<int, fxt::failure>{ 99 };
+                 })
+               | fxt::transform([](int x) { return "recovered value: " + std::to_string(x); });
+
+    if (mixed)
+        std::cout << "   " << *mixed << std::endl;
+    std::cout << std::endl;
+
+    // ===== Stored adaptor reused across multiple inputs =====
+    std::cout << "13. Reusable stored adaptor:" << std::endl;
+
+    auto safe_sqrt = fxt::attempt([](double x) -> double {
+        if (x < 0) throw std::domain_error("negative input");
+        return std::sqrt(x);
+    });
+
+    for (double v : {25.0, -4.0, 9.0}) {
+        auto r = fxt::attempt([v]{ return v; }) | safe_sqrt;
+        if (r)
+            std::cout << "   sqrt(" << v << ") = " << *r << std::endl;
+        else
+            std::cout << "   sqrt(" << v << ") failed: " << r.error().message() << std::endl;
+    }
+    std::cout << std::endl;
+
     std::cout << "=== Demo Complete ===" << std::endl;
     return 0;
 }

@@ -73,6 +73,9 @@
 #pragma once
 #include "Failure.hpp"
 #include "Unit.hpp"
+#include "../concepts/IsExpected.hpp"
+#include <concepts>
+#include <functional>
 
 namespace fxt
 {
@@ -141,6 +144,74 @@ namespace fxt
      * @see fxt::unit
      * @see std::invoke
      */
+    /**
+     * @brief Pipe-adaptor form of fxt::attempt for use mid-pipeline.
+     *
+     * Returns a callable that, when applied to an
+     * @c expected<T, fxt::failure> value via @c |, invokes @p fn with the
+     * contained value inside a try-catch block:
+     *
+     * - If the input already holds an error, it is propagated unchanged and
+     *   @p fn is never called.
+     * - If @p fn returns successfully, the result is wrapped in
+     *   @c expected<result_type, fxt::failure>.  Void-returning functions
+     *   produce @c fxt::unit as the value.
+     * - If @p fn throws, the exception is caught and returned as
+     *   @c unexpected<fxt::failure>, exactly as the free-function form does.
+     *
+     * This overload is selected only when @p fn is **not** callable with zero
+     * arguments, which eliminates ambiguity with the immediate-invocation form
+     * @c attempt(fn) for zero-argument callables.
+     *
+     * @note Unlike the free-function form, the returned closure is not
+     *       @c noexcept: propagating an existing @c fxt::failure through the
+     *       pipeline may copy the failure object, which can allocate.
+     *
+     * @tparam Fn Callable type accepting exactly the value type of the piped expected
+     * @param fn  The potentially-throwing function to wrap mid-pipeline
+     * @return    A pipe-adaptor closure compatible with @c operator|
+     *
+     * @code
+     * // Instead of the verbose form:
+     * fxt::attempt(parse, input)
+     *     | fxt::and_then([](auto x) { return fxt::attempt(validate, x); });
+     *
+     * // Write:
+     * fxt::attempt(parse, input)
+     *     | fxt::attempt(validate);
+     * @endcode
+     */
+    template<typename Fn>
+        requires (!std::invocable<std::decay_t<Fn>>)
+    auto attempt(Fn&& fn)
+    {
+        return [fn = std::forward<Fn>(fn)]<typename TContainer>(TContainer&& container)
+            requires expected_like<std::remove_cvref_t<TContainer>>
+                  && std::same_as<typename std::remove_cvref_t<TContainer>::error_type, fxt::failure>
+                  && std::invocable<std::decay_t<Fn>,
+                                    typename std::remove_cvref_t<TContainer>::value_type>
+        {
+            using TValue     = typename std::remove_cvref_t<TContainer>::value_type;
+            using Ret        = std::invoke_result_t<std::decay_t<Fn>, TValue>;
+            using ValueType  = std::conditional_t<std::is_void_v<Ret>, fxt::unit, Ret>;
+            using ResultType = fxt::expected<ValueType, fxt::failure>;
+
+            if (!container.has_value())
+                return ResultType{ fxt::unexpected{ std::forward<TContainer>(container).error() } };
+
+            try {
+                if constexpr (std::is_void_v<Ret>) {
+                    std::invoke(fn, std::forward<TContainer>(container).value());
+                    return ResultType{ fxt::unit{} };
+                } else {
+                    return ResultType{ std::invoke(fn, std::forward<TContainer>(container).value()) };
+                }
+            } catch (...) {
+                return ResultType{ fxt::unexpected<fxt::failure>(std::current_exception()) };
+            }
+        };
+    }
+
     template<typename Fn, typename... Args>
     requires std::invocable<Fn, Args...>
     auto attempt(Fn &&fn, Args &&...args) noexcept
