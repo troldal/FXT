@@ -301,3 +301,83 @@ TEST_CASE("to_expected on fxt::optional", "[to_expected][optional]")
         REQUIRE(failure.error() == "Processing failed");
     }
 }
+
+TEST_CASE("to_expected with error factory (lazy overload)", "[to_expected][optional][factory]")
+{
+    SECTION("factory overload: value path — factory is never called")
+    {
+        bool factory_called = false;
+        auto result = fxt::optional<int>{42}
+                    | fxt::to_expected([&]{ factory_called = true; return std::string{"no value"}; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 42);
+        REQUIRE_FALSE(factory_called);
+    }
+
+    SECTION("factory overload: empty optional — factory is called once")
+    {
+        int call_count = 0;
+        auto result = fxt::optional<int>{}
+                    | fxt::to_expected([&]{ ++call_count; return std::string{"no value"}; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "no value");
+        REQUIRE(call_count == 1);
+    }
+
+    SECTION("factory return type becomes the error type")
+    {
+        auto result = fxt::optional<int>{}
+                    | fxt::to_expected([]{ return 404; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == 404);
+    }
+
+    SECTION("factory overload chains with transform on success")
+    {
+        auto result = fxt::optional<int>{10}
+                    | fxt::to_expected([]{ return std::string{"missing"}; })
+                    | fxt::transform([](int x) { return x * 2; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 20);
+    }
+
+    SECTION("factory overload chains with transform on failure")
+    {
+        auto result = fxt::optional<int>{}
+                    | fxt::to_expected([]{ return std::string{"missing"}; })
+                    | fxt::transform([](int x) { return x * 2; });
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "missing");
+    }
+
+    SECTION("stored factory adaptor can be applied multiple times")
+    {
+        int call_count = 0;
+        auto adaptor = fxt::to_expected([&]{ ++call_count; return std::string{"err"}; });
+
+        auto r1 = fxt::optional<int>{1}  | adaptor;
+        auto r2 = fxt::optional<int>{}   | adaptor;
+        auto r3 = fxt::optional<int>{3}  | adaptor;
+        auto r4 = fxt::optional<int>{}   | adaptor;
+
+        REQUIRE(r1.has_value());
+        REQUIRE_FALSE(r2.has_value());
+        REQUIRE(r3.has_value());
+        REQUIRE_FALSE(r4.has_value());
+        REQUIRE(call_count == 2);
+    }
+
+    SECTION("rvalue optional moves its value — factory overload")
+    {
+        auto make_opt = []{ return fxt::optional<int>{99}; };
+        auto result = make_opt() | fxt::to_expected([]{ return std::string{"err"}; });
+
+        REQUIRE(result.has_value());
+        REQUIRE(*result == 99);
+    }
+}

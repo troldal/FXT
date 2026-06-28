@@ -44,18 +44,20 @@
 #include "Expected.hpp"
 #include "Optional.hpp"
 #include "../concepts/IsOptional.hpp"
+#include <concepts>
+#include <type_traits>
 
 namespace fxt
 {
     /**
-     * @brief Converts an optional-like type to fxt::expected, using a provided error value if empty.
+     * @brief Converts an optional-like type to fxt::expected, using an eager error value if empty.
      *
-     * This operation extracts the value from an optional and wraps it in an expected.
-     * If the optional is empty, an expected with the provided error is returned.
-     * The optional is taken by forwarding reference so rvalue optionals can move their
-     * contained value rather than copying it.
+     * The error value is constructed and captured when the adaptor is created, regardless
+     * of whether the optional ultimately holds a value. Prefer the factory overload when
+     * constructing the error is expensive and the optional is expected to be engaged most
+     * of the time.
      *
-     * @tparam TError The error type for the resulting expected (decayed automatically)
+     * @tparam TError The error type for the resulting expected (must not be callable with no args)
      * @param err The error value to use if the optional is empty
      * @return A pipe adaptor that accepts any optional_like container
      *
@@ -70,6 +72,7 @@ namespace fxt
      * @endcode
      */
     template<typename TError>
+        requires (!std::invocable<std::decay_t<TError>>)
     inline constexpr auto to_expected(TError&& err)
     {
         return [err = std::forward<TError>(err)]<typename TContainer>(TContainer&& opt)
@@ -80,6 +83,44 @@ namespace fxt
             if (opt.has_value())
                 return fxt::expected<TValue, EType>(std::forward<TContainer>(opt).value());
             return fxt::expected<TValue, EType>(fxt::unexpected(err));
+        };
+    }
+
+    /**
+     * @brief Converts an optional-like type to fxt::expected, using a lazy error factory if empty.
+     *
+     * The factory is invoked only when the optional is disengaged, so no error object is
+     * constructed on the success path. This overload is selected automatically when the
+     * argument is callable with no arguments and returns a non-void type.
+     *
+     * @tparam TFactory Callable type invocable with no arguments; its return type becomes the error type
+     * @param factory A no-argument callable that produces the error value on demand
+     * @return A pipe adaptor that accepts any optional_like container
+     *
+     * @code
+     * // Factory is called only when the optional is empty
+     * auto result = fxt::optional<int>{42}
+     *             | fxt::to_expected([]{ return std::string{"no value"}; });
+     * // result is fxt::expected<int, std::string>{42}   — factory never called
+     *
+     * auto error = fxt::optional<int>{fxt::nullopt}
+     *            | fxt::to_expected([]{ return std::string{"no value"}; });
+     * // error is fxt::expected<int, std::string>{fxt::unexpected("no value")}
+     * @endcode
+     */
+    template<typename TFactory>
+        requires std::invocable<std::decay_t<TFactory>>
+              && (!std::is_void_v<std::invoke_result_t<std::decay_t<TFactory>>>)
+    inline constexpr auto to_expected(TFactory&& factory)
+    {
+        return [factory = std::forward<TFactory>(factory)]<typename TContainer>(TContainer&& opt)
+            requires optional_like<std::remove_cvref_t<TContainer>>
+        {
+            using TValue = typename std::remove_cvref_t<TContainer>::value_type;
+            using EType  = std::decay_t<std::invoke_result_t<std::decay_t<TFactory>>>;
+            if (opt.has_value())
+                return fxt::expected<TValue, EType>(std::forward<TContainer>(opt).value());
+            return fxt::expected<TValue, EType>(fxt::unexpected(std::invoke(factory)));
         };
     }
 

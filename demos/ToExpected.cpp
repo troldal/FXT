@@ -267,6 +267,97 @@ int main()
         std::cout << "      Result: " << exp_result.value() << "\n";
     }
 
+    // -------------------------------------------------------------------------
+    // Factory overload: fxt::to_expected(factory)
+    // The factory is a no-argument callable whose return type becomes the error
+    // type. It is invoked only when the optional is empty, so no error object
+    // is constructed on the success path.
+    // -------------------------------------------------------------------------
+
+    // Example 14: Factory not called when optional has a value
+    std::cout << "\n14. Factory overload — factory is NOT called on the success path:\n";
+    {
+        bool factory_called = false;
+        auto result = find_user(1)
+                    | fxt::to_expected([&]{
+                          factory_called = true;
+                          return std::string{"User not found"};
+                      });
+
+        std::cout << "   Found user: " << result.value() << "\n";
+        std::cout << "   Factory called: " << (factory_called ? "yes" : "no") << "\n";
+    }
+
+    // Example 15: Factory called exactly once when optional is empty
+    std::cout << "\n15. Factory overload — factory IS called on the empty path:\n";
+    {
+        int call_count = 0;
+        auto result = find_user(999)
+                    | fxt::to_expected([&]{
+                          ++call_count;
+                          return std::string{"User not found"};
+                      });
+
+        std::cout << "   Error: " << result.error() << "\n";
+        std::cout << "   Factory call count: " << call_count << "\n";
+    }
+
+    // Example 16: Rich error object built lazily — the primary motivation
+    std::cout << "\n16. Factory builds a rich error object lazily:\n";
+    {
+        struct RequestError {
+            int         status;
+            std::string message;
+            std::string context;
+        };
+
+        auto result = get_config("missing_key")
+                    | fxt::to_expected([]{
+                          return RequestError{404, "Key not found", "get_config(\"missing_key\")"};
+                      });
+
+        if (result.has_value())
+        {
+            std::cout << "   Value: " << result.value() << "\n";
+        }
+        else
+        {
+            const auto& e = result.error();
+            std::cout << "   Error " << e.status << ": " << e.message
+                      << " [" << e.context << "]\n";
+        }
+    }
+
+    // Example 17: Contrast eager vs lazy — side by side
+    std::cout << "\n17. Eager (value) vs lazy (factory) — side by side:\n";
+    {
+        // Eager: error string always constructed, even for id == 2 (success)
+        auto eager  = find_user(2) | fxt::to_expected<std::string>("User not found");
+
+        // Lazy: factory called only if find_user returns nullopt
+        auto lazy   = find_user(2) | fxt::to_expected([]{ return std::string{"User not found"}; });
+
+        std::cout << "   Eager result:  " << eager.value()  << "\n";
+        std::cout << "   Lazy result:   " << lazy.value()   << "\n";
+    }
+
+    // Example 18: Factory overload in a pipeline
+    std::cout << "\n18. Factory overload in a pipeline:\n";
+    {
+        auto result = get_config("port")
+                    | fxt::to_expected([]{ return std::string{"port not configured"}; })
+                    | fxt::transform([](int port) { return port + 1; })
+                    | fxt::and_then([](int port) -> fxt::expected<std::string, std::string> {
+                          if (port > 65535) return fxt::unexpected<std::string>{"port out of range"};
+                          return "Listening on port " + std::to_string(port);
+                      });
+
+        if (result.has_value())
+            std::cout << "   " << result.value() << "\n";
+        else
+            std::cout << "   Error: " << result.error() << "\n";
+    }
+
     std::cout << "\n=== Demo Complete ===\n";
     return 0;
 }
