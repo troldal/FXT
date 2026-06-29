@@ -23,6 +23,9 @@ target_link_libraries(fxt_value_or_demo PRIVATE fxt::fxt)
 add_executable(fxt_curry_demo Curry.cpp)
 target_link_libraries(fxt_curry_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_ensure_demo Ensure.cpp)
+target_link_libraries(fxt_ensure_demo PRIVATE fxt::fxt)
+
 add_executable(fxt_filter_demo Filter.cpp)
 target_link_libraries(fxt_filter_demo PRIVATE fxt::fxt)
 

@@ -51,6 +51,7 @@
 #include "fxt/enums/TypedString.hpp"
 #include "fxt/monads/AndThen.hpp"
 #include "fxt/monads/Attempt.hpp"
+#include "fxt/monads/Ensure.hpp"
 #include "fxt/monads/Expected.hpp"
 #include "fxt/monads/Filter.hpp"
 #include "fxt/monads/Join.hpp"
