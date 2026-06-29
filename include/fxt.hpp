@@ -53,6 +53,7 @@
 #include "fxt/monads/Attempt.hpp"
 #include "fxt/monads/Ensure.hpp"
 #include "fxt/monads/Expected.hpp"
+#include "fxt/monads/Format.hpp"
 #include "fxt/monads/Filter.hpp"
 #include "fxt/monads/Join.hpp"
 #include "fxt/monads/Lifted.hpp"
