@@ -269,7 +269,7 @@ TEST_CASE("fxt::attempt composition with monadic operations", "[attempt][expecte
     SECTION("Chain with or_else - recovery from error")
     {
         auto result = fxt::attempt(divide, 10, 0)
-            .or_else([](const fxt::failure&) { return fxt::expected<int, fxt::failure>(42); });
+            .or_else([](const fxt::failure&) { return fxt::result<int>(42); });
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 42);
@@ -278,7 +278,7 @@ TEST_CASE("fxt::attempt composition with monadic operations", "[attempt][expecte
     SECTION("Chain with or_else - no error to recover")
     {
         auto result = fxt::attempt(divide, 10, 2)
-            .or_else([](const fxt::failure&) { return fxt::expected<int, fxt::failure>(999); });
+            .or_else([](const fxt::failure&) { return fxt::result<int>(999); });
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 5);  // Original value, or_else not invoked
@@ -290,7 +290,7 @@ TEST_CASE("fxt::attempt composition with monadic operations", "[attempt][expecte
             .transform([](int x) { return x * 2; })
             .and_then([](int x) { return fxt::attempt(divide, x, 5); })
             .transform([](int x) { return x + 10; })
-            .or_else([](const fxt::failure&) { return fxt::expected<int, fxt::failure>(0); });
+            .or_else([](const fxt::failure&) { return fxt::result<int>(0); });
 
         REQUIRE(result.has_value());
         REQUIRE(*result == 20);  // ((100/4)*2)/5 + 10 = 20
@@ -385,6 +385,58 @@ TEST_CASE("fxt::attempt is noexcept", "[attempt][expected][noexcept]")
     {
         // This should not throw, even though the lambda throws
         REQUIRE_NOTHROW(fxt::attempt([]() -> int { throw std::runtime_error("test"); }));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// fxt::result<T> alias
+// ---------------------------------------------------------------------------
+
+TEST_CASE("fxt::result<T> is an alias for expected<T, failure>", "[result][attempt]")
+{
+    SECTION("result<T> and expected<T, failure> are the same type")
+    {
+        static_assert(std::is_same_v<fxt::result<int>,
+                                     fxt::expected<int, fxt::failure>>);
+        static_assert(std::is_same_v<fxt::result<std::string>,
+                                     fxt::expected<std::string, fxt::failure>>);
+    }
+
+    SECTION("attempt returns result<T>")
+    {
+        auto r = fxt::attempt(divide, 10, 2);
+        static_assert(std::is_same_v<decltype(r), fxt::result<int>>);
+        REQUIRE(r.has_value());
+        REQUIRE(*r == 5);
+    }
+
+    SECTION("result<T> can be used as a function return type")
+    {
+        auto safe_double = [](int x) -> fxt::result<int> {
+            return fxt::attempt([x] { return x * 2; });
+        };
+
+        auto ok  = safe_double(21);
+        REQUIRE(ok.has_value());
+        REQUIRE(*ok == 42);
+    }
+
+    SECTION("result<T> works in and_then lambdas")
+    {
+        auto r = fxt::attempt(divide, 100, 5)
+            .and_then([](int x) -> fxt::result<int> { return x * 2; });
+
+        REQUIRE(r.has_value());
+        REQUIRE(*r == 40);
+    }
+
+    SECTION("result<T> is usable with std::format via fxt::formatter")
+    {
+        fxt::result<int> ok  = 42;
+        fxt::result<int> err = fxt::unexpected<fxt::failure>{"bad"};
+
+        REQUIRE(std::format("{}", ok)  == "42");
+        REQUIRE(std::format("{}", err) == "unexpected(bad)");
     }
 }
 
@@ -512,7 +564,7 @@ TEST_CASE("fxt::attempt pipe-adaptor: interop with other adaptors", "[attempt][a
         auto result = fxt::attempt(divide, 10, 2)
                     | fxt::attempt([](int) -> int { throw std::runtime_error("oops"); })
                     | fxt::or_else([](const fxt::failure&) {
-                          return fxt::expected<int, fxt::failure>{ 0 };
+                          return fxt::result<int>{ 0 };
                       });
 
         REQUIRE(result.has_value());

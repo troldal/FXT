@@ -81,6 +81,27 @@
 namespace fxt
 {
     /**
+     * @brief Convenience alias for the return type of fxt::attempt.
+     *
+     * @c fxt::result<T> is identical to @c fxt::expected<T, fxt::failure>.
+     * Both @c fxt::attempt overloads always return this type, and naming it
+     * makes function signatures and lambda return types in exception-safe
+     * pipelines significantly shorter:
+     *
+     * @code
+     * // Without the alias:
+     * fxt::expected<int, fxt::failure> safe_parse(const std::string& s);
+     *
+     * // With the alias:
+     * fxt::result<int> safe_parse(const std::string& s);
+     * @endcode
+     *
+     * @tparam T The success value type
+     */
+    template<typename T>
+    using result = fxt::expected<T, fxt::failure>;
+
+    /**
      * @brief Attempts to invoke a function and captures any exceptions as failure values.
      *
      * This function template provides exception-safe invocation by wrapping the function call

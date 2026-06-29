@@ -92,11 +92,11 @@ int main() {
     std::cout << "3. Chaining operations with and_then:" << std::endl;
 
     auto chain_result = fxt::attempt(divide, 100, 5)
-        .and_then([](int x) -> fxt::expected<int, fxt::failure> {
+        .and_then([](int x) -> fxt::result<int> {
             std::cout << "    First division: " << x << std::endl;
             return fxt::attempt(divide, x, 2);
         })
-        .and_then([](int x) -> fxt::expected<int, fxt::failure> {
+        .and_then([](int x) -> fxt::result<int> {
             std::cout << "    Second division: " << x << std::endl;
             return fxt::attempt(divide, x, 5);
         });
@@ -124,7 +124,7 @@ int main() {
     std::cout << "5. Error recovery with or_else:" << std::endl;
 
     auto recovery_result = fxt::attempt(divide, 10, 0)
-        .or_else([](const fxt::failure& err) -> fxt::expected<int, fxt::failure> {
+        .or_else([](const fxt::failure& err) -> fxt::result<int> {
             std::cout << "    Caught error: " << err.message() << std::endl;
             std::cout << "    Returning default value" << std::endl;
             return 0; // Return a default value
@@ -240,7 +240,7 @@ int main() {
                | fxt::attempt([](int x) { return divide(x, 0); })    // throws
                | fxt::or_else([](const fxt::failure& err) {
                      std::cout << "   Caught: " << err.message() << " — recovering\n";
-                     return fxt::expected<int, fxt::failure>{ 99 };
+                     return fxt::result<int>{ 99 };
                  })
                | fxt::transform([](int x) { return "recovered value: " + std::to_string(x); });
 

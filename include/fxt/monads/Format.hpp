@@ -75,6 +75,7 @@
 #include "Optional.hpp"
 #include "../concepts/IsExpected.hpp"
 #include "../concepts/IsOptional.hpp"
+#include "../utils/Failure.hpp"
 #include <format>
 #include <ostream>
 #include <type_traits>
@@ -88,6 +89,30 @@
 
 namespace std
 {
+// ----------------------------------------------------------------------------
+// fxt::failure formatter
+// ----------------------------------------------------------------------------
+
+/**
+ * @brief std::formatter for fxt::failure.
+ *
+ * Outputs the failure's message string, making fxt::result<T> (which is
+ * fxt::expected<T, fxt::failure>) directly usable with std::format.
+ *
+ * @code
+ * fxt::result<int> r = fxt::unexpected<fxt::failure>{"oops"};
+ * std::format("{}", r)   // "unexpected(oops)"
+ * @endcode
+ */
+template<>
+struct formatter<fxt::failure> : formatter<string_view>
+{
+    auto format(const fxt::failure& f, format_context& ctx) const
+    {
+        return formatter<string_view>::format(f.message_view(), ctx);
+    }
+};
+
 // ----------------------------------------------------------------------------
 // optional formatter
 // ----------------------------------------------------------------------------
@@ -160,6 +185,56 @@ namespace std
 #ifndef FXT_USE_TL_EXPECTED
 
     /**
+     * @brief std::formatter for std::expected<T, fxt::failure> where T is not void.
+     *
+     * Dedicated specialisation that calls failure::message_view() directly,
+     * avoiding the std::formattable<fxt::failure, char> concept check.
+     * This makes fxt::result<T> directly usable with std::format.
+     */
+    template<typename T>
+        requires (!is_void_v<T>) && formattable<T, char>
+    struct formatter<expected<T, fxt::failure>>
+    {
+    private:
+        formatter<T> value_fmt_;
+
+    public:
+        constexpr auto parse(format_parse_context& ctx)
+        {
+            return value_fmt_.parse(ctx);
+        }
+
+        auto format(const expected<T, fxt::failure>& exp, format_context& ctx) const
+        {
+            if (exp.has_value())
+                return value_fmt_.format(*exp, ctx);
+            return format_to(ctx.out(), "unexpected({})", exp.error().message_view());
+        }
+    };
+
+    /**
+     * @brief std::formatter for std::expected<void, fxt::failure>.
+     */
+    template<>
+    struct formatter<expected<void, fxt::failure>>
+    {
+        constexpr auto parse(format_parse_context& ctx)
+        {
+            auto it = ctx.begin();
+            if (it != ctx.end() && *it != '}')
+                throw format_error("format spec not supported for expected<void, failure>");
+            return it;
+        }
+
+        auto format(const expected<void, fxt::failure>& exp, format_context& ctx) const
+        {
+            if (exp.has_value())
+                return format_to(ctx.out(), "void");
+            return format_to(ctx.out(), "unexpected({})", exp.error().message_view());
+        }
+    };
+
+    /**
      * @brief std::formatter for std::expected<T, E> where T is not void.
      *
      * Forwards the format spec to T's formatter on the value path.
@@ -221,6 +296,40 @@ namespace std
     };
 
 #else   // FXT_USE_TL_EXPECTED
+
+    template<typename T>
+        requires (!is_void_v<T>) && formattable<T, char>
+    struct formatter<tl::expected<T, fxt::failure>>
+    {
+    private:
+        formatter<T> value_fmt_;
+
+    public:
+        constexpr auto parse(format_parse_context& ctx) { return value_fmt_.parse(ctx); }
+
+        auto format(const tl::expected<T, fxt::failure>& exp, format_context& ctx) const
+        {
+            if (exp.has_value()) return value_fmt_.format(*exp, ctx);
+            return format_to(ctx.out(), "unexpected({})", exp.error().message_view());
+        }
+    };
+
+    template<>
+    struct formatter<tl::expected<void, fxt::failure>>
+    {
+        constexpr auto parse(format_parse_context& ctx)
+        {
+            auto it = ctx.begin();
+            if (it != ctx.end() && *it != '}') throw format_error("no spec for expected<void, failure>");
+            return it;
+        }
+
+        auto format(const tl::expected<void, fxt::failure>& exp, format_context& ctx) const
+        {
+            if (exp.has_value()) return format_to(ctx.out(), "void");
+            return format_to(ctx.out(), "unexpected({})", exp.error().message_view());
+        }
+    };
 
     template<typename T, typename E>
         requires (!is_void_v<T>) && formattable<T, char> && formattable<E, char>

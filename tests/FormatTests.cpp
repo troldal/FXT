@@ -193,6 +193,59 @@ TEST_CASE("operator<< for fxt::expected (non-void)", "[format][ostream][expected
     }
 }
 
+// ============================================================================
+// std::format — fxt::failure  (via the dedicated formatter in Format.hpp)
+// ============================================================================
+
+TEST_CASE("std::format for fxt::failure", "[format][failure]")
+{
+    SECTION("failure with message formats as the message string")
+    {
+        fxt::failure f{"something went wrong"};
+        REQUIRE(std::format("{}", f) == "something went wrong");
+    }
+
+    SECTION("failure from exception formats as the exception message")
+    {
+        auto f = fxt::failure{std::make_exception_ptr(std::runtime_error{"boom"})};
+        REQUIRE(std::format("{}", f) == "boom");
+    }
+}
+
+// ============================================================================
+// std::format — fxt::result<T>  (expected<T, fxt::failure>)
+// ============================================================================
+
+TEST_CASE("std::format for fxt::result<T>", "[format][result]")
+{
+    SECTION("result with value formats as the contained value")
+    {
+        fxt::result<int> r = 42;
+        REQUIRE(std::format("{}", r) == "42");
+    }
+
+    SECTION("result with failure formats as 'unexpected(<message>)'")
+    {
+        fxt::result<int> r = fxt::unexpected<fxt::failure>{"oops"};
+        REQUIRE(std::format("{}", r) == "unexpected(oops)");
+    }
+
+    SECTION("format spec is forwarded to the value formatter")
+    {
+        fxt::result<double> r = 3.14159;
+        REQUIRE(std::format("{:.2f}", r) == "3.14");
+    }
+
+    SECTION("attempt result can be formatted directly")
+    {
+        auto r = fxt::attempt([]{ return 7 * 6; });
+        REQUIRE(std::format("{}", r) == "42");
+
+        auto e = fxt::attempt([]() -> int { throw std::runtime_error{"bad"}; });
+        REQUIRE(std::format("{}", e) == "unexpected(bad)");
+    }
+}
+
 // Note: operator<< for expected<void, E> is not provided because the
 // expected_like concept (which probes transform with a 1-arg lambda) does not
 // match std::expected<void, E> — its transform requires a 0-arg callable.
