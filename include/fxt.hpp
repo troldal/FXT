@@ -92,6 +92,7 @@
 #include "fxt/tuples/TupleSize.hpp"
 #include "fxt/tuples/TupleTake.hpp"
 #include "fxt/tuples/TupleTransform.hpp"
+#include "fxt/utils/Compose.hpp"
 #include "fxt/utils/Curry.hpp"
 #include "fxt/utils/Failure.hpp"
 #include "fxt/utils/Immutable.hpp"

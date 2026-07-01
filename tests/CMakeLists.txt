@@ -9,6 +9,7 @@ add_executable(fxt_tests
         ApplyReplaceTests.cpp
         AsArrayTests.cpp
         AttemptTests.cpp
+        ComposeTests.cpp
         FailureTests.cpp
         EnsureTests.cpp
         FilterTests.cpp
