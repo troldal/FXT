@@ -101,6 +101,7 @@
 #include "fxt/utils/TypeValue.hpp"
 #include "fxt/utils/Unit.hpp"
 #include "fxt/variants/Variant.hpp"
+#include "fxt/variants/VariantAlternative.hpp"
 #include "fxt/variants/VariantHoldsAlternative.hpp"
 #include "fxt/variants/VariantIndex.hpp"
 #include "fxt/variants/VariantPipe.hpp"
