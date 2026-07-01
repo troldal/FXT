@@ -122,6 +122,9 @@ target_link_libraries(fxt_tuple_transform_demo PRIVATE fxt::fxt)
 add_executable(fxt_tuple_cat_demo TupleCat.cpp)
 target_link_libraries(fxt_tuple_cat_demo PRIVATE fxt::fxt)
 
+add_executable(fxt_tuple_contains_demo TupleContains.cpp)
+target_link_libraries(fxt_tuple_contains_demo PRIVATE fxt::fxt)
+
 add_executable(fxt_tuple_reverse_demo TupleReverse.cpp)
 target_link_libraries(fxt_tuple_reverse_demo PRIVATE fxt::fxt)
 

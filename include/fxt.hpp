@@ -81,6 +81,7 @@
 #include "fxt/tuples/TupleAppend.hpp"
 #include "fxt/tuples/TupleAsArray.hpp"
 #include "fxt/tuples/TupleCat.hpp"
+#include "fxt/tuples/TupleContains.hpp"
 #include "fxt/tuples/TupleDrop.hpp"
 #include "fxt/tuples/TupleElement.hpp"
 #include "fxt/tuples/TupleForEach.hpp"

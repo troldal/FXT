@@ -38,6 +38,7 @@ add_executable(fxt_tests
         TeeErrorAndNoneTests.cpp
         TupleAppendTests.cpp
         TupleCatTests.cpp
+        TupleContainsTests.cpp
         TupleElementTests.cpp
         TuplePrependTests.cpp
         TupleReverseTests.cpp
