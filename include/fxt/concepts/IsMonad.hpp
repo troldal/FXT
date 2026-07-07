@@ -72,5 +72,26 @@ namespace fxt
     template<typename T>
     concept monad_like = optional_like<T> || expected_like<T>;
 
+    /**
+     * @brief Bool variable-template wrappers for @ref monad_like.
+     *
+     * clang-cl's Microsoft-ABI name mangler cannot mangle the associated
+     * constraints of a *variadic* function template when the constraint expands
+     * to @ref monad_like / @ref expected_like / @ref optional_like — those
+     * concepts are defined with `requires`-expressions containing generic
+     * lambdas, and the mangler bails out with "cannot mangle this pack expansion
+     * yet". Constraining a variadic template on these plain `bool` variable
+     * templates keeps the mangled constraint a simple variable-template-id
+     * (exactly as @c fxt::tuple_append does with @c impl::is_tuple_like_v),
+     * sidestepping the bug while preserving identical overload-resolution
+     * behaviour. Non-variadic templates are unaffected and may keep using the
+     * concepts directly.
+     */
+    template<typename T>
+    inline constexpr bool monad_like_v = monad_like<T>;
+
+    template<typename... Ts>
+    inline constexpr bool all_monad_like_v = (monad_like<Ts> && ...);
+
 } // namespace fxt
 

@@ -6,6 +6,7 @@
 #include "Catch2/catch_amalgamated.hpp"
 #include <fxt.hpp>
 #include <string>
+#include <memory>
 
 // ============================================================================
 // Tests for fxt::expected with fxt::tuple - Plain values
@@ -407,6 +408,70 @@ TEST_CASE("mtuple_append - chaining with other monadic operations", "[mtuple_app
         REQUIRE(fxt::get<3>(t) == 3.14);
         REQUIRE(fxt::get<4>(t) == true);
         REQUIRE(fxt::get<5>(t) == false);
+    }
+}
+
+// ============================================================================
+// Tests for the curried expected-argument overload — rvalue path
+//
+// fxt::mtuple_append(const TExpected&) / fxt::mtuple_append(TExpected&&) take
+// a single expected-like argument and return a pipeline adaptor. Both
+// overloads accept a bare `TExpected` type parameter (not decomposed via a
+// template-template parameter), so the rvalue overload's `TExpected&&` is a
+// forwarding reference and is explicitly restricted to rvalues via
+// `!std::is_lvalue_reference_v<TExpected>` to avoid colliding with the
+// const-lvalue overload. This restriction, the move-only support, the error
+// short-circuit, and the error-type coercion path all need direct coverage.
+// ============================================================================
+
+TEST_CASE("mtuple_append - curried expected argument, rvalue overload", "[mtuple_append][expected][curried][rvalue]")
+{
+    SECTION("rvalue temporary value, copyable type")
+    {
+        auto exp_tuple = fxt::expected<fxt::tuple<int>, std::string>{fxt::make_tuple(1)};
+        auto result = std::move(exp_tuple)
+            | fxt::mtuple_append(fxt::expected<int, std::string>{2});
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(result.value()) == 1);
+        REQUIRE(fxt::get<1>(result.value()) == 2);
+    }
+
+    SECTION("move-only value type (std::unique_ptr)")
+    {
+        auto exp_tuple = fxt::expected<fxt::tuple<int>, std::string>{fxt::make_tuple(1)};
+        auto result = std::move(exp_tuple)
+            | fxt::mtuple_append(fxt::expected<std::unique_ptr<int>, std::string>{std::make_unique<int>(42)});
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(result.value()) == 1);
+        REQUIRE(*fxt::get<1>(result.value()) == 42);
+    }
+
+    SECTION("error in appended value short-circuits before touching the container, move-only value type")
+    {
+        auto exp_tuple = fxt::expected<fxt::tuple<int>, std::string>{fxt::make_tuple(1)};
+        auto result = std::move(exp_tuple)
+            | fxt::mtuple_append(fxt::expected<std::unique_ptr<int>, std::string>{fxt::unexpected<std::string>("boom")});
+
+        REQUIRE_FALSE(result.has_value());
+        REQUIRE(result.error() == "boom");
+    }
+
+    SECTION("error-type coercion: appended value's error type converts to the container's error type")
+    {
+        struct MyError
+        {
+            operator std::string() const { return "converted"; }
+        };
+
+        auto exp_tuple = fxt::expected<fxt::tuple<int>, std::string>{fxt::make_tuple(1)};
+        auto exp_val = fxt::expected<int, MyError>{5};
+        auto result = std::move(exp_tuple) | fxt::mtuple_append(std::move(exp_val));
+
+        REQUIRE(result.has_value());
+        REQUIRE(fxt::get<0>(result.value()) == 1);
+        REQUIRE(fxt::get<1>(result.value()) == 5);
     }
 }
 

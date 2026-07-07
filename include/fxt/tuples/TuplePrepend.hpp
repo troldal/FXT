@@ -272,8 +272,12 @@ namespace fxt
      * // result4 contains the error
      * @endcode
      */
+    // Constrained on monad_like_v (bool variable template) rather than the
+    // monad_like concept: this template is variadic, and clang-cl cannot mangle
+    // the associated constraint of a variadic template when it expands to the
+    // concept (see IsMonad.hpp).
     template<typename Container, typename U, typename... Us>
-    requires fxt::monad_like<std::remove_cvref_t<Container>> && (!fxt::monad_like<std::remove_cvref_t<U>>)
+    requires fxt::monad_like_v<std::remove_cvref_t<Container>> && (!fxt::monad_like_v<std::remove_cvref_t<U>>)
     constexpr auto mtuple_prepend(Container&& container, U&& u, Us&&... us)
     {
         if constexpr (sizeof...(Us) == 0) {
@@ -348,10 +352,13 @@ namespace fxt
      * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {2, 3, 1}
      * @endcode
      */
+    // Variadic template: constrained on monad_like_v / all_monad_like_v bool
+    // variable templates so clang-cl can mangle the associated constraint
+    // (see IsMonad.hpp).
     template<typename Container1, typename Container2, typename... Containers>
-    requires fxt::monad_like<std::remove_cvref_t<Container1>>
-        && fxt::monad_like<std::remove_cvref_t<Container2>>
-        && (fxt::monad_like<std::remove_cvref_t<Containers>> && ...)
+    requires fxt::monad_like_v<std::remove_cvref_t<Container1>>
+        && fxt::monad_like_v<std::remove_cvref_t<Container2>>
+        && fxt::all_monad_like_v<std::remove_cvref_t<Containers>...>
     constexpr auto mtuple_prepend(Container1&& container1, Container2&& container2, Containers&&... containers)
     {
         if constexpr (sizeof...(Containers) == 0) {

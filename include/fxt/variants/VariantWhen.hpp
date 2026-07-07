@@ -177,14 +177,13 @@ namespace fxt
      * }); // Nothing printed (container is empty)
      * @endcode
      */
+    // Uses the monad_holding_variant concept instead of spelling the nested
+    // `variant_like<typename ...::value_type>` requirement inline: the latter
+    // makes clang-cl fail to mangle the constraint (see IsVariant.hpp).
     template<typename T, typename TMonad, typename F>
-        requires fxt::monad_like<std::remove_cvref_t<TMonad>> &&
-                 fxt::variant_like<typename std::remove_cvref_t<TMonad>::value_type> &&
+        requires fxt::monad_holding_variant<TMonad> &&
                  std::invocable<F, T&>
-    constexpr auto mwhen(TMonad&& monad, F&& func)
-        -> std::conditional_t<std::is_lvalue_reference_v<TMonad>,
-                               TMonad,
-                               std::remove_cvref_t<TMonad>>
+    constexpr decltype(auto) mwhen(TMonad&& monad, F&& func)
     {
         if (monad.has_value()) {
             auto& variant = *monad;
@@ -192,7 +191,15 @@ namespace fxt
                 std::invoke(std::forward<F>(func), std::get<T>(variant));
             }
         }
-        return std::forward<TMonad>(monad);
+        // Deduced return type (instead of a conditional_t trailing return) so
+        // clang-cl need not mangle a dependent return type on this constrained
+        // template. Lvalues are returned by reference, rvalues by value — exactly
+        // as the previous std::conditional_t<...> return type specified.
+        if constexpr (std::is_lvalue_reference_v<TMonad>) {
+            return std::forward<TMonad>(monad);
+        } else {
+            return std::remove_cvref_t<TMonad>(std::forward<TMonad>(monad));
+        }
     }
 
     /**
@@ -233,8 +240,7 @@ namespace fxt
             -> std::conditional_t<std::is_lvalue_reference_v<TMonad>,
                                   TMonad,
                                   std::remove_cvref_t<TMonad>>
-            requires fxt::monad_like<std::remove_cvref_t<TMonad>> &&
-                     fxt::variant_like<typename std::remove_cvref_t<TMonad>::value_type> &&
+            requires fxt::monad_holding_variant<TMonad> &&
                      std::invocable<F, T&>
         {
             if (monad.has_value()) {

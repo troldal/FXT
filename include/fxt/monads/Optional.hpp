@@ -69,8 +69,7 @@ namespace fxt
 {
     template<typename TOptional, typename Callable>
         requires std::invocable<Callable, TOptional> && optional_like<std::remove_cvref_t<TOptional>>
-    constexpr auto operator|(TOptional&& opt, Callable&& function)
-    -> decltype(std::invoke(std::forward<Callable>(function), std::forward<TOptional>(opt)))
+    constexpr decltype(auto) operator|(TOptional&& opt, Callable&& function)
     {
         return std::invoke(std::forward<Callable>(function), std::forward<TOptional>(opt));
     }

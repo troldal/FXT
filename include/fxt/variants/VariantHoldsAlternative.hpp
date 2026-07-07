@@ -116,9 +116,10 @@ namespace fxt
      * bool also_no = fxt::mholds_alternative<int>(empty);  // false (monad is empty)
      * @endcode
      */
+    // monad_holding_variant instead of the inline nested-name constraint so
+    // clang-cl can mangle it (see IsVariant.hpp).
     template<typename T, typename TMonad>
-        requires fxt::monad_like<std::remove_cvref_t<TMonad>> &&
-                 fxt::variant_like<typename std::remove_cvref_t<TMonad>::value_type>
+        requires fxt::monad_holding_variant<TMonad>
     constexpr bool mholds_alternative(TMonad&& monad)
     {
         return monad.has_value() && std::holds_alternative<T>(*monad);
@@ -149,8 +150,7 @@ namespace fxt
     constexpr auto mholds_alternative()
     {
         return []<typename TMonad>(TMonad&& monad)
-            requires fxt::monad_like<std::remove_cvref_t<TMonad>> &&
-                     fxt::variant_like<typename std::remove_cvref_t<TMonad>::value_type>
+            requires fxt::monad_holding_variant<TMonad>
         {
             return monad.has_value() && std::holds_alternative<T>(*monad);
         };

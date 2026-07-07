@@ -199,9 +199,13 @@ namespace fxt
      * @param m  The monad-wrapped argument to feed into the pipeline
      * @return A with_adaptor<M> pipe adaptor
      */
+    // Deduced return type rather than an explicit -> with_adaptor<...> trailing
+    // return: clang-cl cannot mangle the dependent template-specialization return
+    // type of this constrained template ("cannot mangle this template
+    // specialization type yet"). The deduced type is identical (a prvalue).
     template<typename M>
         requires monad_like<std::remove_cvref_t<M>>
-    auto with(M&& m) -> with_adaptor<std::remove_cvref_t<M>>
+    auto with(M&& m)
     {
         return with_adaptor<std::remove_cvref_t<M>>{std::forward<M>(m)};
     }

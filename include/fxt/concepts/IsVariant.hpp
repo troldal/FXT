@@ -42,6 +42,7 @@
 #pragma once
 
 #include "../variants/Variant.hpp"
+#include "IsMonad.hpp"
 #include <concepts>
 #include <cstddef>
 #include <type_traits>
@@ -94,6 +95,22 @@ namespace fxt
      */
     template<typename T>
     concept variant_like = impl::has_variant_protocol<std::remove_cvref_t<T>>;
+
+    /**
+     * @brief A monad-like type whose value_type is variant-like.
+     *
+     * Exposed as a single named concept so that constraints referring to it
+     * mangle as a plain concept-id. Spelling the nested requirement inline in a
+     * requires-clause — @c variant_like<typename std::remove_cvref_t<M>::value_type>
+     * — makes clang-cl's Microsoft-ABI mangler fail with "cannot mangle this
+     * dependent name type yet"; hiding the @c typename-specifier inside this
+     * concept's definition avoids that (clang mangles the constraint by the
+     * concept-id, not its expansion).
+     */
+    template<typename M>
+    concept monad_holding_variant =
+        monad_like<std::remove_cvref_t<M>> &&
+        variant_like<typename std::remove_cvref_t<M>::value_type>;
 
 }    // namespace fxt
 

@@ -397,8 +397,11 @@ namespace fxt
      * auto r3 = raw_set | fxt::traverse(maybe_parse);
      * @endcode
      */
+    // Deduced return type instead of an explicit -> traverse_adaptor<...>
+    // trailing return: clang-cl cannot mangle a dependent template-specialization
+    // return type here. The deduced type is identical.
     template<typename F>
-    auto traverse(F&& f) -> traverse_adaptor<std::decay_t<F>>
+    auto traverse(F&& f)
     {
         return traverse_adaptor<std::decay_t<F>>{std::forward<F>(f)};
     }
@@ -641,8 +644,11 @@ namespace fxt
      * // result : expected<tuple<double, double, double>, Err>
      * @endcode
      */
+    // Deduced return type instead of -> fxt::expected<fxt::tuple<Ts...>, E>:
+    // clang-cl cannot mangle this dependent template-specialization return type
+    // on a variadic template. The deduced type is identical.
     template<typename... Ts, typename E>
-    auto sequence(fxt::tuple<fxt::expected<Ts, E>...> t) -> fxt::expected<fxt::tuple<Ts...>, E>
+    auto sequence(fxt::tuple<fxt::expected<Ts, E>...> t)
     {
         return impl::sequence_tuple_impl<decltype(t), E>(
             std::move(t),
@@ -663,11 +669,33 @@ namespace fxt
      * // result : expected<tuple<double, double, double>, Err>
      * @endcode
      */
+    namespace impl
+    {
+        // Bool wrapper so clang-cl can mangle the (variadic) traverse constraint:
+        // spelling the nested expected_like<...invoke_result...> requirement
+        // inline in the requires-clause trips "cannot mangle this template
+        // specialization type yet". Hiding it behind a variable-template-id keeps
+        // the mangled constraint simple.
+        template<typename F, typename... Ts>
+        inline constexpr bool traverse_first_returns_expected_v =
+            expected_like<std::remove_cvref_t<
+                std::invoke_result_t<F&, std::tuple_element_t<0, fxt::tuple<Ts...>>&>>>;
+
+        template<typename F, typename... Ts>
+        inline constexpr bool traverse_first_returns_optional_v =
+            optional_like<std::remove_cvref_t<
+                std::invoke_result_t<F&, std::tuple_element_t<0, fxt::tuple<Ts...>>&>>>;
+
+        // Bool wrapper so clang-cl can mangle the optional-tuple sequence
+        // constraint: the fold ((optional_like<Opt<Ts>>) && ...) spells the
+        // template-specialization type Opt<Ts> inline, which the mangler rejects.
+        template<template<typename> class Opt, typename... Ts>
+        inline constexpr bool all_optional_like_v = ((optional_like<Opt<Ts>>) && ...);
+    }
+
     template<typename... Ts, typename F>
         requires (sizeof...(Ts) > 0)
-              && expected_like<std::remove_cvref_t<
-                     std::invoke_result_t<F&, std::tuple_element_t<0, fxt::tuple<Ts...>>&>
-                 >>
+              && impl::traverse_first_returns_expected_v<F, Ts...>
     auto traverse(fxt::tuple<Ts...> t, F&& f)
     {
         return impl::traverse_tuple_impl(
@@ -693,8 +721,8 @@ namespace fxt
      * @endcode
      */
     template<template<typename> class Opt, typename... Ts>
-        requires ((optional_like<Opt<Ts>>) && ...)
-    auto sequence(fxt::tuple<Opt<Ts>...> t) -> Opt<fxt::tuple<Ts...>>
+        requires impl::all_optional_like_v<Opt, Ts...>
+    auto sequence(fxt::tuple<Opt<Ts>...> t)
     {
         return impl::sequence_optional_tuple_impl(
             std::move(t),
@@ -716,9 +744,7 @@ namespace fxt
      */
     template<typename... Ts, typename F>
         requires (sizeof...(Ts) > 0)
-              && optional_like<std::remove_cvref_t<
-                     std::invoke_result_t<F&, std::tuple_element_t<0, fxt::tuple<Ts...>>&>
-                 >>
+              && impl::traverse_first_returns_optional_v<F, Ts...>
     auto traverse(fxt::tuple<Ts...> t, F&& f)
     {
         return impl::traverse_optional_tuple_impl(

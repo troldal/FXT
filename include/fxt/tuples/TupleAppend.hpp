@@ -283,8 +283,12 @@ namespace fxt
      * // result4 contains the error
      * @endcode
      */
+    // Constrained on monad_like_v (a bool variable template) rather than the
+    // monad_like concept directly: this template is variadic, and clang-cl
+    // cannot mangle the associated constraint of a variadic template when it
+    // expands to the concept (see IsMonad.hpp).
     template<typename Container, typename U, typename... Us>
-    requires fxt::monad_like<std::remove_cvref_t<Container>> && (!fxt::monad_like<std::remove_cvref_t<U>>)
+    requires fxt::monad_like_v<std::remove_cvref_t<Container>> && (!fxt::monad_like_v<std::remove_cvref_t<U>>)
     constexpr auto mtuple_append(Container&& container, U&& u, Us&&... us)
     {
         if constexpr (sizeof...(Us) == 0) {
@@ -359,10 +363,13 @@ namespace fxt
      * // result is fxt::expected<fxt::tuple<int, int, int>, Error> containing {1, 2, 3}
      * @endcode
      */
+    // Variadic template: constrained on the monad_like_v / all_monad_like_v bool
+    // variable templates instead of the monad_like concept so clang-cl can mangle
+    // the associated constraint (see IsMonad.hpp).
     template<typename Container1, typename Container2, typename... Containers>
-    requires fxt::monad_like<std::remove_cvref_t<Container1>>
-        && fxt::monad_like<std::remove_cvref_t<Container2>>
-        && (fxt::monad_like<std::remove_cvref_t<Containers>> && ...)
+    requires fxt::monad_like_v<std::remove_cvref_t<Container1>>
+        && fxt::monad_like_v<std::remove_cvref_t<Container2>>
+        && fxt::all_monad_like_v<std::remove_cvref_t<Containers>...>
     constexpr auto mtuple_append(Container1&& container1, Container2&& container2, Containers&&... containers)
     {
         // First append container2 to container1
@@ -407,18 +414,27 @@ namespace fxt
      * // result2: fxt::expected<fxt::tuple<int, int>, std::string> containing {1, 3}
      * @endcode
      */
-    template<template<typename, typename> class TExpected, typename TValue, typename TError>
-        requires expected_like<TExpected<TValue, TError>>
-    constexpr auto mtuple_append(const TExpected<TValue, TError>& value)
+    // Note: takes a plain expected-like type parameter and derives its value/error
+    // types from member aliases, rather than decomposing it via a
+    // template<template<...> class> parameter. The template-template form makes
+    // clang-cl fail with "cannot mangle this template specialization type yet"
+    // when it mangles the returned closure (whose operator() is itself a template
+    // over the template-template parameter). Deriving the types keeps every
+    // mangled type a concrete specialization while preserving the same behaviour,
+    // including error-type coercion (std::convertible_to below).
+    template<typename TExpected>
+        requires expected_like<std::remove_cvref_t<TExpected>>
+    constexpr auto mtuple_append(const TExpected& value)
     {
-        return [value]<template<typename, typename> class TExp2, typename TTuple, typename TError2>(
-                   const TExp2<TTuple, TError2>& tupleContainer)
-            requires expected_constructible_like<TExp2<TTuple, TError2>>
-                  && std::convertible_to<TError, TError2>
+        using TError = typename std::remove_cvref_t<TExpected>::error_type;
+        return [value]<typename TupleContainer>(const TupleContainer& tupleContainer)
+            requires expected_constructible_like<TupleContainer>
+                  && std::convertible_to<TError, typename TupleContainer::error_type>
         {
+            using TTuple = typename TupleContainer::value_type;
             return value
                 ? tupleContainer.transform([&value](const TTuple& t) { return fxt::tuple_append(t, *value); })
-                : typename TExp2<TTuple, TError2>::unexpected_type(value.error());
+                : typename TupleContainer::unexpected_type(value.error());
         };
     }
 
@@ -443,19 +459,25 @@ namespace fxt
      * // result: fxt::expected<fxt::tuple<int, std::unique_ptr<int>>, std::string>
      * @endcode
      */
-    template<template<typename, typename> class TExpected, typename TValue, typename TError>
-        requires expected_like<TExpected<TValue, TError>>
-    constexpr auto mtuple_append(TExpected<TValue, TError>&& value)
+    // Rvalue counterpart of the overload above; same rationale for avoiding the
+    // template-template parameter. The `!std::is_lvalue_reference_v<TExpected>`
+    // constraint keeps this an rvalue-only overload (TExpected&& would otherwise
+    // be a forwarding reference and collide with the const-lvalue overload).
+    template<typename TExpected>
+        requires expected_like<std::remove_cvref_t<TExpected>>
+              && (!std::is_lvalue_reference_v<TExpected>)
+    constexpr auto mtuple_append(TExpected&& value)
     {
-        return [value = std::move(value)]<template<typename, typename> class TExp2, typename TTuple, typename TError2>(
-                   const TExp2<TTuple, TError2>& tupleContainer) mutable
-            requires expected_constructible_like<TExp2<TTuple, TError2>>
-                  && std::convertible_to<TError, TError2>
+        using TError = typename std::remove_cvref_t<TExpected>::error_type;
+        return [value = std::move(value)]<typename TupleContainer>(const TupleContainer& tupleContainer) mutable
+            requires expected_constructible_like<TupleContainer>
+                  && std::convertible_to<TError, typename TupleContainer::error_type>
         {
+            using TTuple = typename TupleContainer::value_type;
             return value
                 ? tupleContainer.transform([value = std::move(value)](const TTuple& t) mutable {
                     return fxt::tuple_append(t, std::move(*value)); })
-                : typename TExp2<TTuple, TError2>::unexpected_type(std::move(value.error()));
+                : typename TupleContainer::unexpected_type(std::move(value.error()));
         };
     }
 
@@ -504,8 +526,11 @@ namespace fxt
      * // result5 is fxt::optional<fxt::flat_tuple<double, double, double, double>> containing {1.0, 2.0, 3.0, 4.0}
      * @endcode
      */
+    // Variadic template: constrained on expected_like_v (bool variable template)
+    // rather than the expected_like concept so clang-cl can mangle the associated
+    // constraint (see IsMonad.hpp / IsExpected.hpp).
     template<typename U, typename... Us>
-        requires (!expected_like<std::remove_cvref_t<U>>)
+        requires (!expected_like_v<std::remove_cvref_t<U>>)
     constexpr auto mtuple_append(U&& u, Us&&... us)
     {
         // Copy-constructible types: std::as_const forces a copy → reusable adaptor.

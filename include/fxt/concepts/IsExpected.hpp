@@ -89,6 +89,16 @@ namespace fxt
     } && std::is_same_v<std::decay_t<T>, T>; // Ensure we work with decayed types
 
     /**
+     * @brief Bool variable-template wrapper for @ref expected_like.
+     *
+     * Exists for the same reason as @c fxt::monad_like_v (see IsMonad.hpp):
+     * constraining a *variadic* function template directly on @ref expected_like
+     * makes clang-cl's mangler fail with "cannot mangle this pack expansion yet".
+     */
+    template<typename T>
+    inline constexpr bool expected_like_v = expected_like<T>;
+
+    /**
      * @brief Refinement of expected_like for types that can be constructed from their
      *        own "unexpected" wrapper (the std::expected / tl::expected pattern).
      *
