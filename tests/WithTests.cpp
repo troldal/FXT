@@ -319,7 +319,7 @@ TEST_CASE("fxt::with applicative — pipeline composition with other adaptors", 
     }
 }
 
-TEST_CASE("fxt::mwith applicative — entry point (Case 1: plain callable returning expected)", "[mwith][expected][applicative]")
+TEST_CASE("fxt::mwith applicative — entry point (plain callable returning expected)", "[mwith][expected][applicative]")
 {
     // The curried callable returns expected<R, E>; mwith() flattens it via and_then()
     // rather than wrapping it, so the result is expected<R, E>, never expected<expected<R, E>, E>.
@@ -369,7 +369,7 @@ TEST_CASE("fxt::mwith applicative — entry point (Case 1: plain callable return
     }
 }
 
-TEST_CASE("fxt::mwith applicative — multi-argument (with() for intermediate, mwith() for final)", "[mwith][expected][applicative]")
+TEST_CASE("fxt::mwith applicative — multi-argument (with() then mwith() for final)", "[mwith][expected][applicative]")
 {
     // For a multi-argument curried callable, intermediate arguments are fed with with()
     // (each yields a partial application wrapped in expected), and the final monadic step

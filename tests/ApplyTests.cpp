@@ -1085,10 +1085,10 @@ TEST_CASE("apply - advanced integration tests", "[apply][advanced]")
 }
 
 // ============================================================================
-// Tests for fxt::mapply (REPLACE semantics — tuple is replaced by result)
+// Tests for fxt::mapply (REPLACE semantics - tuple is replaced by result)
 // ============================================================================
 
-TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
+TEST_CASE("mapply - expected: plain return replaces tuple", "[apply][mapply]")
 {
     SECTION("lvalue expected")
     {
@@ -1121,7 +1121,7 @@ TEST_CASE("mapply — expected: plain return replaces tuple", "[apply][mapply]")
     }
 }
 
-TEST_CASE("mapply — expected: monadic return is flattened (and_then)", "[apply][mapply]")
+TEST_CASE("mapply - expected: monadic return is flattened (and_then)", "[apply][mapply]")
 {
     SECTION("success case")
     {
@@ -1135,7 +1135,7 @@ TEST_CASE("mapply — expected: monadic return is flattened (and_then)", "[apply
         REQUIRE(*result == 5.0);
     }
 
-    SECTION("function returns error — propagated")
+    SECTION("function returns error - propagated")
     {
         auto result = fxt::expected<std::tuple<double, double>, std::string>{std::make_tuple(10.0, 0.0)}
                     | fxt::mapply([](double a, double b) -> fxt::expected<double, std::string> {
@@ -1148,7 +1148,7 @@ TEST_CASE("mapply — expected: monadic return is flattened (and_then)", "[apply
     }
 }
 
-TEST_CASE("mapply — expected (lvalue): void return — Case 2b regression", "[apply][mapply]")
+TEST_CASE("mapply - expected (lvalue): void return - Case 2b regression", "[apply][mapply]")
 {
     // This case was broken: expected_like<TArg> rejected the lvalue reference type,
     // so `lvalue_exp | mapply(void_fn)` failed to compile. Fixed by using
@@ -1187,7 +1187,7 @@ TEST_CASE("mapply — expected (lvalue): void return — Case 2b regression", "[
     }
 }
 
-TEST_CASE("mapply — optional: plain return replaces tuple", "[apply][mapply]")
+TEST_CASE("mapply - optional: plain return replaces tuple", "[apply][mapply]")
 {
     SECTION("has value")
     {
@@ -1210,9 +1210,9 @@ TEST_CASE("mapply — optional: plain return replaces tuple", "[apply][mapply]")
     }
 }
 
-TEST_CASE("mapply — optional: void return", "[apply][mapply]")
+TEST_CASE("mapply - optional: void return", "[apply][mapply]")
 {
-    SECTION("has value — side effect runs")
+    SECTION("has value - side effect runs")
     {
         int side_effect = 0;
         auto opt = fxt::optional<std::tuple<int, int>>{std::make_tuple(7, 8)};
@@ -1223,7 +1223,7 @@ TEST_CASE("mapply — optional: void return", "[apply][mapply]")
         REQUIRE(side_effect == 15);
     }
 
-    SECTION("empty — side effect does not run")
+    SECTION("empty - side effect does not run")
     {
         int side_effect = 0;
         auto result = fxt::optional<std::tuple<int, int>>{}

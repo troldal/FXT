@@ -125,7 +125,7 @@ TEST_CASE("fxt::for_each direct call — rvalue returns a value (no dangling)", 
     REQUIRE(visited == std::vector<int>{7, 8, 9});
 }
 
-TEST_CASE("fxt::for_each direct call — lvalue reference chains without copying elements", "[for_each]")
+TEST_CASE("fxt::for_each direct call — lvalue reference chains without copying", "[for_each]")
 {
     std::vector<int> v = {2, 4, 6};
 
