@@ -41,6 +41,7 @@ add_executable(fxt_tests
         TupleCatTests.cpp
         TupleContainsTests.cpp
         TupleElementTests.cpp
+        TypeMapTests.cpp
         TuplePrependTests.cpp
         TupleReverseTests.cpp
         TupleSizeTests.cpp

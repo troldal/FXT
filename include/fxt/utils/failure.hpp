@@ -41,8 +41,8 @@
 
 #pragma once
 
+#include <any>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -59,57 +59,6 @@ namespace fxt
 {
     // Forward declaration
     class failure;
-
-    namespace detail
-    {
-
-        /**
-         * @brief Base class for type-erased context storage
-         */
-        class context_holder_base
-        {
-        public:
-            virtual ~context_holder_base() = default;
-            [[nodiscard]] virtual std::unique_ptr<context_holder_base> clone() const = 0;
-            [[nodiscard]] virtual const std::type_info& type() const noexcept = 0;
-            [[nodiscard]] virtual void* get() noexcept = 0;
-            [[nodiscard]] virtual const void* get() const noexcept = 0;
-        };
-
-        /**
-         * @brief Concrete implementation of context holder for a specific type
-         * @tparam T The context type to store
-         */
-        template<typename T>
-        class context_holder : public context_holder_base
-        {
-        public:
-            explicit context_holder(T value) : m_value(std::move(value)) {}
-
-            [[nodiscard]] std::unique_ptr<context_holder_base> clone() const override
-            {
-                return std::make_unique<context_holder<T>>(m_value);
-            }
-
-            [[nodiscard]] const std::type_info& type() const noexcept override
-            {
-                return typeid(T);
-            }
-
-            [[nodiscard]] void* get() noexcept override
-            {
-                return &m_value;
-            }
-
-            [[nodiscard]] const void* get() const noexcept override
-            {
-                return &m_value;
-            }
-
-        private:
-            T m_value;
-        };
-    }    // namespace detail
 
     /**
      * @class failure
@@ -169,22 +118,11 @@ namespace fxt
             : m_exception(std::move(exception))
         {}
 
-        failure(const failure& other)
-            : m_message(other.m_message),
-              m_exception(other.m_exception),
-              m_context(other.m_context ? other.m_context->clone() : nullptr) {}
+        failure(const failure& other) = default;
 
         failure(failure&&) noexcept = default;
 
-        failure& operator=(const failure& other)
-        {
-            if (this != &other) {
-                m_message = other.m_message;
-                m_exception = other.m_exception;
-                m_context = other.m_context ? other.m_context->clone() : nullptr;
-            }
-            return *this;
-        }
+        failure& operator=(const failure& other) = default;
 
         failure& operator=(failure&&) noexcept = default;
 
@@ -309,7 +247,7 @@ namespace fxt
         template<typename T>
         failure& with_context(T data) &
         {
-            m_context = std::make_unique<detail::context_holder<std::decay_t<T>>>(std::move(data));
+            m_context = std::move(data);
             return *this;
         }
 
@@ -322,7 +260,7 @@ namespace fxt
         template<typename T>
         failure&& with_context(T data) &&
         {
-            m_context = std::make_unique<detail::context_holder<std::decay_t<T>>>(std::move(data));
+            m_context = std::move(data);
             return std::move(*this);
         }
 
@@ -332,7 +270,7 @@ namespace fxt
          */
         [[nodiscard]] bool has_context() const noexcept
         {
-            return m_context != nullptr;
+            return m_context.has_value();
         }
 
         /**
@@ -343,7 +281,7 @@ namespace fxt
         template<typename T>
         [[nodiscard]] bool has_context() const noexcept
         {
-            return m_context && m_context->type() == typeid(T);
+            return m_context.has_value() && m_context.type() == typeid(T);
         }
 
         /**
@@ -354,8 +292,8 @@ namespace fxt
         template<typename T>
         [[nodiscard]] std::optional<T> get_context() const noexcept
         {
-            if (has_context<T>()) {
-                return *static_cast<const T*>(m_context->get());
+            if (const auto* ptr = std::any_cast<T>(&m_context)) {
+                return *ptr;
             }
             return std::nullopt;
         }
@@ -366,7 +304,7 @@ namespace fxt
          */
         [[nodiscard]] const std::type_info& context_type() const noexcept
         {
-            return m_context ? m_context->type() : typeid(void);
+            return m_context.has_value() ? m_context.type() : typeid(void);
         }
 
         /**
@@ -408,9 +346,9 @@ namespace fxt
         friend struct std::hash<fxt::failure>;
 
     private:
-        mutable std::optional<std::string>           m_message {};        ///< Lazily populated error message
-        std::exception_ptr                           m_exception {};      ///< The stored exception pointer
-        std::unique_ptr<detail::context_holder_base> m_context {};        ///< Optional type-erased context storage
+        mutable std::optional<std::string> m_message {};        ///< Lazily populated error message
+        std::exception_ptr                 m_exception {};      ///< The stored exception pointer
+        std::any                           m_context {};        ///< Optional type-erased context storage
 
         void ensure_message_nothrow() const noexcept
         {

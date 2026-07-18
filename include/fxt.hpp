@@ -99,6 +99,7 @@
 #include "fxt/utils/Lazy.hpp"
 #include "fxt/utils/Lift.hpp"
 #include "fxt/utils/Overload.hpp"
+#include "fxt/utils/TypeMap.hpp"
 #include "fxt/utils/TypeValue.hpp"
 #include "fxt/utils/Unit.hpp"
 #include "fxt/variants/Variant.hpp"
