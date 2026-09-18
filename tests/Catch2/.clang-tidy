@@ -1,0 +1,3 @@
+---
+# Catch2's amalgamated source, vendored: not FXT's code to lint.
+Checks: '-*'

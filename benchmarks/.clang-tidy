@@ -1,0 +1,6 @@
+---
+# The library's checks, less one Google Benchmark's macros defeat: BENCHMARK
+# registers each benchmark in a static, which may throw.
+InheritParentConfig: true
+Checks: >-
+  -bugprone-throwing-static-initialization

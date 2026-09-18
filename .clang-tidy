@@ -1,35 +1,41 @@
 ---
+# The checks FXT is held to: bugs and performance, plus a few modernisations,
+# as warnings that fail the run. tests/, benchmarks/ and tests/Catch2 adjust
+# this in their own .clang-tidy.
+#
+# Left out on purpose:
+#   bugprone-unused-return-value          discarding a result is sometimes the point
+#   bugprone-easily-swappable-parameters  (lhs, rhs) is often the right signature
+#   performance-avoid-endl                the demos flush as they print, by design
+#   readability-braces-around-statements  not the style here
+#   google-explicit-constructor           implicit conversions are part of the API
+#   hicpp-explicit-conversions            likewise
+#
+# The headers are the library, so they are checked too: HeaderFilterRegex
+# covers include/fxt, and nothing fetched or vendored. Run over FXT's own
+# sources, not the dependencies a build fetches:
+#
+#   run-clang-tidy -p <build> '/FXT/(tests|demos|benchmarks)/'
+#
+# This file used to enable every check, with the exclusions after `*` in a
+# `>-` block interleaved with commented-out lines. A `#` line indented less
+# than the block ends it, so the file never parsed and no check ever ran.
 Checks: >-
-  *
-#  , -llvmlibc-*
-#  , -llvm-header-guard
-#  , -fuchsia-*
-  , -modernize-use-trailing-return-type
-  , -modernize-use-nodiscard
-  , -bugprone-unused-return-value
-  , -cert-err33-c
-  , -hicpp-explicit-conversions
-  , -google-explicit-constructor
-  , -misc-no-recursion
-#  , -modernize-avoid-c-arrays
-#  , -modernize-pass-by-value
-#  , -readability-braces-around-statements
-#  , -readability-implicit-bool-conversion
-#  , -readability-else-after-return
-#  , -readability-convert-member-functions-to-static
-#  , -cppcoreguidelines-avoid-c-arrays
-#  , -hicpp-avoid-c-arrays
-#  , -hicpp-braces-around-statements
-#  , -google-readability-braces-around-statements
-#  , -google-build-using-namespace
-#  , -bugprone-infinite-loop
-#  , -abseil-string-find-startswith
-#  , -abseil-string-find-str-contains
-#  , -altera-unroll-loops
-#  , -altera-id-dependent-backward-branch
-#  , -cppcoreguidelines-pro-bounds-array-to-pointer-decay
-#  , -hicpp-no-array-decay
+  -*,
+  bugprone-*,
+  -bugprone-unused-return-value,
+  -bugprone-easily-swappable-parameters,
+  performance-*,
+  -performance-avoid-endl,
+  modernize-use-override,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-use-nullptr,
+  modernize-use-using,
+  misc-unused-using-decls,
+  misc-redundant-expression,
+  readability-misleading-indentation
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: ''
+HeaderFilterRegex: '.*/include/fxt/.*'
 FormatStyle:     none

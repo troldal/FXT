@@ -1,0 +1,10 @@
+---
+# The library's checks, less two that Catch2's macros defeat:
+#   bugprone-unchecked-optional-access       a REQUIRE(r.has_value()) before *r
+#                                            is a check the analysis cannot see
+#   bugprone-throwing-static-initialization  TEST_CASE registers each test in a
+#                                            static, which may throw
+InheritParentConfig: true
+Checks: >-
+  -bugprone-unchecked-optional-access,
+  -bugprone-throwing-static-initialization
