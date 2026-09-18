@@ -39,10 +39,10 @@
 */
 
 /**
- * @file MZip.hpp
+ * @file Zip.hpp
  * @brief Monadic zip: combine N monadic values into a single monad holding a tuple.
  *
- * fxt::mtuple_zip takes N monadic values (all fxt::optional, or all fxt::expected with
+ * fxt::zip takes N monadic values (all fxt::optional, or all fxt::expected with
  * the same error type) and returns a single monad containing an fxt::tuple of
  * their unwrapped values. Short-circuits on the first empty/error monad.
  *
@@ -51,7 +51,7 @@
  * @code
  * // from f in firstName, from l in lastName, from t in title
  * // select std::format("{} {} {}", t, f, l)
- * auto fullName = fxt::mtuple_zip(firstName, lastName, title)
+ * auto fullName = fxt::zip(firstName, lastName, title)
  *               | fxt::mapply([](auto f, auto l, auto t) {
  *                     return std::format("{} {} {}", t, f, l);
  *                 });
@@ -90,14 +90,18 @@ namespace fxt
      * auto b = fxt::expected<double,      std::string>{2.5};
      * auto c = fxt::expected<std::string, std::string>{"three"};
      *
-     * auto zipped = fxt::mtuple_zip(a, b, c);
+     * auto zipped = fxt::zip(a, b, c);
      * // zipped is fxt::expected<fxt::tuple<int, double, std::string>, std::string>
      * // containing (1, 2.5, "three")
      * @endcode
      */
+    // Constrained on the bool wrapper all_monad_like_v rather than a fold over
+    // monad_like: clang-cl's Microsoft-ABI mangler cannot mangle the pack
+    // expansion of a concept in a variadic template's constraints ("cannot
+    // mangle this pack expansion yet"). See IsMonad.hpp. Same overloads.
     template<typename First, typename... Rest>
-        requires fxt::monad_like<std::remove_cvref_t<First>>
-              && (fxt::monad_like<std::remove_cvref_t<Rest>> && ...)
+        requires fxt::all_monad_like_v<std::remove_cvref_t<First>,
+                                       std::remove_cvref_t<Rest>...>
     constexpr auto zip(First&& first, Rest&&... rest)
     {
         // Wrap the first monad's value into a single-element fxt::tuple.

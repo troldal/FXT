@@ -1,7 +1,7 @@
 ﻿//
-// Demo: fxt::mtuple_zip
+// Demo: fxt::zip
 //
-// fxt::mtuple_zip combines N monadic values (all fxt::optional, or all fxt::expected
+// fxt::zip combines N monadic values (all fxt::optional, or all fxt::expected
 // with the same error type) into a single monad containing an fxt::tuple of
 // their unwrapped values. It short-circuits on the first empty/error input.
 //
@@ -70,11 +70,11 @@ void example_heterogeneous_types()
     auto b = fxt::expected<double,      std::string>{ 3.14 };
     auto c = fxt::expected<std::string, std::string>{ "hello" };
 
-    // mzip alone produces a monad<tuple<...>>
+    // zip alone produces a monad<tuple<...>>
     auto zipped = fxt::zip(a, b, c);
 
     if (zipped) {
-        std::cout << "   mzip(a, b, c) = ("
+        std::cout << "   zip(a, b, c) = ("
                   << fxt::get<0>(*zipped) << ", "
                   << fxt::get<1>(*zipped) << ", \""
                   << fxt::get<2>(*zipped) << "\")\n\n";
@@ -134,12 +134,12 @@ void example_short_circuit_optional()
 }
 
 // ============================================================================
-// Example 5: Single-argument mzip (lift into tuple)
+// Example 5: Single-argument zip (lift into tuple)
 // ============================================================================
 
 void example_single_argument()
 {
-    std::cout << "Example 5: Single-argument mzip\n";
+    std::cout << "Example 5: Single-argument zip\n";
     std::cout << "================================\n\n";
 
     auto a = fxt::expected<int, std::string>{ 7 };
@@ -242,7 +242,7 @@ void example_realistic_pipeline()
 
 int main()
 {
-    std::cout << "\n=== fxt::mtuple_zip Demo ===\n\n";
+    std::cout << "\n=== fxt::zip Demo ===\n\n";
 
     example_linq_style_expected();
     example_heterogeneous_types();

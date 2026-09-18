@@ -32,6 +32,7 @@ add_executable(fxt_tests
         MatchTests.cpp
         MasArrayTests.cpp
         MonadicTupleAppendTests.cpp
+        ZipTests.cpp
         MonadicTuplePrependTests.cpp
         ToOptionalTests.cpp
         ToExpectedTests.cpp
