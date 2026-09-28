@@ -70,11 +70,12 @@ namespace fxt
 
         // Monadic operations required for pipeline composition. and_then's return type
         // must be a specialization of the same optional template, so T itself (never
-        // actually constructed, the body just throws) is the only portable probe.
+        // actually constructed: the body never returns) is the only portable probe.
         // Probe the rvalue-qualified overloads via std::move(t), mirroring
-        // expected_like, so move-only value_types are supported.
-        std::move(t).transform([](auto&&) -> typename T::value_type { throw 0; });
-        std::move(t).and_then([](auto&&) -> T { throw 0; });
+        // expected_like, so move-only value_types are supported. std::unreachable()
+        // instead of `throw` keeps the concept usable with exceptions disabled.
+        std::move(t).transform([](auto&&) -> typename T::value_type { std::unreachable(); });
+        std::move(t).and_then([](auto&&) -> T { std::unreachable(); });
 
     } && std::is_same_v<std::decay_t<T>, T> // Ensure we work with decayed types
       && !requires(T t) { t.error(); };     // Must NOT have .error() member
